@@ -1,6 +1,6 @@
 {
   "name": "voice-actors",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Voice Actors — Neural Audio Studio",
   "type": "module",
   "main": "static/app.js",
