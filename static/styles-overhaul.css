@@ -1,0 +1,510 @@
+/* =====================================================================
+   VOXFLOW UI/UX OVERHAUL LAYER
+   Additive to the Obsidian Acoustic system in styles.css.
+   Order matters: base tokens -> header -> studio -> dock.
+   ===================================================================== */
+
+/* =====================================================================
+   1. FOUNDATION — tokens, accessible text, focus rings, touch targets
+   ===================================================================== */
+:root {
+  /* Accessible secondary text: ~4.6:1 on --bg-page (#121315).
+     The old --text-muted (#8e929b) sits at ~4.0:1, just under AA. */
+  --text-secondary: #a4a8ae;
+
+  /* Accent ramp */
+  --accent-ring: rgba(239, 190, 130, 0.45);
+  --accent-soft: rgba(239, 190, 130, 0.12);
+  --danger: #ff8f85;
+  --danger-soft: rgba(255, 143, 133, 0.12);
+  --success: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.12);
+
+  /* Elevation scale */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elev-2: 0 4px 16px -4px rgba(0, 0, 0, 0.55);
+  --elev-3: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+
+  /* Motion — one curve, three durations */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-med: 200ms;
+  --dur-slow: 320ms;
+
+  /* Minimum comfortable touch target */
+  --touch: 44px;
+}
+
+body.theme-light {
+  --text-secondary: #5b6472;
+  --accent-ring: rgba(180, 120, 40, 0.45);
+  --accent-soft: rgba(180, 120, 40, 0.10);
+  --danger: #c0392b;
+  --danger-soft: rgba(192, 57, 43, 0.10);
+  --success: #15803d;
+  --success-soft: rgba(21, 128, 61, 0.10);
+}
+
+/* Body copy that used the too-dim muted tone now inherits the accessible one */
+.font-mono.text-outline,
+.text-outline {
+  color: var(--text-secondary);
+}
+
+/* --- Universal focus ring ---
+   The old UI had no visible focus indicator anywhere, so keyboard users
+   had no way to tell where they were. */
+:where(a, button, input, textarea, select, [tabindex], [role="button"]):focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Suppress for pointer users where we draw our own hover state */
+:where(a, button, input, textarea, select):focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* --- Touch targets ---
+   Small visual controls get an invisible 44px hit-area expansion so they
+   stay tappable without changing the visual design. */
+.nav-action-btn,
+.dock-tab-btn,
+.voice-preview-btn,
+.voice-fav-btn,
+.btn-audition-engine,
+.filter-pill,
+.provider-tab-btn,
+.lib-btn-del,
+.vx-iconbtn {
+  position: relative;
+}
+
+.nav-action-btn::after,
+.voice-preview-btn::after,
+.voice-fav-btn::after,
+.btn-audition-engine::after,
+.filter-pill::after,
+.provider-tab-btn::after,
+.lib-btn-del::after,
+.vx-iconbtn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, var(--touch));
+  height: max(100%, var(--touch));
+  transform: translate(-50%, -50%);
+  border-radius: inherit;
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =====================================================================
+   2. HEADER — de-cluttered; APK download moved out of the nav bar
+   ===================================================================== */
+.vx-header {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--bg-page) 82%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.vx-header__bar {
+  max-width: 1120px;
+  margin: 0 auto;
+  height: 60px;
+  padding-inline: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .vx-header__bar { padding-inline: 1.5rem; }
+}
+
+/* --- Brand --- */
+.vx-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.vx-brand__mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(145deg, #2a2b2d, #16171a);
+  border: 1px solid var(--border-subtle);
+  display: grid;
+  place-items: center;
+  color: var(--accent-amber);
+  flex-shrink: 0;
+}
+
+.vx-brand__mark svg { width: 17px; height: 17px; }
+
+.vx-brand__name {
+  font-size: 0.975rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.vx-brand__sub {
+  font-family: var(--font-code);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  padding-left: 0.5rem;
+  margin-left: 0.125rem;
+  border-left: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 900px) {
+  .vx-brand__sub { display: none; }
+}
+
+/* --- Desktop nav --- */
+.vx-nav {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  margin-inline: auto;
+}
+
+@media (min-width: 900px) {
+  .vx-nav { display: flex; }
+}
+
+.vx-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-code);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out);
+}
+
+.vx-nav__item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.vx-nav__item:hover { color: var(--text-main); }
+
+.vx-nav__item[aria-current="page"] {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  box-shadow: var(--elev-1);
+}
+
+/* --- Header actions --- */
+.vx-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.vx-iconbtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+
+.vx-iconbtn svg { width: 17px; height: 17px; }
+
+.vx-iconbtn:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
+  border-color: var(--border-dock);
+}
+
+/* --- Status chip (replaces the bare coloured dot) --- */
+.vx-status {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem 0.3rem 0.55rem;
+  border-radius: 9999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-code);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+@media (min-width: 1100px) {
+  .vx-status { display: inline-flex; }
+}
+
+.vx-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--success-soft);
+  flex-shrink: 0;
+}
+
+.vx-status__dot--degraded {
+  background: var(--accent-amber);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* --- "Get the app" popover --- */
+.vx-menu { position: relative; }
+
+.vx-menu__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 236px;
+  padding: 6px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-card) 96%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--elev-3);
+  z-index: 50;
+  display: none;
+}
+
+.vx-menu__panel[data-open="true"] {
+  display: block;
+  animation: vx-pop var(--dur-med) var(--ease-out);
+}
+
+@keyframes vx-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.vx-menu__title {
+  font-family: var(--font-code);
+  font-size: 0.6rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 0.4rem 0.6rem 0.3rem;
+}
+
+.vx-menu__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.vx-menu__row:hover { background: var(--bg-hover); }
+
+.vx-menu__row svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-amber);
+  flex-shrink: 0;
+}
+
+.vx-menu__meta {
+  display: block;
+  font-family: var(--font-code);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.vx-menu__sep {
+  height: 1px;
+  margin: 5px 6px;
+  background: var(--border-subtle);
+}
+
+/* =====================================================================
+   3. STUDIO — presets scroll affordance, generate button feedback
+   ===================================================================== */
+
+/* Preset row: signal that it scrolls. The old row silently truncated
+   "Podcast" with no hint anything was hidden. */
+.vx-presets {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent 100%);
+}
+
+.vx-presets::-webkit-scrollbar { display: none; }
+
+.vx-presets[data-at-end="true"] {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* --- Primary Generate button --- */
+.vx-generate {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Spinner: hidden until the button enters its loading state */
+.vx-generate__spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  animation: vx-spin 620ms linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes vx-spin {
+  to { transform: rotate(360deg); }
+}
+
+.vx-generate.loading .vx-generate__spinner { display: block; }
+.vx-generate.loading #generate-icon,
+.vx-generate.loading .vx-generate__kbd { display: none; }
+.vx-generate.loading { cursor: progress; }
+
+/* Keyboard hint chip — hidden on touch devices where it means nothing */
+.vx-generate__kbd {
+  display: none;
+  font-family: var(--font-code);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  opacity: 0.65;
+  margin-left: 0.25rem;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 768px) {
+  .vx-generate__kbd { display: inline-block; }
+}
+
+/* Sample button playing state */
+#btn-dock-voice-sample.playing {
+  color: var(--accent-amber);
+  border-color: var(--accent-ring);
+  background: var(--accent-soft);
+}
+
+/* =====================================================================
+   4. MOBILE DOCK — labels raised from 9px to 11px for small phones
+   ===================================================================== */
+.vx-dock__nav {
+  pointer-events: auto;
+  max-width: 26rem;
+  margin: 0 auto 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--bg-card-subtle) 92%, transparent);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--elev-3);
+}
+
+.vx-dock__btn {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.vx-dock__btn svg { width: 21px; height: 21px; }
+
+/* 11px instead of 9px — legible on small phones, still fits 4 tabs */
+.vx-dock__label {
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.vx-dock__btn[aria-current="page"] { color: var(--text-main); }
+.vx-dock__btn[aria-current="page"] svg { color: var(--accent-amber); }
+.vx-dock__btn[aria-current="page"] .vx-dock__label { font-weight: 600; }
+
+/* =====================================================================
+   5. MAIN OFFSET — the header is now 60px, not the old 64px Tailwind bar
+   ===================================================================== */
+@media (min-width: 768px) {
+  main {
+    padding-top: 84px !important;
+  }
+}

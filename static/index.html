@@ -80,62 +80,99 @@
 
   <!-- Bespoke Studio & Custom Component Styles -->
   <link rel="stylesheet" href="styles.css">
+  <!-- UI/UX overhaul layer (additive; loads after the base system) -->
+  <link rel="stylesheet" href="styles-overhaul.css">
 </head>
 
 <body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-surface-variant selection:text-primary font-body antialiased">
 
   <!-- =====================================================================
-       1. FIXED TOP HEADER (Voice Actors / Quiet Luxury Branding & Desktop Nav)
+       1. FIXED TOP HEADER (Voice Actors · Quiet Luxury Branding & Desktop Nav)
        ===================================================================== -->
-  <header class="fixed top-0 inset-x-0 z-40 bg-surface/85 backdrop-blur-xl border-b border-white/[0.04] pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.2)]">
-    <div class="max-w-5xl mx-auto h-16 px-gutter-mobile flex items-center justify-between">
-      
+  <header class="vx-header" id="app-header">
+    <div class="vx-header__bar">
+
       <!-- Brand & Watermark -->
-      <div class="flex items-center gap-3">
-        <span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim/90 shadow-[0_0_8px_rgba(239,190,130,0.5)]" id="global-status-dot"></span>
-        <div class="flex items-baseline gap-2">
-          <span class="font-medium text-lg text-primary tracking-tight font-headline">Voice Actors</span>
-          <span class="font-mono text-[10px] text-outline/60 pl-2 border-l border-white/[0.08]">Made by A.T.M.R</span>
-        </div>
+      <div class="vx-brand">
+        <span class="vx-brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M3 12v3M7.5 8v11M12 4v16M16.5 9v6M21 11v2"/>
+          </svg>
+        </span>
+        <span class="vx-brand__name">Voice Actors</span>
+        <span class="vx-brand__sub">Made by A.T.M.R</span>
       </div>
 
       <!-- Desktop Navigation Bar (Centered) -->
-      <nav class="hidden md:flex items-center p-1 rounded-full bg-surface-container-low border border-white/[0.06] shadow-inner gap-1">
-        <button class="nav-desktop-tab px-4 py-1.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-200 active text-primary bg-surface-container-highest shadow-sm cursor-pointer" data-tab="studio" type="button">Studio</button>
-        <button class="nav-desktop-tab px-4 py-1.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-200 text-on-surface-variant hover:text-primary cursor-pointer" data-tab="transcribe" type="button">Transcribe</button>
-        <button class="nav-desktop-tab px-4 py-1.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-200 text-on-surface-variant hover:text-primary cursor-pointer" data-tab="models" type="button">Models</button>
-        <button class="nav-desktop-tab px-4 py-1.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-200 text-on-surface-variant hover:text-primary cursor-pointer" data-tab="archive" type="button">Archive</button>
+      <nav class="vx-nav" aria-label="Primary">
+        <button class="vx-nav__item" data-tab="studio" type="button" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+          Studio
+        </button>
+        <button class="vx-nav__item" data-tab="transcribe" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3z"/><path d="M7 15h2l2-4 2 8 2-6 1.5 2H21"/></svg>
+          Transcribe
+        </button>
+        <button class="vx-nav__item" data-tab="models" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
+          Models
+        </button>
+        <button class="vx-nav__item" data-tab="archive" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v4H4z"/><path d="M5 8v12h14V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+          Archive
+        </button>
       </nav>
 
-      <!-- Header Actions: Mode Pills, Install PWA, Settings -->
-      <div class="flex items-center gap-2">
-        <!-- Hidden mode buttons for backward compatibility -->
-        <div class="hidden">
-          <button id="btn-mode-tts" data-mode="tts" type="button"></button>
-          <button id="btn-mode-stt" data-mode="stt" type="button"></button>
+      <!-- Header Actions -->
+      <div class="vx-actions">
+        <!-- Status now explains itself instead of a bare coloured dot -->
+        <div class="vx-status" id="global-status-chip" role="status" aria-live="polite">
+          <span class="vx-status__dot" id="global-status-dot"></span>
+          <span id="global-status-text">Engines Ready</span>
         </div>
 
-        <!-- PWA Install Button (Shown when installable) -->
-        <button class="hidden w-8 h-8 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center transition-colors border border-white/[0.04]" id="btn-install-pwa" title="Install Web App" type="button">
-          <span class="material-symbols-outlined text-[16px]">download</span>
-        </button>
-
-        <!-- Android APK Download Web Component -->
-        <download-app variant="button" manifest-url="/latest.json"></download-app>
-
         <!-- Developer API Modal Button -->
-        <button class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors border border-white/[0.04] cursor-pointer" id="btn-open-api" title="API Keys & Integration" type="button">
-          <span class="material-symbols-outlined text-[16px]">code</span>
+        <button class="vx-iconbtn" id="btn-open-api" title="API Keys &amp; Integration" type="button" aria-label="Developer API">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         </button>
 
         <!-- Settings & Keys Modal Button -->
-        <button class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors border border-white/[0.04] cursor-pointer" id="btn-open-settings" title="Engine Settings & API Keys" type="button">
-          <span class="material-symbols-outlined text-[16px]">tune</span>
+        <button class="vx-iconbtn" id="btn-open-settings" title="Engine Settings &amp; API Keys" type="button" aria-label="Engine settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
         </button>
 
-        <!-- Hidden theme toggle for compatibility -->
-        <button class="hidden" id="btn-toggle-theme" type="button"></button>
-        <button class="hidden" id="btn-open-library" type="button"><span id="lib-count-badge">0</span></button>
+        <!-- "Get the app" — consolidates the APK download + QR + PWA install
+             that previously competed with core navigation in the header. -->
+        <div class="vx-menu" id="get-app-menu">
+          <button class="vx-iconbtn" id="btn-get-app" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Get the Android app">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <div class="vx-menu__panel" id="get-app-panel" data-open="false" role="menu" aria-label="Get the app">
+            <div class="vx-menu__title">Voice Actors for Android</div>
+            <a class="vx-menu__row" href="https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk" download="voice-actors-latest.apk" target="_blank" rel="noopener" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>
+                Download APK
+                <span class="vx-menu__meta" id="get-app-meta">v1.0.0 · 9.3 MB</span>
+              </span>
+            </a>
+            <div class="vx-menu__sep"></div>
+            <button class="vx-menu__row" id="btn-install-pwa" type="button" role="menuitem" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+              <span>
+                Install web app
+                <span class="vx-menu__meta">Add to home screen</span>
+              </span>
+            </button>
+            <a class="vx-menu__row" href="https://github.com/ATMRaven/voice-actors/releases" target="_blank" rel="noopener" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <span>
+                Release notes
+                <span class="vx-menu__meta">Version history &amp; checksums</span>
+              </span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -237,7 +274,7 @@
           <div class="flex flex-col min-w-0">
             <div class="flex items-center gap-1.5">
               <span class="font-medium text-base text-primary tracking-tight truncate" id="dock-voice-name">Alexis</span>
-              <span class="material-symbols-outlined text-[15px] text-tertiary-fixed-dim shrink-0">verified</span>
+              <span class="material-symbols-outlined text-[15px] text-tertiary-fixed-dim shrink-0" title="Curated voice">verified</span>
             </div>
             <span class="font-mono text-xs uppercase tracking-wider text-on-surface-variant truncate" id="dock-voice-accent">Female · US English</span>
           </div>
@@ -245,14 +282,15 @@
 
         <div class="flex items-center gap-2 shrink-0">
           <!-- Quick Voice Sample Preview Button -->
-          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05]" id="btn-dock-voice-sample" type="button" title="Listen to Voice Sample">
+          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05] min-h-[36px]" id="btn-dock-voice-sample" type="button" title="Listen to Voice Sample">
             <span class="material-symbols-outlined text-[16px]" id="sample-icon">play_arrow</span>
-            <span class="font-mono text-[11px] tracking-widest uppercase">Sample</span>
+            <span class="font-mono text-[11px] tracking-widest uppercase" id="sample-label">Sample</span>
           </button>
           
-          <!-- Swap Voice Button (Opens Drawer) -->
-          <button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 bg-surface-container-high/60 border border-white/[0.05]" id="dock-voice-pill" type="button" title="Open Voice Drawer">
-            <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+          <!-- Swap Voice Button — now labelled, not a bare ambiguous icon -->
+          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05] min-h-[36px]" id="dock-voice-pill" type="button" title="Browse all 96 voices">
+            <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+            <span class="font-mono text-[11px] tracking-widest uppercase hidden sm:inline">Change</span>
           </button>
         </div>
       </div>
@@ -265,20 +303,21 @@
           <span class="font-mono text-[11px] uppercase tracking-widest text-outline">Script Input</span>
           
           <div class="flex items-center gap-3">
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-clear" type="button">Clear</button>
+            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer px-1 py-0.5" id="btn-clear" type="button" title="Clear the script">Clear</button>
             <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-paste" type="button">Paste</button>
+            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer px-1 py-0.5" id="btn-paste" type="button" title="Paste from clipboard">Paste</button>
           </div>
         </div>
 
-        <!-- 1-Click Directly Clickable Presets -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-1 scrollbar-none" id="presets-quick-bar">
-          <span class="font-mono text-[10px] uppercase tracking-wider text-outline/80 shrink-0 mr-1">Presets:</span>
+        <!-- 1-Click Presets. The old row silently truncated ("Podcas") with no
+             hint that more existed; it now fades at the edge to signal scroll. -->
+        <div class="vx-presets flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-1" id="presets-quick-bar">
+          <span class="font-mono text-[10px] uppercase tracking-wider text-outline/80 shrink-0 mr-1">Presets</span>
           <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Welcome to Voice Actors Neural Studio. Experience high-fidelity acoustic speech synthesis across eight state-of-the-art providers." type="button">Welcome</button>
           <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="In the quiet corners of deep space, silence is the canvas upon which cosmic light writes its timeless symphony." type="button">Cosmic</button>
           <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Thank you for calling customer support. Your account verification has been processed successfully. How may I assist you today?" type="button">Support</button>
           <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Hey everyone, welcome back to the channel. Today we are exploring the frontiers of real-time edge speech models." type="button">Podcast</button>
-          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="أهلاً بكم في استوديو فويس أكتورز لتوليد الصوت بالذكاء الاصطناعي بنقاء فائق وتزامن حي." type="button">🇸🇦 عربي</button>
+          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="أهلاً بكم في استوديو فويس أكتورز لتوليد الصوت بالذكاء الاصطناعي بنقاء فائق وتزامن حي." type="button" lang="ar">Arabic</button>
         </div>
 
         <button class="hidden" id="btn-samples-menu" type="button"></button>
@@ -296,8 +335,8 @@
             </span>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <span class="hidden sm:inline font-mono text-[11px] uppercase tracking-widest text-outline">EN-US</span>
-            <span class="font-mono text-[10px] uppercase text-tertiary-fixed-dim px-2 py-0.5 rounded bg-surface-container-lowest border border-white/[0.06]">48kHz</span>
+            <!-- 48kHz is informational, not a setting — de-emphasised and labelled -->
+            <span class="font-mono text-[10px] uppercase text-tertiary-fixed-dim px-2 py-0.5 rounded bg-surface-container-lowest border border-white/[0.06]" title="Output sample rate (fixed by the selected engine)">48kHz out</span>
           </div>
         </div>
       </div>
@@ -329,9 +368,11 @@
 
       <!-- Primary Generation CTA (Directly visible on Desktop without scrolling) -->
       <div class="flex flex-col gap-2 pt-1 mb-4" id="cta-generate-zone">
-        <button class="w-full h-12 rounded-full bg-primary text-on-primary flex items-center justify-center gap-2 shadow-[0_12px_28px_-6px_rgba(255,255,255,0.18)] hover:bg-primary-container active:scale-[0.98] transition-all duration-150 font-medium text-base tracking-tight cursor-pointer" id="btn-main-generate" type="button">
+        <button class="vx-generate w-full h-12 rounded-full bg-primary text-on-primary flex items-center justify-center gap-2 shadow-[0_12px_28px_-6px_rgba(255,255,255,0.18)] hover:bg-primary-container active:scale-[0.98] transition-all duration-150 font-medium text-base tracking-tight cursor-pointer" id="btn-main-generate" type="button">
+          <span class="vx-generate__spinner" id="generate-spinner" aria-hidden="true"></span>
           <span class="material-symbols-outlined text-[20px]" id="generate-icon">graphic_eq</span>
           <span id="label-generate">Generate Speech</span>
+          <kbd class="vx-generate__kbd" id="generate-kbd" title="Keyboard shortcut">Ctrl ↵</kbd>
         </button>
 
         <!-- Prominent Stop Generation Button (Revealed during synthesis) -->
@@ -844,33 +885,34 @@
   </main>
 
   <!-- =====================================================================
-       3. FLOATING BOTTOM NAVIGATION DOCK (Obsidian Acoustic 4-Pillars, Mobile Only)
+       3. FLOATING BOTTOM NAVIGATION DOCK (4-Pillar, Mobile Only)
+       Labels raised from 9px to 11px for small-phone legibility.
        ===================================================================== -->
   <div class="md:hidden fixed bottom-0 inset-x-0 z-40 pointer-events-none pb-safe px-gutter-mobile" id="main-dock">
-    <nav class="pointer-events-auto mx-auto max-w-sm mb-3 sm:mb-4 rounded-full bg-surface-container-low/90 backdrop-blur-2xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.8)] border border-white/[0.08] px-2 py-1.5 flex items-center justify-around">
+    <nav class="vx-dock__nav pointer-events-auto" aria-label="Primary">
       
       <!-- Studio Tab -->
-      <button class="dock-tab-btn active flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 transition-colors duration-200 text-primary cursor-pointer" data-tab="studio" type="button">
-        <span class="material-symbols-outlined text-[20px]">record_voice_over</span>
-        <span class="font-mono text-[9px] uppercase tracking-widest mt-0.5">Studio</span>
+      <button class="vx-dock__btn dock-tab-btn active" data-tab="studio" type="button" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        <span class="vx-dock__label">Studio</span>
       </button>
 
       <!-- Transcribe Tab -->
-      <button class="dock-tab-btn flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 text-on-surface-variant hover:text-primary transition-colors duration-200 cursor-pointer" data-tab="transcribe" type="button">
-        <span class="material-symbols-outlined text-[20px]">graphic_eq</span>
-        <span class="font-mono text-[9px] uppercase tracking-widest mt-0.5">Transcribe</span>
+      <button class="vx-dock__btn dock-tab-btn" data-tab="transcribe" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3z"/><path d="M7 15h2l2-4 2 8 2-6 1.5 2H21"/></svg>
+        <span class="vx-dock__label">Transcribe</span>
       </button>
 
       <!-- Models Tab -->
-      <button class="dock-tab-btn flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 text-on-surface-variant hover:text-primary transition-colors duration-200 cursor-pointer" data-tab="models" type="button">
-        <span class="material-symbols-outlined text-[20px]">spatial_audio</span>
-        <span class="font-mono text-[9px] uppercase tracking-widest mt-0.5">Models</span>
+      <button class="vx-dock__btn dock-tab-btn" data-tab="models" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
+        <span class="vx-dock__label">Models</span>
       </button>
 
       <!-- Archive Tab -->
-      <button class="dock-tab-btn flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 text-on-surface-variant hover:text-primary transition-colors duration-200 cursor-pointer" data-tab="archive" type="button">
-        <span class="material-symbols-outlined text-[20px]">library_music</span>
-        <span class="font-mono text-[9px] uppercase tracking-widest mt-0.5">Archive</span>
+      <button class="vx-dock__btn dock-tab-btn" data-tab="archive" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v4H4z"/><path d="M5 8v12h14V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        <span class="vx-dock__label">Archive</span>
       </button>
     </nav>
   </div>

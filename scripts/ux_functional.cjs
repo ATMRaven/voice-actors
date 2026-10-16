@@ -25,7 +25,11 @@ function check(name, ok, detail) {
 
   const visible = (sel) => page.evaluate((s) => {
     const e = document.querySelector(s);
-    return !!e && !e.classList.contains('hidden') && e.offsetParent !== null;
+    if (!e) return false;
+    if (e.classList.contains('hidden')) return false;
+    const cs = getComputedStyle(e);
+    // offsetParent is null for position:fixed elements, so check display directly
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.01;
   }, sel);
 
   // --- 1. Generate button (the critical regression) ---
@@ -76,7 +80,7 @@ function check(name, ok, detail) {
 
   // --- 6. Tabs ---
   for (const [tab, view] of [['transcribe', '#view-stt'], ['models', '#view-models'], ['archive', '#view-archive'], ['studio', '#view-tts']]) {
-    await page.evaluate((t) => document.querySelector(`.nav-desktop-tab[data-tab="${t}"]`).click(), tab);
+    await page.evaluate((t) => document.querySelector(`.vx-nav__item[data-tab="${t}"]`).click(), tab);
     await new Promise((r) => setTimeout(r, 350));
     check(`Tab "${tab}" shows its view`, await visible(view));
   }
@@ -118,21 +122,21 @@ function check(name, ok, detail) {
   await new Promise((r) => setTimeout(r, 300));
 
   // --- 10. STT engine toggle ---
-  await page.evaluate(() => document.querySelector('.nav-desktop-tab[data-tab="transcribe"]').click());
+  await page.evaluate(() => document.querySelector('.vx-nav__item[data-tab="transcribe"]').click());
   await new Promise((r) => setTimeout(r, 350));
   await page.click('#btn-engine-deepgram');
   await new Promise((r) => setTimeout(r, 250));
   check('STT engine toggle switches', true);
 
   // --- 11. Models accordion ---
-  await page.evaluate(() => document.querySelector('.nav-desktop-tab[data-tab="models"]').click());
+  await page.evaluate(() => document.querySelector('.vx-nav__item[data-tab="models"]').click());
   await new Promise((r) => setTimeout(r, 400));
   await page.evaluate(() => document.querySelector('.engine-card .btn-toggle-voices')?.click());
   await new Promise((r) => setTimeout(r, 350));
   check('Models accordion expands', true);
 
   // --- 12. Archive search ---
-  await page.evaluate(() => document.querySelector('.nav-desktop-tab[data-tab="archive"]').click());
+  await page.evaluate(() => document.querySelector('.vx-nav__item[data-tab="archive"]').click());
   await new Promise((r) => setTimeout(r, 400));
   await page.type('#archiveSearchInput', 'x');
   await new Promise((r) => setTimeout(r, 300));

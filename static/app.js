@@ -245,6 +245,11 @@
     btnOpenLib: document.getElementById('btn-open-library'),
     btnOpenSettings: document.getElementById('btn-open-settings'),
     btnInstallPwa: document.getElementById('btn-install-pwa'),
+    btnGetApp: document.getElementById('btn-get-app'),
+    getAppPanel: document.getElementById('get-app-panel'),
+    getAppMeta: document.getElementById('get-app-meta'),
+    globalStatusChip: document.getElementById('global-status-chip'),
+    globalStatusText: document.getElementById('global-status-text'),
     favCountBadge: document.getElementById('fav-count-badge'),
     globalStatusDot: document.getElementById('global-status-dot'),
     libBadge: document.getElementById('lib-count-badge'),
@@ -391,6 +396,8 @@
   async function init() {
     setupTheme();
     setupModeToggle();
+    setupGetAppMenu();
+    setupGenerateButton();
     setupCanvasEvents();
     setupInteractiveReader();
     setupDockControls();
@@ -443,6 +450,29 @@
     }
   }
 
+  // --- Primary Generate button: spinner, platform-correct shortcut hint ---
+  function setupGenerateButton() {
+    // Show ⌘ on Apple platforms instead of a hardcoded "Ctrl"
+    const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+    if (isMac) {
+      document.body.classList.add('vx-mac');
+      const kbd = document.getElementById('generate-kbd');
+      if (kbd) kbd.textContent = '⌘ ↵';
+    }
+
+    // Preset row: drop the scroll fade once the end is reached
+    const bar = document.getElementById('presets-quick-bar');
+    if (bar) {
+      const syncFade = () => {
+        const atEnd = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 2;
+        bar.dataset.atEnd = atEnd ? 'true' : 'false';
+      };
+      bar.addEventListener('scroll', syncFade, { passive: true });
+      window.addEventListener('resize', syncFade);
+      syncFade();
+    }
+  }
+
   // --- 4-Pillar Obsidian Acoustic Navigation System ---
   function switchTab(tabId) {
     state.activeTab = tabId;
@@ -462,6 +492,13 @@
     });
 
     // Update desktop nav pills in header
+    document.querySelectorAll('.vx-nav__item').forEach(btn => {
+      const match = btn.getAttribute('data-tab') === tabId;
+      if (match) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    });
+
+    // Legacy desktop nav pills (kept for any markup still using them)
     document.querySelectorAll('.nav-desktop-tab').forEach(btn => {
       const match = btn.getAttribute('data-tab') === tabId;
       btn.classList.toggle('active', match);
@@ -479,9 +516,11 @@
       const match = btn.getAttribute('data-tab') === tabId;
       btn.classList.toggle('active', match);
       if (match) {
+        btn.setAttribute('aria-current', 'page');
         btn.classList.add('text-primary');
         btn.classList.remove('text-on-surface-variant');
       } else {
+        btn.removeAttribute('aria-current');
         btn.classList.remove('text-primary');
         btn.classList.add('text-on-surface-variant');
       }
@@ -507,7 +546,7 @@
   }
 
   function setupNavigationTabs() {
-    document.querySelectorAll('.dock-tab-btn, .nav-desktop-tab').forEach(btn => {
+    document.querySelectorAll('.dock-tab-btn, .nav-desktop-tab, .vx-nav__item').forEach(btn => {
       btn.addEventListener('click', () => {
         const tab = btn.getAttribute('data-tab');
         if (tab) switchTab(tab);
@@ -520,6 +559,48 @@
     if (el.btnModeStt) {
       el.btnModeStt.addEventListener('click', () => switchTab('transcribe'));
     }
+  }
+
+  // --- "Get the app" header menu ---
+  // Consolidates APK download, PWA install and release notes into one
+  // disclosure instead of letting the download compete with navigation.
+  function setupGetAppMenu() {
+    if (!el.btnGetApp || !el.getAppPanel) return;
+
+    const setOpen = (open) => {
+      el.getAppPanel.dataset.open = open ? 'true' : 'false';
+      el.btnGetApp.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
+    el.btnGetApp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setOpen(el.getAppPanel.dataset.open !== 'true');
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#get-app-menu')) setOpen(false);
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && el.getAppPanel.dataset.open === 'true') {
+        setOpen(false);
+        el.btnGetApp.focus();
+      }
+    });
+
+    // Keep the version/size badge in sync with latest.json
+    fetch('/latest.json', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || !el.getAppMeta) return;
+        const parts = [];
+        if (d.versionName) parts.push(`v${d.versionName}`);
+        if (d.sizeBytes) parts.push(`${(d.sizeBytes / (1024 * 1024)).toFixed(1)} MB`);
+        if (parts.length) el.getAppMeta.textContent = parts.join(' · ');
+      })
+      .catch(() => { /* keep the static fallback */ });
   }
 
   function setupModeToggle() {
@@ -592,6 +673,21 @@
 
     const anyVoiceReady = dgActive || orActive || mistralActive || elevenActive || geminiActive || cartesiaActive || cfActive;
     el.globalStatusDot.style.background = (anyVoiceReady && groqActive) ? 'var(--accent-teal)' : 'var(--accent-amber)';
+
+    // The header status chip now says what is actually wrong, instead of a
+    // bare dot the user has to decode.
+    if (el.globalStatusText) {
+      if (!anyVoiceReady) {
+        el.globalStatusText.textContent = 'No Voice Engine';
+        el.globalStatusDot.classList.add('vx-status__dot--degraded');
+      } else if (!groqActive) {
+        el.globalStatusText.textContent = 'Transcribe Offline';
+        el.globalStatusDot.classList.add('vx-status__dot--degraded');
+      } else {
+        el.globalStatusText.textContent = 'Engines Ready';
+        el.globalStatusDot.classList.remove('vx-status__dot--degraded');
+      }
+    }
 
     if (el.pillStatusDeepgram) {
       el.pillStatusDeepgram.textContent = state.customDeepgramKey ? 'Custom Key Active' : (state.serverConfig.deepgram_ready ? 'Server Key Active' : 'Key Optional');
@@ -1049,6 +1145,7 @@
     // Reset generate button & hide cancel buttons
     el.btnMainGenerate.disabled = false;
     el.btnMainGenerate.classList.remove('loading');
+    el.btnMainGenerate.removeAttribute('aria-busy');
     el.labelGenerate.textContent = 'Generate Speech';
     if (el.btnCancelGenerate) el.btnCancelGenerate.classList.add('hidden');
     if (el.btnStageCancel) el.btnStageCancel.classList.add('hidden');
@@ -3165,6 +3262,7 @@
 
     el.btnMainGenerate.disabled = true;
     el.btnMainGenerate.classList.add('loading');
+    el.btnMainGenerate.setAttribute('aria-busy', 'true');
     el.labelGenerate.textContent = 'Starting...';
     if (el.btnCancelGenerate) el.btnCancelGenerate.classList.remove('hidden');
     if (el.btnStageCancel) el.btnStageCancel.classList.remove('hidden');
@@ -3399,6 +3497,7 @@
 
         el.btnMainGenerate.disabled = false;
         el.btnMainGenerate.classList.remove('loading');
+        el.btnMainGenerate.removeAttribute('aria-busy');
         el.labelGenerate.textContent = 'Generate Speech';
         if (el.btnCancelGenerate) el.btnCancelGenerate.classList.add('hidden');
         if (el.btnStageCancel) el.btnStageCancel.classList.add('hidden');
@@ -3423,6 +3522,7 @@
       showToast(errMsg, 'error', 5500);
       el.btnMainGenerate.disabled = false;
       el.btnMainGenerate.classList.remove('loading');
+      el.btnMainGenerate.removeAttribute('aria-busy');
       el.labelGenerate.textContent = 'Generate Speech';
       if (el.btnCancelGenerate) el.btnCancelGenerate.classList.add('hidden');
       if (el.btnStageCancel) el.btnStageCancel.classList.add('hidden');
@@ -3969,12 +4069,17 @@
   }
 
   // --- Library Management ---
+  // --- Library (Archive tab) ---
+  // The standalone library drawer was folded into the Archive tab, so the
+  // open/close button may no longer exist in the DOM. Guard every access.
   function setupLibrary() {
-    el.btnOpenLib.addEventListener('click', openLibrary);
-    el.btnCloseLibDrawer.addEventListener('click', closeLibrary);
-    el.libraryDrawerBackdrop.addEventListener('click', (e) => {
-      if (e.target === el.libraryDrawerBackdrop) closeLibrary();
-    });
+    if (el.btnOpenLib) el.btnOpenLib.addEventListener('click', openLibrary);
+    if (el.btnCloseLibDrawer) el.btnCloseLibDrawer.addEventListener('click', closeLibrary);
+    if (el.libraryDrawerBackdrop) {
+      el.libraryDrawerBackdrop.addEventListener('click', (e) => {
+        if (e.target === el.libraryDrawerBackdrop) closeLibrary();
+      });
+    }
 
     el.btnClearAllLib.addEventListener('click', () => {
       if (confirm('Clear all items from your library?')) {
@@ -3987,11 +4092,11 @@
   }
 
   function openLibrary() {
-    el.libraryDrawerBackdrop.classList.remove('hidden');
+    if (el.libraryDrawerBackdrop) el.libraryDrawerBackdrop.classList.remove('hidden');
   }
 
   function closeLibrary() {
-    el.libraryDrawerBackdrop.classList.add('hidden');
+    if (el.libraryDrawerBackdrop) el.libraryDrawerBackdrop.classList.add('hidden');
   }
 
   function addToLibrary(item) {
