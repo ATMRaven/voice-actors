@@ -336,6 +336,10 @@
     btnExportStt: document.getElementById('btn-export-stt'),
     btnSendSttToTts: document.getElementById('btn-send-stt-to-tts'),
 
+    // Sample presets popover (legacy anchor, kept for the click-outside guard below)
+    samplesPopover: document.getElementById('samples-popover'),
+    btnSamplesMenu: document.getElementById('btn-samples-menu'),
+
     // Library Drawer
     libraryDrawerBackdrop: document.getElementById('library-drawer-backdrop'),
     btnCloseLibDrawer: document.getElementById('btn-close-library-drawer'),
@@ -804,11 +808,16 @@
       });
     }
 
-    // Click outside to close popovers
+    // Click outside to close popovers (guarded — a throw here would silently kill
+    // every handler registered below it in this setup function)
     document.addEventListener('click', () => {
-      if (el.menuModelSelect) el.menuModelSelect.classList.add('hidden');
-      if (el.menuSpeedSelect) el.menuSpeedSelect.classList.add('hidden');
-      if (samplesPopover) samplesPopover.classList.add('hidden');
+      try {
+        if (el.menuModelSelect) el.menuModelSelect.classList.add('hidden');
+        if (el.menuSpeedSelect) el.menuSpeedSelect.classList.add('hidden');
+        if (el.samplesPopover) el.samplesPopover.classList.add('hidden');
+      } catch (err) {
+        console.warn('Popover close guard failed:', err);
+      }
     });
 
     // Master Generate Button
