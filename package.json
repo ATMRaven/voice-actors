@@ -2,6 +2,7 @@
   "name": "voice-actors",
   "version": "1.0.0",
   "description": "Voice Actors — Neural Audio Studio",
+  "type": "module",
   "main": "static/app.js",
   "scripts": {
     "build": "node -e \"console.log('Static web bundle ready in static/')\"",
