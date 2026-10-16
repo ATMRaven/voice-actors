@@ -510,21 +510,35 @@
 
         <!-- Quality Tag -->
         <div class="flex items-center gap-2 mt-3 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant border border-white/[0.04]">
-          <span class="material-symbols-outlined text-[13px] text-tertiary-fixed-dim">lock</span>
-          <span class="font-mono text-[10px] tracking-widest uppercase">48 kHz • Lossless FLAC</span>
+          <!-- Was a padlock, which reads as "secure" rather than "format spec" -->
+          <svg class="w-3.5 h-3.5 text-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/><circle cx="12" cy="9" r="2"/></svg>
+          <span class="font-mono text-[10px] tracking-widest uppercase">Captured at 48 kHz • FLAC</span>
         </div>
       </div>
 
-      <!-- Prominent Primary Action Buttons (Transcribe Audio & Mic Record) -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 my-4">
-        <button class="w-full sm:w-auto px-8 h-12 rounded-full bg-primary text-on-primary font-medium text-sm flex items-center justify-center gap-2 shadow-[0_12px_24px_-6px_rgba(255,255,255,0.2)] hover:bg-primary-container active:scale-95 transition-all cursor-pointer" id="btn-do-transcribe" type="button">
-          <span class="material-symbols-outlined text-[20px]">transcribe</span>
-          <span class="font-mono uppercase tracking-wider text-xs font-semibold" id="label-transcribe">Transcribe Audio</span>
+      <!-- Primary Actions
+           Previously: a "Transcribe Audio" button with a *microphone* icon
+           (misleading — it transcribes the selected/recorded file, it is
+           not the record control), a second round mic button, plus Browse.
+           Three ways to start, only one clearly labelled.
+           Now: one labelled "Upload file" path and one labelled "Record" path. -->
+      <div class="grid grid-cols-2 gap-3 my-4">
+        <button class="h-14 rounded-xl bg-surface-container border border-white/[0.06] hover:border-white/[0.12] hover:bg-surface-container-high transition-all flex flex-col items-center justify-center gap-1 cursor-pointer disabled:opacity-40 disabled:pointer-events-none" id="btn-browse-file-alt" type="button">
+          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
+          <span class="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant">Upload file</span>
         </button>
-        <button class="w-12 h-12 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center shadow-md active:scale-95 transition-all border border-white/[0.06] cursor-pointer shrink-0" id="btn-big-record" type="button" title="Record Audio with Microphone">
-          <span class="material-symbols-outlined text-[24px]" id="stt-record-icon">mic</span>
+        <button class="h-14 rounded-xl bg-surface-container border border-white/[0.06] hover:border-white/[0.12] hover:bg-surface-container-high transition-all flex flex-col items-center justify-center gap-1 cursor-pointer" id="btn-big-record" type="button" aria-label="Record with microphone">
+          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/></svg>
+          <span class="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant" id="label-record-toggle">Record</span>
         </button>
       </div>
+
+      <!-- The primary transcribe action now sits directly under the two
+           input paths, so the flow is: choose input -> transcribe. -->
+      <button class="w-full h-12 rounded-full bg-primary text-on-primary font-medium text-sm flex items-center justify-center gap-2 shadow-[0_12px_24px_-6px_rgba(255,255,255,0.2)] hover:bg-primary-container active:scale-[0.98] transition-all cursor-pointer disabled:opacity-40 disabled:pointer-events-none" id="btn-do-transcribe" type="button">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10V5a1 1 0 0 1 1-1h3"/><path d="M17 4h3a1 1 0 0 1 1 1v5"/><path d="M20 14v5a1 1 0 0 1-1 1h-3"/><path d="M7 20H4a1 1 0 0 1-1-1v-5"/><path d="M9 12h6"/></svg>
+        <span class="font-mono uppercase tracking-wider text-xs font-semibold" id="label-transcribe">Transcribe Audio</span>
+      </button>
 
       <!-- File Dropzone Option -->
       <div class="p-3.5 rounded-xl bg-surface-container-low mb-4 border border-dashed border-white/[0.08] flex items-center justify-between" id="stt-dropzone">
@@ -548,9 +562,12 @@
         <div class="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.04]">
           <span class="font-mono text-[11px] uppercase tracking-widest text-outline">Live Transcript</span>
           <div class="flex items-center gap-2">
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-copy-stt" type="button">Copy</button>
+            <!-- Both actions were enabled while the transcript was still the
+                 placeholder string, so clicking them copied/forwarded nothing.
+                 They are disabled on init and enabled once text exists. -->
+            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer disabled:opacity-35 disabled:hover:text-outline disabled:cursor-not-allowed" id="btn-copy-stt" type="button" disabled>Copy</button>
             <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-send-stt-to-tts" type="button">Send to Studio</button>
+            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer disabled:opacity-35 disabled:hover:text-outline disabled:cursor-not-allowed" id="btn-send-stt-to-tts" type="button" disabled>Send to Studio</button>
             <button class="hidden" id="btn-export-stt" type="button"></button>
           </div>
         </div>
