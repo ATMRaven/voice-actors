@@ -1,0 +1,23 @@
+{
+  "name": "voxflow-mcp",
+  "version": "1.0.0",
+  "description": "VoxFlow Online TTS Model Context Protocol (MCP) Server",
+  "main": "index.js",
+  "bin": {
+    "voxflow-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "tts",
+    "speech-synthesis",
+    "deepgram",
+    "whisper",
+    "transcription",
+    "ai-audio"
+  ],
+  "author": "VoxFlow",
+  "license": "MIT"
+}

@@ -1,0 +1,219 @@
+name: Android Release Build
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to GitHub Releases (set false for test build artifact)'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+env:
+  UPDATER_ENABLED: 'true'
+
+jobs:
+  build:
+    name: Build & Verify Signed Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Build production web bundle
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Determine Version Name and Version Code
+        id: versioning
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            RAW_TAG="${{ github.ref_name }}"
+            VERSION_NAME="${RAW_TAG#v}"
+          else
+            VERSION_NAME=$(node -p "require('./package.json').version || '1.0.0'")
+          fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
+          MAJOR=${MAJOR:-1}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+
+          VERSION_CODE=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+          APP_NAME=$(node -p "require('./package.json').name || 'voice-actors'")
+
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION_NAME (Code: $VERSION_CODE) for $APP_NAME"
+
+      - name: Decode Release Keystore & Configure Signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_BASE64 is not set!"
+            exit 1
+          fi
+
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+
+          cat <<EOF > android/keystore.properties
+          RELEASE_STORE_FILE=release.keystore
+          RELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD
+          RELEASE_KEY_ALIAS=$KEY_ALIAS
+          RELEASE_KEY_PASSWORD=$KEY_PASSWORD
+          EOF
+
+      - name: Assemble Release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease \
+            -PversionName="${{ steps.versioning.outputs.VERSION_NAME }}" \
+            -PversionCode="${{ steps.versioning.outputs.VERSION_CODE }}" \
+            -PupdaterEnabled="${{ env.UPDATER_ENABLED }}" \
+            --no-daemon
+
+      - name: Verify APK Signature & Certificate Fingerprint
+        env:
+          EXPECTED_SHA256: ${{ vars.ANDROID_CERT_SHA256 || secrets.ANDROID_CERT_SHA256 }}
+        run: |
+          APK_PATH=$(find android/app/build/outputs/apk/release -name "*-release.apk" | head -n 1)
+          if [ ! -f "$APK_PATH" ]; then
+            echo "::error::Release APK was not generated at expected path!"
+            exit 1
+          fi
+
+          echo "Verifying APK signature: $APK_PATH"
+          apksigner verify --verbose --print-certs "$APK_PATH" > cert_info.txt
+          cat cert_info.txt
+
+          ACTUAL_SHA256=$(grep "Signer #1 certificate SHA-256 digest:" cert_info.txt | awk '{print $NF}' | tr -d ' ' | tr '[:upper:]' '[:lower:]')
+          echo "Actual Certificate SHA-256: $ACTUAL_SHA256"
+
+          if [ -n "$EXPECTED_SHA256" ]; then
+            CLEAN_EXPECTED=$(echo "$EXPECTED_SHA256" | tr -d ' :' | tr '[:upper:]' '[:lower:]')
+            if [ "$ACTUAL_SHA256" != "$CLEAN_EXPECTED" ]; then
+              echo "::error::Certificate SHA-256 mismatch!"
+              echo "Expected: $CLEAN_EXPECTED"
+              echo "Actual:   $ACTUAL_SHA256"
+              exit 1
+            fi
+            echo "Certificate fingerprint matches ANDROID_CERT_SHA256 exactly."
+          else
+            echo "::warning::ANDROID_CERT_SHA256 variable is not set. Saving fingerprint for record: $ACTUAL_SHA256"
+          fi
+
+          aapt dump badging "$APK_PATH" | grep -E "package: name="
+
+      - name: Package Artifacts & Compute Checksums
+        id: package
+        run: |
+          APK_SRC=$(find android/app/build/outputs/apk/release -name "*-release.apk" | head -n 1)
+          APP_NAME="${{ steps.versioning.outputs.APP_NAME }}"
+          VERSION_NAME="${{ steps.versioning.outputs.VERSION_NAME }}"
+          VERSION_CODE="${{ steps.versioning.outputs.VERSION_CODE }}"
+
+          VERSIONED_APK="${APP_NAME}-${VERSION_NAME}.apk"
+          LATEST_APK="${APP_NAME}-latest.apk"
+
+          cp "$APK_SRC" "./$VERSIONED_APK"
+          cp "$APK_SRC" "./$LATEST_APK"
+
+          APK_SHA256=$(sha256sum "$VERSIONED_APK" | awk '{print $1}')
+          APK_SIZE=$(stat -c%s "$VERSIONED_APK")
+          REPO_OWNER_NAME="${{ github.repository }}"
+          NOW_ISO=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          echo "APK_SHA256=$APK_SHA256" >> $GITHUB_OUTPUT
+          echo "APK_SIZE=$APK_SIZE" >> $GITHUB_OUTPUT
+          echo "VERSIONED_APK=$VERSIONED_APK" >> $GITHUB_OUTPUT
+          echo "LATEST_APK=$LATEST_APK" >> $GITHUB_OUTPUT
+
+          cat <<EOF > latest.json
+          {
+            "versionName": "${VERSION_NAME}",
+            "versionCode": ${VERSION_CODE},
+            "apkUrl": "https://github.com/${REPO_OWNER_NAME}/releases/latest/download/${LATEST_APK}",
+            "sha256": "${APK_SHA256}",
+            "sizeBytes": ${APK_SIZE},
+            "minSupportedVersionCode": 1,
+            "mandatory": false,
+            "releaseNotes": "Release v${VERSION_NAME} with native stability and in-app updates.",
+            "publishedAt": "${NOW_ISO}"
+          }
+          EOF
+
+          echo "Generated latest.json:"
+          cat latest.json
+
+      - name: Upload Artifacts (Test Run or CI Retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk-${{ steps.versioning.outputs.VERSION_NAME }}
+          path: |
+            ${{ steps.package.outputs.VERSIONED_APK }}
+            ${{ steps.package.outputs.LATEST_APK }}
+            latest.json
+
+      - name: Publish GitHub Release
+        if: ${{ github.event_name == 'push' || github.event.inputs.publish == 'true' || github.event.inputs.publish == true }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v${{ steps.versioning.outputs.VERSION_NAME }}"
+          APP_NAME="${{ steps.versioning.outputs.APP_NAME }}"
+
+          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            echo "Release $TAG_NAME exists. Uploading updated assets..."
+            gh release upload "$TAG_NAME" \
+              "${{ steps.package.outputs.VERSIONED_APK }}" \
+              "${{ steps.package.outputs.LATEST_APK }}" \
+              "latest.json" \
+              --clobber
+          else
+            echo "Creating new release $TAG_NAME..."
+            gh release create "$TAG_NAME" \
+              "${{ steps.package.outputs.VERSIONED_APK }}" \
+              "${{ steps.package.outputs.LATEST_APK }}" \
+              "latest.json" \
+              --title "$APP_NAME v${{ steps.versioning.outputs.VERSION_NAME }}" \
+              --notes "Production signed Android release v${{ steps.versioning.outputs.VERSION_NAME }}." \
+              --latest
+          fi

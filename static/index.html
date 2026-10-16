@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Voice Actors — Neural Audio Studio</title>
+  <meta name="description" content="High-fidelity neural voice studio powered by ElevenLabs, Cartesia Sonic, Gemini, Groq, Deepgram, and Mistral.">
+  
+  <!-- Fonts: Geist Grotesk, Geist Mono, Newsreader, Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
+  <!-- PWA & Mobile Ergonomics -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#121315">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Voice Actors">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Tailwind CSS with Obsidian Acoustic Color Tokens -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          'background': '#121315',
+          'surface': '#121315',
+          'surface-dim': '#121315',
+          'surface-bright': '#38393a',
+          'surface-container-lowest': '#0d0e0f',
+          'surface-container-low': '#1b1c1d',
+          'surface-container': '#1f2021',
+          'surface-container-high': '#292a2b',
+          'surface-container-highest': '#343536',
+          'on-surface': '#e3e2e3',
+          'on-surface-variant': '#c4c7c9',
+          'primary': '#ffffff',
+          'on-primary': '#2e3132',
+          'primary-container': '#e1e2e4',
+          'on-primary-container': '#626566',
+          'secondary': '#c3c6d0',
+          'on-secondary': '#2c3138',
+          'secondary-container': '#454951',
+          'tertiary-fixed': '#ffddb7',
+          'tertiary-fixed-dim': '#efbe82',
+          'outline': '#8e9193',
+          'outline-variant': '#444749',
+          'error': '#ffb4ab',
+          'error-container': '#93000a'
+        },
+        fontFamily: {
+          'display': ['Newsreader', 'Geist', 'serif'],
+          'headline': ['Geist', 'sans-serif'],
+          'body': ['Geist', 'sans-serif'],
+          'mono': ['Geist Mono', 'monospace'],
+          'technical-mono': ['Geist Mono', 'monospace']
+        },
+        spacing: {
+          'space-xs': '0.25rem',
+          'space-sm': '0.5rem',
+          'space-md': '1rem',
+          'space-lg': '1.5rem',
+          'space-xl': '2.5rem',
+          'gutter': '1.25rem',
+          'gutter-mobile': '1rem',
+          'margin': '2rem',
+          'margin-mobile': '1.25rem'
+        }
+      }
+    }
+  };
+  </script>
+
+  <!-- Bespoke Studio & Custom Component Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-surface-variant selection:text-primary font-body antialiased">
+
+  <!-- =====================================================================
+       1. FIXED TOP HEADER (Voice Actors / Quiet Luxury Branding & Desktop Nav)
+       ===================================================================== -->
+  <header class="fixed top-0 inset-x-0 z-40 bg-surface/85 backdrop-blur-xl border-b border-white/[0.04] pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.2)]">
+    <div class="max-w-5xl mx-auto h-16 px-gutter-mobile flex items-center justify-between">
+      
+      <!-- Brand & Watermark -->
+      <div class="flex items-center gap-3">
+        <span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim/90 shadow-[0_0_8px_rgba(239,190,130,0.5)]" id="global-status-dot"></span>
+        <div class="flex items-baseline gap-2">
+          <span class="font-medium text-lg text-primary tracking-tight font-headline">Voice Actors</span>
+          <span class="font-mono text-[10px] text-outline/60 pl-2 border-l border-white/[0.08]">Made by A.T.M.R</span>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation Bar (Centered) -->
+      <nav class="hidden md:flex items-center p-1 rounded-full bg-surface-container-low border border-white/[0.06] shadow-inner gap-1">
+        <button class="nav-desktop-tab px-4 py-1.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-200 active text-primary bg-surface-container-highest shadow-sm cursor-pointer" data-tab="studio" type="button">Studio</button>
+        <button class="nav-desktop-tab px-4 py-1.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-200 text-on-surface-variant hover:text-primary cursor-pointer" data-tab="transcribe" type="button">Transcribe</button>
+        <button class="nav-desktop-tab px-4 py-1.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-200 text-on-surface-variant hover:text-primary cursor-pointer" data-tab="models" type="button">Models</button>
+        <button class="nav-desktop-tab px-4 py-1.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-200 text-on-surface-variant hover:text-primary cursor-pointer" data-tab="archive" type="button">Archive</button>
+      </nav>
+
+      <!-- Header Actions: Mode Pills, Install PWA, Settings -->
+      <div class="flex items-center gap-2">
+        <!-- Hidden mode buttons for backward compatibility -->
+        <div class="hidden">
+          <button id="btn-mode-tts" data-mode="tts" type="button"></button>
+          <button id="btn-mode-stt" data-mode="stt" type="button"></button>
+        </div>
+
+        <!-- PWA Install Button (Shown when installable) -->
+        <button class="hidden w-8 h-8 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center transition-colors border border-white/[0.04]" id="btn-install-pwa" title="Install Web App" type="button">
+          <span class="material-symbols-outlined text-[16px]">download</span>
+        </button>
+
+        <!-- Android APK Download Web Component -->
+        <download-app variant="button" manifest-url="/latest.json"></download-app>
+
+        <!-- Developer API Modal Button -->
+        <button class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors border border-white/[0.04] cursor-pointer" id="btn-open-api" title="API Keys & Integration" type="button">
+          <span class="material-symbols-outlined text-[16px]">code</span>
+        </button>
+
+        <!-- Settings & Keys Modal Button -->
+        <button class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors border border-white/[0.04] cursor-pointer" id="btn-open-settings" title="Engine Settings & API Keys" type="button">
+          <span class="material-symbols-outlined text-[16px]">tune</span>
+        </button>
+
+        <!-- Hidden theme toggle for compatibility -->
+        <button class="hidden" id="btn-toggle-theme" type="button"></button>
+        <button class="hidden" id="btn-open-library" type="button"><span id="lib-count-badge">0</span></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       2. PRIMARY VIEWPORT CONTAINER
+       ===================================================================== -->
+  <main class="flex-1 w-full max-w-4xl mx-auto pt-20 pb-28 md:pb-16 px-gutter-mobile">
+    
+    <!-- ===================================================================
+         VIEW 1: TTS STUDIO (Neural Acoustic Speech Engine)
+         =================================================================== -->
+    <section class="flex flex-col w-full" id="view-tts">
+      
+      <!-- Studio Header & Model Pill -->
+      <div class="flex items-center justify-between pt-2 pb-4">
+        <div>
+          <h1 class="font-display text-2xl sm:text-3xl text-primary tracking-tight font-normal">Speech Studio</h1>
+          <p class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant mt-0.5">Multi-Provider Neural Synthesis</p>
+        </div>
+
+        <!-- Model Selector Dropdown Trigger -->
+        <div class="relative">
+          <button class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface border border-white/[0.06] active:scale-95 duration-150" id="dock-model-pill" type="button">
+            <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
+            <span class="font-mono text-xs tracking-wider text-primary truncate max-w-[140px] sm:max-w-[200px]" id="dock-model-name">Deepgram Flux</span>
+            <span class="material-symbols-outlined text-[16px] text-on-surface-variant">expand_more</span>
+          </button>
+
+          <!-- Model Dropdown Popover Menu -->
+          <div class="hidden absolute right-0 top-full mt-2 w-72 rounded-xl bg-surface-container-low/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_16px_40px_rgba(0,0,0,0.8)] z-50 p-1.5 flex flex-col gap-1" id="menu-model-select">
+            <div class="px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-widest text-outline">Select Speech Engine</div>
+            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="deepgram/flux-tts:free" type="button">
+              <div>
+                <span class="item-name text-xs font-medium text-primary block">Deepgram Flux (Free)</span>
+                <span class="text-[10px] text-on-surface-variant block">36 Studio Voices • Low Latency</span>
+              </div>
+              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Free</span>
+            </button>
+            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="cartesia/sonic-3.6" type="button">
+              <div>
+                <span class="item-name text-xs font-medium text-primary block">Cartesia Sonic 3.6</span>
+                <span class="text-[10px] text-on-surface-variant block">Ultra Low-Latency • 90ms Realtime</span>
+              </div>
+              <span class="text-[10px] font-mono text-pink-400 bg-pink-950/60 px-1.5 py-0.5 rounded">90ms</span>
+            </button>
+            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="elevenlabs/multilingual-v2" type="button">
+              <div>
+                <span class="item-name text-xs font-medium text-primary block">ElevenLabs Studio v2</span>
+                <span class="text-[10px] text-on-surface-variant block">21 Expressive Pre-made Personas</span>
+              </div>
+              <span class="text-[10px] font-mono text-purple-400 bg-purple-950/60 px-1.5 py-0.5 rounded">Studio</span>
+            </button>
+            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="google/gemini-2.5-flash-tts" type="button">
+              <div>
+                <span class="item-name text-xs font-medium text-primary block">Google Gemini Audio</span>
+                <span class="text-[10px] text-on-surface-variant block">5 Expressive Personas • AI Studio</span>
+              </div>
+              <span class="text-[10px] font-mono text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded">Expressive</span>
+            </button>
+            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="groq/orpheus-english" type="button">
+              <div>
+                <span class="item-name text-xs font-medium text-primary block">Groq Orpheus (English)</span>
+                <span class="text-[10px] text-on-surface-variant block">6 Natural English Voices • Groq LPU</span>
+              </div>
+              <span class="text-[10px] font-mono text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded">LPU Speed</span>
+            </button>
+            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="groq/orpheus-arabic" type="button">
+              <div>
+                <span class="item-name text-xs font-medium text-primary block">Groq Orpheus (Saudi Arabic)</span>
+                <span class="text-[10px] text-on-surface-variant block">6 Authentic Saudi Voices • Groq LPU</span>
+              </div>
+              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">🇸🇦 Arabic</span>
+            </button>
+            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="mistral/voxtral-mini-tts" type="button">
+              <div>
+                <span class="item-name text-xs font-medium text-primary block">Mistral Voxtral Mini</span>
+                <span class="text-[10px] text-on-surface-variant block">4 Personas • 30 Emotional Shades</span>
+              </div>
+              <span class="text-[10px] font-mono text-orange-400 bg-orange-950/60 px-1.5 py-0.5 rounded">Emotions</span>
+            </button>
+            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="cloudflare/melotts" type="button">
+              <div>
+                <span class="item-name text-xs font-medium text-primary block">Cloudflare MeloTTS</span>
+                <span class="text-[10px] text-on-surface-variant block">9 Global Edge Accents • Fast Edge</span>
+              </div>
+              <span class="text-[10px] font-mono text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded">Edge</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Persona Card -->
+      <div class="flex items-center justify-between p-4 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] transition-all hover:border-white/[0.08]" id="active-persona-card">
+        <div class="flex items-center gap-3.5 min-w-0">
+          <div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container-highest shrink-0 flex items-center justify-center font-medium text-lg text-primary border border-white/[0.06] shadow-inner" id="dock-voice-avatar">
+            A
+          </div>
+          <div class="flex flex-col min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="font-medium text-base text-primary tracking-tight truncate" id="dock-voice-name">Alexis</span>
+              <span class="material-symbols-outlined text-[15px] text-tertiary-fixed-dim shrink-0">verified</span>
+            </div>
+            <span class="font-mono text-xs uppercase tracking-wider text-on-surface-variant truncate" id="dock-voice-accent">Female · US English</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Quick Voice Sample Preview Button -->
+          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05]" id="btn-dock-voice-sample" type="button" title="Listen to Voice Sample">
+            <span class="material-symbols-outlined text-[16px]" id="sample-icon">play_arrow</span>
+            <span class="font-mono text-[11px] tracking-widest uppercase">Sample</span>
+          </button>
+          
+          <!-- Swap Voice Button (Opens Drawer) -->
+          <button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 bg-surface-container-high/60 border border-white/[0.05]" id="dock-voice-pill" type="button" title="Open Voice Drawer">
+            <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Distraction-Free Script Input Canvas -->
+      <div class="relative flex flex-col p-4 sm:p-5 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] focus-within:border-white/[0.12] transition-colors duration-200" id="textarea-stage">
+        
+        <!-- Script Header -->
+        <div class="flex items-center justify-between pb-2 mb-2 text-on-surface-variant border-b border-white/[0.04]">
+          <span class="font-mono text-[11px] uppercase tracking-widest text-outline">Script Input</span>
+          
+          <div class="flex items-center gap-3">
+            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-clear" type="button">Clear</button>
+            <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-paste" type="button">Paste</button>
+          </div>
+        </div>
+
+        <!-- 1-Click Directly Clickable Presets -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-1 scrollbar-none" id="presets-quick-bar">
+          <span class="font-mono text-[10px] uppercase tracking-wider text-outline/80 shrink-0 mr-1">Presets:</span>
+          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Welcome to Voice Actors Neural Studio. Experience high-fidelity acoustic speech synthesis across eight state-of-the-art providers." type="button">Welcome</button>
+          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="In the quiet corners of deep space, silence is the canvas upon which cosmic light writes its timeless symphony." type="button">Cosmic</button>
+          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Thank you for calling customer support. Your account verification has been processed successfully. How may I assist you today?" type="button">Support</button>
+          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Hey everyone, welcome back to the channel. Today we are exploring the frontiers of real-time edge speech models." type="button">Podcast</button>
+          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="أهلاً بكم في استوديو فويس أكتورز لتوليد الصوت بالذكاء الاصطناعي بنقاء فائق وتزامن حي." type="button">🇸🇦 عربي</button>
+        </div>
+
+        <button class="hidden" id="btn-samples-menu" type="button"></button>
+        <div class="hidden" id="samples-popover"></div>
+
+        <!-- Textarea -->
+        <textarea class="w-full bg-transparent font-sans text-base text-primary placeholder:text-outline/40 focus:outline-none resize-none leading-relaxed tracking-tight min-h-[105px]" id="text-input" placeholder="Type or paste text to synthesize...">In the quiet corners of deep space, silence is the canvas upon which cosmic light writes its timeless symphony.</textarea>
+
+        <!-- Script Footer Metrics -->
+        <div class="flex items-center justify-between pt-3 mt-1 text-on-surface-variant border-t border-white/[0.04]">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary/40 shrink-0"></span>
+            <span class="font-mono text-[11px] tracking-wider uppercase text-on-surface-variant truncate">
+              <span id="stat-words">0</span> Words • <span id="stat-chars">0</span> Chars • ~<span id="stat-duration">0</span>s
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="hidden sm:inline font-mono text-[11px] uppercase tracking-widest text-outline">EN-US</span>
+            <span class="font-mono text-[10px] uppercase text-tertiary-fixed-dim px-2 py-0.5 rounded bg-surface-container-lowest border border-white/[0.06]">48kHz</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fine Audio Controls (Speed Slider & Cadence) -->
+      <div class="p-4 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] space-y-3">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="text-sm font-medium text-primary">Speech Rate</span>
+              <span class="text-xs text-on-surface-variant">Playback cadence</span>
+            </div>
+            <span class="font-mono text-xs text-primary font-medium tracking-widest" id="dock-speed-label">1.0x</span>
+          </div>
+          <div class="relative w-full h-5 flex items-center group cursor-pointer" id="dock-speed-pill">
+            <input class="w-full h-1 bg-surface-container-highest rounded-full appearance-none outline-none cursor-pointer accent-white" id="slider-speed" max="2.0" min="0.5" step="0.1" type="range" value="1.0"/>
+          </div>
+        </div>
+        
+        <!-- Speed quick selection options hidden container for app.js sync -->
+        <div class="hidden" id="menu-speed-select">
+          <button class="speed-opt" data-speed="0.75">0.75x</button>
+          <button class="speed-opt active" data-speed="1.0">1.0x</button>
+          <button class="speed-opt" data-speed="1.25">1.25x</button>
+          <button class="speed-opt" data-speed="1.5">1.5x</button>
+          <button class="speed-opt" data-speed="2.0">2.0x</button>
+        </div>
+      </div>
+
+      <!-- Primary Generation CTA (Directly visible on Desktop without scrolling) -->
+      <div class="flex flex-col gap-2 pt-1 mb-4" id="cta-generate-zone">
+        <button class="w-full h-12 rounded-full bg-primary text-on-primary flex items-center justify-center gap-2 shadow-[0_12px_28px_-6px_rgba(255,255,255,0.18)] hover:bg-primary-container active:scale-[0.98] transition-all duration-150 font-medium text-base tracking-tight cursor-pointer" id="btn-main-generate" type="button">
+          <span class="material-symbols-outlined text-[20px]" id="generate-icon">graphic_eq</span>
+          <span id="label-generate">Generate Speech</span>
+        </button>
+
+        <!-- Prominent Stop Generation Button (Revealed during synthesis) -->
+        <button class="hidden w-full h-12 rounded-full bg-red-950/40 border border-red-500/40 text-red-400 hover:bg-red-950/60 flex items-center justify-center gap-2 font-mono text-xs uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer shadow-sm" id="btn-cancel-generate" type="button">
+          <span class="material-symbols-outlined text-[20px]">stop_circle</span>
+          <span>Stop Audio Generation</span>
+        </button>
+
+        <div class="flex items-center justify-center gap-1.5 text-on-surface-variant opacity-75">
+          <span class="material-symbols-outlined text-[13px] text-tertiary-fixed-dim">bolt</span>
+          <span class="font-mono text-[10px] uppercase tracking-widest">Est. Latency ~180ms • Uncompressed Audio</span>
+        </div>
+      </div>
+
+      <!-- Buffer Preview / Audio Waveform Monitor (Hidden by default, shown when audio ready) -->
+      <div class="hidden flex flex-col p-4 rounded-xl bg-surface-container mb-4 border border-white/[0.06] shadow-md transition-all duration-300" id="dock-player">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" id="audio-ready-dot"></span>
+            <span class="font-mono text-[11px] tracking-widest uppercase text-tertiary-fixed-dim">Buffer Preview</span>
+          </div>
+          <span class="font-mono text-[11px] tracking-widest text-on-surface-variant" id="player-time-display">0:00 / 0:00</span>
+        </div>
+
+        <!-- Waveform Scrub Rail Canvas -->
+        <div class="relative flex items-center gap-1 h-11 w-full py-1 cursor-pointer overflow-hidden rounded-lg bg-surface-container-lowest/60 border border-white/[0.04]" id="waveform-scrub-zone">
+          <canvas class="w-full h-full" id="dock-waveform-canvas"></canvas>
+          <div class="absolute top-0 bottom-0 w-0.5 bg-tertiary-fixed-dim pointer-events-none" id="dock-playhead" style="left:0%"></div>
+        </div>
+
+        <!-- Player Action Toolbar -->
+        <div class="flex items-center justify-between pt-3 border-t border-white/[0.04] mt-2">
+          <div class="flex items-center gap-2.5">
+            <!-- Play/Pause Button with dynamic icon -->
+            <button class="w-10 h-10 rounded-full bg-primary text-on-primary hover:bg-primary-container flex items-center justify-center active:scale-95 transition-all shadow-md cursor-pointer" id="dock-btn-play" type="button" title="Play/Pause Synthesis">
+              <span class="material-symbols-outlined text-[22px]" id="play-pause-icon">play_arrow</span>
+            </button>
+            
+            <!-- Download MP3 Button -->
+            <button class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center active:scale-95 transition-colors border border-white/[0.04] cursor-pointer" id="btn-dock-download" type="button" title="Download Audio File">
+              <span class="material-symbols-outlined text-[18px]">download</span>
+            </button>
+
+            <!-- Toggle Live Sync Stage -->
+            <button class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center active:scale-95 transition-colors border border-white/[0.04] cursor-pointer" id="btn-toggle-reader" type="button" title="Toggle Word-by-Word Reading Stage">
+              <span class="material-symbols-outlined text-[18px]">subtitles</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider" id="player-label-voice">Alexis</span>
+            <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+            <span class="font-mono text-[11px] text-tertiary-fixed-dim uppercase tracking-wider font-medium" id="player-speed-text">1.0x</span>
+            <button class="hidden" id="btn-close-player" type="button"></button>
+            <button class="hidden" id="btn-player-speed" type="button"></button>
+            <span class="hidden" id="player-label-model"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Interactive Reading & Karaoke Stage (Collapsible) -->
+      <div class="hidden flex flex-col p-5 rounded-xl bg-surface-container mb-4 shadow-sm border border-tertiary-fixed-dim/30 transition-all duration-300" id="interactive-stage">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.06]">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></span>
+            <span class="font-mono text-xs uppercase tracking-widest text-primary">Karaoke Sync Stage</span>
+          </div>
+          <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-back-to-editor" type="button">Back to Editor</button>
+          <button class="hidden" id="btn-stage-cancel" type="button"></button>
+          <span class="hidden" id="label-reader-toggle"></span>
+          <span class="hidden" id="interactive-status-label"></span>
+        </div>
+
+        <div class="interactive-reading-content font-sans text-lg sm:text-xl text-primary leading-relaxed min-h-[100px] py-2" id="interactive-reading-body">
+          <!-- Live synchronized words render here dynamically -->
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-white/[0.04]" id="continuous-timeline-ribbon">
+          <div class="relative w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden cursor-pointer" id="ribbon-track">
+            <div class="h-full bg-tertiary-fixed-dim rounded-full transition-all duration-100" id="ribbon-progress" style="width: 0%;"></div>
+            <div class="hidden" id="ribbon-playhead"></div>
+          </div>
+          <div class="flex items-center justify-between pt-2 font-mono text-[10px] text-on-surface-variant uppercase tracking-wider">
+            <span id="ribbon-time-display">0:00 / 0:00</span>
+            <span id="ribbon-segments-badge">1 Sentence</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 2: LIVE TRANSCRIBE (Speech-to-Text & Whisper)
+         =================================================================== -->
+    <section class="hidden flex flex-col w-full" id="view-stt">
+      
+      <!-- Engine Toggle Segmented Control -->
+      <div class="w-full flex justify-center pt-2 pb-5">
+        <div class="relative bg-surface-container-low p-1 rounded-full flex items-center shadow-inner max-w-xs w-full border border-white/[0.04]">
+          <button class="flex-1 py-1.5 text-center font-mono text-xs tracking-widest uppercase transition-all duration-200 bg-surface-container-highest text-primary rounded-full shadow-sm cursor-pointer" id="btn-engine-whisper" type="button">Whisper v3</button>
+          <button class="flex-1 py-1.5 text-center font-mono text-xs tracking-widest uppercase transition-all duration-200 text-on-surface-variant hover:text-primary rounded-full cursor-pointer" id="btn-engine-deepgram" type="button">Deepgram</button>
+        </div>
+      </div>
+
+      <!-- Center Hero: Serene Audio Recording Session Visualizer -->
+      <div class="flex flex-col items-center justify-center my-4">
+        <div class="relative w-40 h-40 flex items-center justify-center">
+          <!-- Outer Gentle Ambient Pulse Aura -->
+          <div class="absolute inset-0 rounded-full bg-tertiary-fixed-dim/5 duration-1000 ease-out pointer-events-none transition-all" id="mic-halo"></div>
+          
+          <!-- Concentric Halos & Breathing Ring -->
+          <div class="absolute inset-2 rounded-full bg-surface-container-lowest/60 backdrop-blur-md shadow-2xl flex items-center justify-center border border-white/[0.06]">
+            <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+              <circle class="stroke-surface-container-high" cx="50" cy="50" fill="none" r="46" stroke-width="1.5"></circle>
+              <circle class="stroke-primary transition-all duration-300" cx="50" cy="50" fill="none" id="progress-orbit" r="46" stroke-dasharray="289" stroke-dashoffset="289" stroke-linecap="round" stroke-width="1.5"></circle>
+            </svg>
+            
+            <!-- Dynamic Counter Display -->
+            <div class="flex flex-col items-center justify-center space-y-1">
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" id="recording-dot"></span>
+                <span class="font-mono text-[10px] uppercase text-on-surface-variant tracking-widest" id="stt-status-label">Ready</span>
+              </div>
+              <span class="font-mono text-3xl font-light text-primary tracking-tight" id="stt-timer-display">00:00</span>
+              
+              <!-- Minimalist 4-Bar Acoustic Waveform -->
+              <div class="flex items-end gap-1 h-3 mt-0.5">
+                <span class="w-0.5 bg-tertiary-fixed-dim rounded-full h-2"></span>
+                <span class="w-0.5 bg-primary rounded-full h-3"></span>
+                <span class="w-0.5 bg-tertiary-fixed-dim rounded-full h-1.5"></span>
+                <span class="w-0.5 bg-primary rounded-full h-2.5"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quality Tag -->
+        <div class="flex items-center gap-2 mt-3 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant border border-white/[0.04]">
+          <span class="material-symbols-outlined text-[13px] text-tertiary-fixed-dim">lock</span>
+          <span class="font-mono text-[10px] tracking-widest uppercase">48 kHz • Lossless FLAC</span>
+        </div>
+      </div>
+
+      <!-- Prominent Primary Action Buttons (Transcribe Audio & Mic Record) -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 my-4">
+        <button class="w-full sm:w-auto px-8 h-12 rounded-full bg-primary text-on-primary font-medium text-sm flex items-center justify-center gap-2 shadow-[0_12px_24px_-6px_rgba(255,255,255,0.2)] hover:bg-primary-container active:scale-95 transition-all cursor-pointer" id="btn-do-transcribe" type="button">
+          <span class="material-symbols-outlined text-[20px]">transcribe</span>
+          <span class="font-mono uppercase tracking-wider text-xs font-semibold" id="label-transcribe">Transcribe Audio</span>
+        </button>
+        <button class="w-12 h-12 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center shadow-md active:scale-95 transition-all border border-white/[0.06] cursor-pointer shrink-0" id="btn-big-record" type="button" title="Record Audio with Microphone">
+          <span class="material-symbols-outlined text-[24px]" id="stt-record-icon">mic</span>
+        </button>
+      </div>
+
+      <!-- File Dropzone Option -->
+      <div class="p-3.5 rounded-xl bg-surface-container-low mb-4 border border-dashed border-white/[0.08] flex items-center justify-between" id="stt-dropzone">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="material-symbols-outlined text-outline text-[20px]">upload_file</span>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-medium text-primary truncate" id="picked-file-name">Or select an audio file (WAV, MP3, M4A, WEBM)</span>
+            <span class="font-mono text-[10px] text-outline truncate" id="stt-hint-display">Upload file for direct neural transcription</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <input class="hidden" id="input-audio-file" type="file" accept="audio/*"/>
+          <button class="px-3.5 py-1.5 rounded-full bg-surface-container-high text-xs text-primary hover:bg-surface-container-highest transition-colors border border-white/[0.05] cursor-pointer" id="btn-browse-file" type="button">Browse</button>
+          <button class="hidden" id="btn-remove-picked" type="button"></button>
+          <span class="hidden" id="chip-picked-file"></span>
+        </div>
+      </div>
+
+      <!-- Live Transcript Feed Card -->
+      <div class="flex flex-col p-4 sm:p-5 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04]" id="stt-result-card">
+        <div class="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.04]">
+          <span class="font-mono text-[11px] uppercase tracking-widest text-outline">Live Transcript</span>
+          <div class="flex items-center gap-2">
+            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-copy-stt" type="button">Copy</button>
+            <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer" id="btn-send-stt-to-tts" type="button">Send to Studio</button>
+            <button class="hidden" id="btn-export-stt" type="button"></button>
+          </div>
+        </div>
+
+        <div class="font-sans text-base text-primary leading-relaxed min-h-[85px] py-1 select-text" id="stt-transcript-text">
+          Click "Transcribe Audio" or record with your microphone to begin speech recognition.
+        </div>
+      </div>
+
+      <canvas class="hidden" id="stt-live-canvas"></canvas>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 3: MODELS & ENGINES (Architecture & Connected Providers)
+         =================================================================== -->
+    <section class="hidden flex flex-col w-full" id="view-models">
+      <div class="flex flex-col pt-2 pb-5">
+        <span class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Architecture</span>
+        <h1 class="font-display text-3xl sm:text-4xl text-primary tracking-tight font-normal mt-0.5">Providers &amp; Engines</h1>
+        <p class="font-mono text-xs text-on-surface-variant mt-1">High-fidelity acoustic speech models</p>
+      </div>
+
+      <!-- Telemetry Stats Row -->
+      <div class="flex items-baseline justify-between py-3 mb-5 border-y border-white/[0.04]">
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
+            <span class="font-display text-2xl text-primary font-light" id="models-stat-connected">8</span>
+          </div>
+          <span class="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">Connected</span>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-baseline">
+            <span class="font-display text-2xl text-primary font-light">94</span>
+            <span class="font-mono text-xs text-on-surface-variant ml-0.5">ms</span>
+          </div>
+          <span class="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">Mean Latency</span>
+        </div>
+        <div class="flex flex-col text-right">
+          <div class="flex items-baseline justify-end">
+            <span class="font-display text-2xl text-primary font-light">96</span>
+            <span class="font-mono text-xs text-on-surface-variant ml-1">Voices</span>
+          </div>
+          <span class="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">Audio Previews</span>
+        </div>
+      </div>
+
+      <!-- Engine Filter Tabs -->
+      <div class="flex items-center gap-1 p-1 rounded-full bg-surface-container-low max-w-xs mb-4 border border-white/[0.04]">
+        <button class="models-filter-tab flex-1 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-center transition-all bg-surface-container-highest text-primary" data-cat="all" type="button">All (8)</button>
+        <button class="models-filter-tab flex-1 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-center transition-all text-on-surface-variant hover:text-primary" data-cat="tts" type="button">TTS (7)</button>
+        <button class="models-filter-tab flex-1 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-center transition-all text-on-surface-variant hover:text-primary" data-cat="stt" type="button">STT (2)</button>
+      </div>
+
+      <!-- Engines Cards List -->
+      <div class="flex flex-col gap-3" id="engines-cards-list">
+        
+        <!-- Cartesia Sonic -->
+        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-pink-500/15 text-pink-400 flex items-center justify-center shrink-0 font-medium">
+              <span class="material-symbols-outlined text-[20px]">bolt</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm text-primary">Cartesia Sonic</span>
+                <span class="font-mono text-[10px] text-pink-400 bg-pink-950/60 px-1.5 py-0.5 rounded-full">90ms</span>
+              </div>
+              <span class="text-xs text-on-surface-variant truncate">Ultra low-latency neural synthesis • 8 Voices</span>
+            </div>
+          </div>
+          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="95856005-0332-41b0-935f-352e296aa0df" type="button" title="Audition Cartesia Voice">
+            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+          </button>
+        </div>
+
+        <!-- ElevenLabs Turbo -->
+        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0 font-medium">
+              <span class="material-symbols-outlined text-[20px]">auto_fix_high</span>
+            </div>
+            <div class="flex items-center flex-col min-w-0 items-start">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm text-primary">ElevenLabs Turbo v2.5</span>
+                <span class="font-mono text-[10px] text-purple-400 bg-purple-950/60 px-1.5 py-0.5 rounded-full">120ms</span>
+              </div>
+              <span class="text-xs text-on-surface-variant truncate">Studio realism &amp; expressive timbre • 21 Voices</span>
+            </div>
+          </div>
+          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="CwhRBWXzGAHq8TQ4Fs17" type="button" title="Audition ElevenLabs Voice">
+            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+          </button>
+        </div>
+
+        <!-- Google Gemini Flash Audio -->
+        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 font-medium">
+              <span class="material-symbols-outlined text-[20px]">cognition</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm text-primary">Google Gemini 2.5 Audio</span>
+                <span class="font-mono text-[10px] text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded-full">Multimodal</span>
+              </div>
+              <span class="text-xs text-on-surface-variant truncate">Expressive prosody &amp; AI Studio • 5 Voices</span>
+            </div>
+          </div>
+          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="Puck" type="button" title="Audition Gemini Voice">
+            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+          </button>
+        </div>
+
+        <!-- Groq Orpheus -->
+        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 font-medium">
+              <span class="material-symbols-outlined text-[20px]">speed</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm text-primary">Groq Orpheus LPU</span>
+                <span class="font-mono text-[10px] text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded-full">85ms</span>
+              </div>
+              <span class="text-xs text-on-surface-variant truncate">English &amp; Saudi Arabic Speech • 12 Voices</span>
+            </div>
+          </div>
+          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="autumn" type="button" title="Audition Groq Voice">
+            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+          </button>
+        </div>
+
+        <!-- Deepgram Flux & Nova -->
+        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 font-medium">
+              <span class="material-symbols-outlined text-[20px]">waves</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm text-primary">Deepgram Flux &amp; Nova-2</span>
+                <span class="font-mono text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded-full">Live Edge</span>
+              </div>
+              <span class="text-xs text-on-surface-variant truncate">36 Broadcast TTS Voices • Live Whisper STT</span>
+            </div>
+          </div>
+          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="flux-alexis-en" type="button" title="Audition Deepgram Voice">
+            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+          </button>
+        </div>
+
+        <!-- Mistral Voxtral -->
+        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-orange-500/15 text-orange-400 flex items-center justify-center shrink-0 font-medium">
+              <span class="material-symbols-outlined text-[20px]">theater_comedy</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm text-primary">Mistral Voxtral Mini</span>
+                <span class="font-mono text-[10px] text-orange-400 bg-orange-950/60 px-1.5 py-0.5 rounded-full">Emotions</span>
+              </div>
+              <span class="text-xs text-on-surface-variant truncate">4 Personas • 30 Emotional Vocal Inflections</span>
+            </div>
+          </div>
+          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="en_paul" type="button" title="Audition Mistral Voice">
+            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+          </button>
+        </div>
+
+        <!-- Cloudflare MeloTTS -->
+        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0 font-medium">
+              <span class="material-symbols-outlined text-[20px]">public</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm text-primary">Cloudflare MeloTTS</span>
+                <span class="font-mono text-[10px] text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded-full">Edge AI</span>
+              </div>
+              <span class="text-xs text-on-surface-variant truncate">Global Multi-lingual Accents • 9 Accents</span>
+            </div>
+          </div>
+          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="en-us" type="button" title="Audition Cloudflare Accent">
+            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Engine Configuration Button -->
+      <div class="mt-6 flex justify-center">
+        <button class="px-5 py-2.5 rounded-full bg-surface-container hover:bg-surface-container-high text-xs font-mono uppercase tracking-wider text-primary border border-white/[0.06] transition-all flex items-center gap-2" onclick="document.getElementById('btn-open-settings').click()" type="button">
+          <span class="material-symbols-outlined text-[16px]">key</span>
+          <span>Configure API Credentials</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 4: AUDIO ARCHIVE (Vault & Generated History)
+         =================================================================== -->
+    <section class="hidden flex flex-col w-full" id="view-archive">
+      
+      <!-- Minimal Search Bar -->
+      <div class="relative w-full mt-1 mb-4">
+        <div class="relative flex items-center w-full h-11 rounded-full bg-surface-container-low px-4 border border-white/[0.06] focus-within:border-white/[0.15] transition-all">
+          <span class="material-symbols-outlined text-outline text-[18px] mr-2.5">search</span>
+          <input class="w-full bg-transparent text-sm text-primary placeholder:text-outline/50 focus:outline-none" id="archiveSearchInput" placeholder="Search saved audio by script or voice..." type="text"/>
+        </div>
+      </div>
+
+      <!-- Vault Telemetry Progress -->
+      <div class="w-full mb-6 flex flex-col gap-1.5">
+        <div class="flex items-center justify-between font-mono text-[10px] text-outline tracking-wider uppercase">
+          <span>Vault Capacity</span>
+          <span id="archive-count-label">0 Clips Saved</span>
+        </div>
+        <div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+          <div class="h-full bg-tertiary-fixed-dim rounded-full transition-all duration-500" id="archive-progress-bar" style="width: 15%;"></div>
+        </div>
+      </div>
+
+      <!-- Saved Clips List -->
+      <div class="flex flex-col gap-3" id="library-items-list">
+        <!-- Rendered dynamically via app.js -->
+        <div class="p-8 text-center text-on-surface-variant font-mono text-xs rounded-xl bg-surface-container-low border border-white/[0.04]">
+          No saved audio clips yet. Synthesize speech in Studio to build your personal archive.
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-3">
+        <button class="font-mono text-[10px] text-outline hover:text-error uppercase tracking-wider transition-colors" id="btn-clear-all-lib" type="button">Clear All Clips</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- =====================================================================
+       3. FLOATING BOTTOM NAVIGATION DOCK (Obsidian Acoustic 4-Pillars, Mobile Only)
+       ===================================================================== -->
+  <div class="md:hidden fixed bottom-0 inset-x-0 z-40 pointer-events-none pb-safe px-gutter-mobile" id="main-dock">
+    <nav class="pointer-events-auto mx-auto max-w-sm mb-3 sm:mb-4 rounded-full bg-surface-container-low/90 backdrop-blur-2xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.8)] border border-white/[0.08] px-2 py-1.5 flex items-center justify-around">
+      
+      <!-- Studio Tab -->
+      <button class="dock-tab-btn active flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 transition-colors duration-200 text-primary cursor-pointer" data-tab="studio" type="button">
+        <span class="material-symbols-outlined text-[20px]">record_voice_over</span>
+        <span class="font-mono text-[9px] uppercase tracking-widest mt-0.5">Studio</span>
+      </button>
+
+      <!-- Transcribe Tab -->
+      <button class="dock-tab-btn flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 text-on-surface-variant hover:text-primary transition-colors duration-200 cursor-pointer" data-tab="transcribe" type="button">
+        <span class="material-symbols-outlined text-[20px]">graphic_eq</span>
+        <span class="font-mono text-[9px] uppercase tracking-widest mt-0.5">Transcribe</span>
+      </button>
+
+      <!-- Models Tab -->
+      <button class="dock-tab-btn flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 text-on-surface-variant hover:text-primary transition-colors duration-200 cursor-pointer" data-tab="models" type="button">
+        <span class="material-symbols-outlined text-[20px]">spatial_audio</span>
+        <span class="font-mono text-[9px] uppercase tracking-widest mt-0.5">Models</span>
+      </button>
+
+      <!-- Archive Tab -->
+      <button class="dock-tab-btn flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 text-on-surface-variant hover:text-primary transition-colors duration-200 cursor-pointer" data-tab="archive" type="button">
+        <span class="material-symbols-outlined text-[20px]">library_music</span>
+        <span class="font-mono text-[9px] uppercase tracking-widest mt-0.5">Archive</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- =====================================================================
+       4. SPACIOUS CENTERED VOICE SELECTION MODAL (96 Authentic Preview Voices)
+       ===================================================================== -->
+  <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-6 transition-opacity duration-200" id="voice-drawer-backdrop">
+    <div class="w-full max-w-5xl h-[88vh] sm:h-[84vh] bg-surface-container-low border border-white/[0.08] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden" id="voice-drawer">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <h3 class="font-display text-xl text-primary font-normal" id="drawer-title-text">Select Voice Actor</h3>
+          <span class="font-mono text-[10px] uppercase text-outline px-2 py-0.5 rounded-full bg-surface-container" id="drawer-voice-count">96 Available</span>
+          <span class="font-mono text-[10px] text-tertiary-fixed-dim bg-tertiary-fixed-dim/10 px-2.5 py-0.5 rounded-full border border-tertiary-fixed-dim/20" id="drawer-provider-badge">Deepgram</span>
+        </div>
+        <button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors bg-surface-container hover:bg-surface-container-high cursor-pointer" id="btn-close-voice-drawer" aria-label="Close voice selection" type="button">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <!-- Provider Filter Tabs Carousel -->
+      <div class="px-5 py-2.5 border-b border-white/[0.04] overflow-x-auto flex items-center gap-2 scrollbar-none shrink-0" id="drawer-provider-tabs">
+        <button class="provider-tab-btn active px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap bg-surface-container-highest text-primary border border-white/[0.06] cursor-pointer" data-provider="deepgram" type="button">Deepgram (36)</button>
+        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="mistral" type="button">Mistral (4)</button>
+        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="elevenlabs" type="button">ElevenLabs (21)</button>
+        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="cartesia" type="button">Cartesia (8)</button>
+        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="gemini" type="button">Gemini (5)</button>
+        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="groq" type="button">Groq Orpheus (12)</button>
+        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="cloudflare" type="button">Cloudflare (9)</button>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="px-5 py-3 border-b border-white/[0.04] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+        <div class="relative flex-1 max-w-md">
+          <span class="material-symbols-outlined text-outline text-[16px] absolute left-3 top-1/2 -translate-y-1/2">search</span>
+          <input class="w-full h-9 pl-9 pr-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/50 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="voice-search-field" placeholder="Search voice actors, accents, tones..." type="text"/>
+        </div>
+        
+        <!-- Filter Pills -->
+        <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none" id="drawer-filters">
+          <button class="filter-pill active px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider bg-surface-container-highest text-primary cursor-pointer" data-filter="all" type="button">All</button>
+          <button class="filter-pill px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-outline hover:text-primary bg-surface-container cursor-pointer" data-filter="favorites" type="button">★ Favs (<span id="fav-count-badge">0</span>)</button>
+          <button class="filter-pill px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-outline hover:text-primary bg-surface-container cursor-pointer" data-filter="Female" type="button">Female</button>
+          <button class="filter-pill px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-outline hover:text-primary bg-surface-container cursor-pointer" data-filter="Male" type="button">Male</button>
+          <button class="filter-pill px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-outline hover:text-primary bg-surface-container cursor-pointer" data-filter="recommended" type="button">★ Picks</button>
+        </div>
+      </div>
+
+      <!-- Voices Grid List (Spacious 3-Column Responsive Grid) -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 content-start" id="drawer-voices-list">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       5. ENGINE SETTINGS & API KEYS MODAL
+       ===================================================================== -->
+  <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 transition-opacity duration-300" id="settings-modal-backdrop">
+    <div class="w-full max-w-lg rounded-2xl bg-surface-container-low border border-white/[0.08] shadow-2xl p-5 sm:p-6 flex flex-col max-h-[90vh] overflow-y-auto" id="settings-modal">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-white/[0.06] mb-4">
+        <div>
+          <h3 class="font-display text-xl text-primary font-normal">Engine Settings</h3>
+          <p class="font-mono text-xs text-outline mt-0.5">Server Keys &amp; Personal Credentials</p>
+        </div>
+        <button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary bg-surface-container" id="btn-close-settings-modal" type="button">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <p class="text-xs text-on-surface-variant mb-4 leading-relaxed">
+        Server credentials are pre-configured server-side. You can optionally supply your own keys below to override defaults.
+      </p>
+
+      <div class="space-y-3.5">
+        <!-- ElevenLabs -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-primary">ElevenLabs API Key</span>
+            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-elevenlabs">Server Active</span>
+          </div>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-elevenlabs" placeholder="sk_... (Optional custom key)" type="password"/>
+        </div>
+
+        <!-- Cartesia -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-primary">Cartesia API Key</span>
+            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-cartesia">Server Active</span>
+          </div>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-cartesia" placeholder="sk_car_... (Optional custom key)" type="password"/>
+        </div>
+
+        <!-- Google Gemini -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-primary">Google Gemini API Key</span>
+            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-gemini">Server Active</span>
+          </div>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-gemini" placeholder="AIzaSy... (Optional custom key)" type="password"/>
+        </div>
+
+        <!-- Groq -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-primary">Groq API Key (Orpheus &amp; Whisper)</span>
+            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-groq">Server Active</span>
+          </div>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-groq" placeholder="gsk_... (Optional custom key)" type="password"/>
+        </div>
+
+        <!-- Deepgram -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-primary">Deepgram API Key</span>
+            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-deepgram">Server Active</span>
+          </div>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-deepgram" placeholder="Optional custom key" type="password"/>
+        </div>
+
+        <!-- Mistral -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-primary">Mistral AI Key</span>
+            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-mistral">Server Active</span>
+          </div>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-mistral" placeholder="Optional custom key" type="password"/>
+        </div>
+
+        <!-- Cloudflare -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-primary">Cloudflare Token</span>
+            <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-key-cf-token" placeholder="Optional" type="password"/>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-primary">Account ID</span>
+            <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-key-cf-account" placeholder="Optional" type="text"/>
+          </div>
+        </div>
+
+        <!-- OpenRouter -->
+        <div class="hidden">
+          <input id="input-key-openrouter" type="password"/>
+          <span id="pill-status-openrouter"></span>
+          <span id="pill-status-cloudflare"></span>
+        </div>
+
+        <!-- Autoplay Toggle -->
+        <div class="pt-2 flex items-center justify-between border-t border-white/[0.04]">
+          <span class="text-xs text-primary">Auto-Play audio after synthesis</span>
+          <input class="accent-white cursor-pointer" id="toggle-autoplay" type="checkbox" checked/>
+        </div>
+
+        <!-- Android In-App Updates & Version Info -->
+        <download-app variant="settings" manifest-url="/latest.json"></download-app>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-5 mt-4 border-t border-white/[0.06]">
+        <button class="px-4 py-2 rounded-lg text-xs font-mono uppercase text-outline hover:text-primary transition-colors" id="btn-reset-default-keys" type="button">Reset</button>
+        <button class="px-5 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium hover:bg-primary-container transition-colors shadow-sm" id="btn-save-custom-keys" type="button">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       6. DEVELOPER API / AI AGENT INTEGRATION MODAL
+       ===================================================================== -->
+  <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 transition-opacity duration-300" id="api-modal-backdrop">
+    <div class="w-full max-w-lg rounded-2xl bg-surface-container-low border border-white/[0.08] shadow-2xl p-5 sm:p-6 flex flex-col" id="api-modal">
+      <div class="flex items-center justify-between pb-3 border-b border-white/[0.06] mb-3">
+        <div>
+          <h3 class="font-display text-xl text-primary font-normal">Developer API</h3>
+          <p class="font-mono text-xs text-outline mt-0.5">Agent Keys &amp; REST Endpoints</p>
+        </div>
+        <button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary bg-surface-container" id="btn-close-api-modal" type="button">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+      
+      <p class="text-xs text-on-surface-variant mb-3 leading-relaxed">
+        Generate authorized API tokens to connect autonomous coding agents, CLI tools, or external services to VoxFlow.
+      </p>
+
+      <div class="flex items-center gap-2 mb-3">
+        <input class="flex-1 h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-api-key-name" placeholder="Key description (e.g. Cursor Agent)" type="text"/>
+        <button class="px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium" id="btn-generate-api-key" type="button">Generate</button>
+      </div>
+
+      <div class="hidden flex flex-col gap-2 p-3 rounded-lg bg-surface-container-lowest border border-white/[0.04] mb-3" id="api-key-display-area">
+        <span class="font-mono text-[10px] text-tertiary-fixed-dim uppercase tracking-wider">Your API Token (Copy Now):</span>
+        <code class="font-mono text-xs text-emerald-400 break-all select-all" id="display-api-key">vox_...</code>
+        <div class="flex items-center gap-2 pt-1">
+          <button class="font-mono text-[10px] text-primary hover:underline uppercase" id="btn-copy-api-key" type="button">Copy Key</button>
+          <span class="text-outline text-[10px]">•</span>
+          <button class="font-mono text-[10px] text-error hover:underline uppercase" id="btn-revoke-api-key" type="button">Revoke</button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <span class="font-mono text-[10px] text-outline uppercase tracking-wider">Sample cURL Command:</span>
+        <pre class="font-mono text-[11px] text-on-surface-variant bg-surface-container p-2.5 rounded-lg overflow-x-auto select-all" id="api-sample-curl">curl -X POST https://voxflow-809.pages.dev/api/tts \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello from VoxFlow", "voice": "flux-alexis-en"}' \
+  --output speech.mp3</pre>
+      </div>
+
+      <div class="flex justify-end pt-4 mt-2 border-t border-white/[0.04]">
+        <button class="px-4 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-mono uppercase text-primary transition-colors" id="btn-close-api-modal-done" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Deck for Smooth Feedback -->
+  <div class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col gap-2 items-center" id="toast-deck"></div>
+
+  <!-- Hidden library drawer backdrop for backward compatibility with app.js -->
+  <div class="hidden" id="library-drawer-backdrop"><button id="btn-close-library-drawer"></button></div>
+
+  <!-- Android Modules & Web Components -->
+  <script src="modules/back-navigation.js" type="module"></script>
+  <script src="modules/UpdateManager.js" type="module"></script>
+  <script src="components/DownloadApp.js" type="module"></script>
+
+  <!-- Core App Controller Script -->
+  <script src="app.js"></script>
+</body>
+</html>

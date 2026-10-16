@@ -1,0 +1,11 @@
+{
+  "versionName": "1.0.0",
+  "versionCode": 10000,
+  "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
+  "sha256": "",
+  "sizeBytes": 0,
+  "minSupportedVersionCode": 10000,
+  "mandatory": false,
+  "releaseNotes": "Initial production release of Voice Actors Neural Studio for Android.",
+  "publishedAt": "2026-10-16T16:00:00Z"
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Voice Actors</string>
+    <string name="title_activity_main">Voice Actors</string>
+    <string name="package_name">com.atmr.voiceactors</string>
+    <string name="custom_url_scheme">com.atmr.voiceactors</string>
+</resources>

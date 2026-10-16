@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>VoxFlow — Modern Voice Studio</title>
+  <meta name="description" content="Minimalist, professional AI voice canvas powered by OpenRouter Free TTS and Groq Whisper.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#09090b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VoxFlow">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-dark">
+  <div class="studio-app">
+    
+    <!-- Ultra-Clean Top Bar -->
+    <header class="top-nav">
+      <div class="nav-brand">
+        <div class="brand-avatar">
+          <svg viewBox="0 0 64 64" fill="none" class="brand-logo-svg">
+            <rect width="64" height="64" rx="16" fill="#0e0f11"/>
+            <rect x="1" y="1" width="62" height="62" rx="15" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+            <rect x="14" y="24" width="4.5" height="16" rx="2.25" fill="#f59e0b"/>
+            <rect x="22.5" y="15" width="4.5" height="34" rx="2.25" fill="#f59e0b"/>
+            <rect x="31" y="8" width="4.5" height="48" rx="2.25" fill="#fbbf24"/>
+            <rect x="39.5" y="18" width="4.5" height="28" rx="2.25" fill="#f59e0b"/>
+            <rect x="48" y="26" width="4.5" height="12" rx="2.25" fill="#f59e0b"/>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <span class="brand-title">VoxFlow</span>
+          <span class="watermark-badge" title="Architected by A.T.M.R">A.T.M.R</span>
+          <span class="brand-tag">Neural Audio Studio</span>
+        </div>
+      </div>
+
+      <!-- Mode Switcher Pill -->
+      <div class="mode-pill-toggle">
+        <button class="mode-btn active" id="btn-mode-tts" data-mode="tts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          </svg>
+          <span>Speak</span>
+        </button>
+        <button class="mode-btn" id="btn-mode-stt" data-mode="stt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>Transcribe</span>
+        </button>
+      </div>
+
+      <div class="nav-actions">
+        <button class="nav-action-btn pwa-install-btn hidden" id="btn-install-pwa" title="Install VoxFlow App">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
+
+        <button class="nav-action-btn" id="btn-open-library" title="Saved Audio Clips">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span class="badge-count" id="lib-count-badge">0</span>
+        </button>
+
+        <button class="nav-action-btn" id="btn-toggle-theme" title="Toggle Light/Dark Theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+
+        <button class="nav-action-btn api-btn" id="btn-open-api" title="Developer API & AI Agent Access">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </button>
+
+        <button class="nav-action-btn settings-btn" id="btn-open-settings" title="Engine Settings & API Keys">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span class="status-indicator-dot" id="global-status-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Expansive Creative Canvas -->
+    <main class="studio-canvas-container">
+      
+      <!-- TTS Canvas View -->
+      <div class="canvas-view" id="view-tts">
+        <!-- The Expansive Textarea (Edit Mode) -->
+        <div class="textarea-stage" id="textarea-stage">
+          <textarea 
+            id="text-input" 
+            placeholder="Type or paste your text here to synthesize speech..."
+            spellcheck="false"
+            autocomplete="off"
+            autofocus
+          >Welcome to VoxFlow. Generate ultra-natural, studio-grade speech directly using free neural voice models and Groq Whisper.</textarea>
+
+          <!-- Sleek Bottom-Right In-Canvas Quick Toolbar -->
+          <div class="editor-quick-toolbar">
+            <div class="samples-dropdown-wrapper">
+              <button class="editor-tool-chip" id="btn-samples-menu" title="Insert Sample Text" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span>Examples</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="samples-popover hidden" id="samples-popover">
+                <div class="samples-popover-title">Sample Prompts</div>
+                <button class="preset-pill" data-text="Welcome to VoxFlow. Experience lifelike, ultra-natural neural speech synthesis with instant zero-latency playback.">Welcome Studio</button>
+                <button class="preset-pill" data-text="The morning fog lifted slowly over the emerald mountain peaks, revealing a hidden valley kissed by the warm golden sunrise.">Storytelling</button>
+                <button class="preset-pill" data-text="Hi there! Thank you for reaching out to support. I'd be more than happy to help you with your account setup today.">Support Agent</button>
+                <button class="preset-pill" data-text="In today's deep dive episode, we examine the rapid convergence of foundation models and real-time audio intelligence.">Podcast Intro</button>
+              </div>
+            </div>
+
+            <button class="editor-tool-chip" id="btn-toggle-reader" title="Switch between Editor and Interactive Sync" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              <span id="label-reader-toggle">Live Sync</span>
+            </button>
+
+            <button class="editor-tool-chip" id="btn-paste" title="Paste text from clipboard" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              </svg>
+              <span>Paste</span>
+            </button>
+
+            <button class="editor-tool-chip" id="btn-clear" title="Clear canvas" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- The Interactive Real-Time Sync & Karaoke Stage (Live Speech Sync Mode) -->
+        <div class="interactive-stage hidden" id="interactive-stage">
+          <div class="interactive-stage-header">
+            <div class="interactive-status-badge">
+              <span class="pulse-dot"></span>
+              <span id="interactive-status-label">Groq Whisper Real-Time Word Sync</span>
+            </div>
+            <div class="interactive-stage-controls">
+              <span class="interactive-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle;"><circle cx="12" cy="10" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>Click any word to jump audio</span>
+              <button class="stage-cancel-btn hidden" id="btn-stage-cancel" title="Cancel audio generation">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="2"/>
+                </svg>
+                <span>Cancel</span>
+              </button>
+              <button class="stage-toggle-btn" id="btn-back-to-editor" title="Return to text editor">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                <span>Edit Prompt</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Expanding Audio Timeline Ribbon (Widening continuous stream) -->
+          <div class="continuous-timeline-ribbon" id="continuous-timeline-ribbon">
+            <div class="ribbon-track" id="ribbon-track">
+              <div class="ribbon-progress" id="ribbon-progress"></div>
+              <div class="ribbon-playhead" id="ribbon-playhead"></div>
+            </div>
+            <div class="ribbon-meta">
+              <span class="ribbon-time" id="ribbon-time-display">0:00 / 0:00</span>
+              <span class="ribbon-segments" id="ribbon-segments-badge">1 Sentence Buffered</span>
+            </div>
+          </div>
+
+          <!-- Word-Level Interactive Reader Body -->
+          <div class="interactive-reading-body" id="interactive-reading-body">
+            <!-- Dynamically populated with .reader-sentence and .reader-word spans -->
+          </div>
+        </div>
+
+        <!-- Canvas Stats Strip -->
+        <div class="canvas-footer-stats">
+          <div class="canvas-footer-watermark">
+            <span class="watermark-sig">A.T.M.R Studio Engine</span>
+          </div>
+          <div class="stats-group">
+            <span id="stat-words">0 words</span>
+            <span class="sep">•</span>
+            <span id="stat-chars">0 characters</span>
+            <span class="sep">•</span>
+            <span id="stat-duration">~0 sec listening time</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STT Canvas View (Unified Transcriber) -->
+      <div class="canvas-view hidden" id="view-stt">
+        <div class="stt-canvas-hero">
+          <div class="stt-engine-badge">
+            <span class="groq-dot"></span>
+            <span>Groq Whisper Large v3 Turbo • 216x Real-Time</span>
+          </div>
+          
+          <h2 class="stt-title">Speak or Upload Audio to Transcribe</h2>
+          <p class="stt-subtitle">Instant speech recognition with superhuman accuracy. Output can be edited or transferred directly to TTS with one click.</p>
+
+          <!-- Unified Audio Input Zone -->
+          <div class="stt-interaction-zone">
+            <!-- Big Organic Mic Record Button -->
+            <div class="stt-record-card">
+              <div class="mic-halo-container" id="mic-halo">
+                <button class="big-mic-button" id="btn-big-record" aria-label="Toggle recording">
+                  <svg class="mic-svg-idle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                  </svg>
+                  <svg class="mic-svg-active" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="7" y="7" width="10" height="10" rx="2"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="rec-timer-large" id="stt-timer-display">00:00</div>
+              <span class="rec-prompt-hint" id="stt-hint-display">Click to record voice from microphone</span>
+              
+              <!-- Real-time Mic Level Wave -->
+              <canvas id="stt-live-canvas" width="320" height="36"></canvas>
+            </div>
+
+            <div class="stt-or-divider"><span>OR</span></div>
+
+            <!-- Drag & Drop Audio Upload Area -->
+            <div class="stt-upload-card" id="stt-dropzone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <div class="dropzone-text">Drop audio file here</div>
+              <div class="dropzone-sub">MP3, WAV, M4A, WEBM, OGG (up to 25MB)</div>
+              <button class="btn-browse-audio" id="btn-browse-file">Choose File</button>
+              <input type="file" id="input-audio-file" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg" style="display:none;">
+
+              <div class="file-picked-chip hidden" id="chip-picked-file">
+                <span class="file-name" id="picked-file-name">audio.mp3</span>
+                <button class="btn-remove-picked" id="btn-remove-picked">×</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transcribe Action Button -->
+          <div class="stt-action-strip">
+            <button class="btn-transcribe-main disabled" id="btn-do-transcribe">
+              <span class="btn-spinner"></span>
+              <span class="btn-label" id="label-transcribe">Transcribe Audio with Groq</span>
+            </button>
+          </div>
+
+          <!-- Transcript Result Display -->
+          <div class="transcript-result-box hidden" id="stt-result-card">
+            <div class="transcript-top-row">
+              <span class="result-title">Transcription Result</span>
+              <div class="result-actions">
+                <button class="result-btn" id="btn-copy-stt">Copy Text</button>
+                <button class="result-btn" id="btn-export-stt">Download .txt</button>
+                <button class="result-btn primary" id="btn-send-stt-to-tts">Transfer to TTS Script ➔</button>
+              </div>
+            </div>
+            <div class="transcript-body" id="stt-transcript-text"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Sleek Floating Studio Dock (ElevenLabs / Apple Style) -->
+    <div class="floating-dock-container">
+      
+      <!-- Live Audio Waveform Player Bar (Appears when audio is synthesized) -->
+      <div class="dock-player-bar hidden" id="dock-player">
+        <div class="player-left-group">
+          <button class="dock-play-btn" id="dock-btn-play" aria-label="Play or Pause">
+            <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="6 4 20 12 6 20 6 4"/>
+            </svg>
+            <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16"/>
+              <rect x="14" y="4" width="4" height="16"/>
+            </svg>
+          </button>
+          
+          <div class="player-meta-info">
+            <span class="player-voice-title" id="player-label-voice">Alexis</span>
+            <span class="player-model-sub" id="player-label-model">Deepgram Flux</span>
+          </div>
+        </div>
+
+        <!-- Interactive Waveform Canvas -->
+        <div class="player-waveform-wrapper" id="waveform-scrub-zone">
+          <canvas id="dock-waveform-canvas" width="420" height="42"></canvas>
+          <div class="dock-playhead" id="dock-playhead"></div>
+        </div>
+
+        <!-- Player Controls & Time -->
+        <div class="player-right-group">
+          <span class="player-time-badge" id="player-time-display">0:00 / 0:00</span>
+          
+          <button class="dock-icon-action" id="btn-player-speed" title="Playback Speed">
+            <span id="player-speed-text">1.0x</span>
+          </button>
+
+          <button class="dock-icon-action download-accent" id="btn-dock-download" title="Download Audio File (.mp3)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span class="btn-download-text">Download</span>
+          </button>
+
+          <button class="dock-icon-action close-player" id="btn-close-player" title="Close Player">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Creation Control Dock (Always visible for fast synthesis) -->
+      <div class="floating-dock" id="main-dock">
+        
+        <!-- Auxiliary Controls Group (Model, Speed, Quick Mic) -->
+        <div class="dock-controls-group">
+          <!-- Model Selector Pill -->
+          <div class="model-dropdown-wrapper">
+            <button class="dock-pill-btn model-pill" id="dock-model-pill">
+              <div class="model-indicator-badge"></div>
+              <div class="dock-pill-text">
+                <span class="pill-title" id="dock-model-name">Deepgram Flux</span>
+                <span class="pill-caption">Free Model</span>
+              </div>
+              <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+
+            <!-- Model Dropdown Menu -->
+            <div class="dock-dropdown-menu hidden" id="menu-model-select">
+              <div class="dropdown-item active" data-model="deepgram/flux-tts:free">
+                <div class="item-title-row">
+                  <span class="item-name">Deepgram Flux TTS</span>
+                  <span class="item-tag ultra">Ultra Fast</span>
+                </div>
+                <span class="item-desc">36 natural voices • Instant &lt;400ms latency • Broadcast clarity</span>
+              </div>
+              <div class="dropdown-item" data-model="mistral/voxtral-mini-tts">
+                <div class="item-title-row">
+                  <span class="item-name">Mistral Voxtral TTS</span>
+                  <span class="item-tag emotion">Emotions &amp; Tones</span>
+                </div>
+                <span class="item-desc">30 Expressive Emotion Presets • Sarcasm, Joy, Anger • Studio Voxtral</span>
+              </div>
+              <div class="dropdown-item" data-model="elevenlabs/multilingual-v2">
+                <div class="item-title-row">
+                  <span class="item-name">ElevenLabs Studio</span>
+                  <span class="item-tag elevenlabs-tag" style="background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.25);">Free Tier Active</span>
+                </div>
+                <span class="item-desc">Industry benchmark speech • 21 studio personas (Roger, Sarah, Laura, Charlie)</span>
+              </div>
+              <div class="dropdown-item" data-model="cartesia/sonic">
+                <div class="item-title-row">
+                  <span class="item-name">Cartesia Sonic 3.6</span>
+                  <span class="item-tag cartesia-tag" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">20k Free/Mo</span>
+                </div>
+                <span class="item-desc">Hyper-realistic conversational voices • Low latency • 8 natural personas</span>
+              </div>
+              <div class="dropdown-item" data-model="google/gemini-2.5-flash-preview-tts">
+                <div class="item-title-row">
+                  <span class="item-name">Google Gemini 2.5 Flash</span>
+                  <span class="item-tag gemini-tag" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);">Free Studio</span>
+                </div>
+                <span class="item-desc">Google AI Studio audio synthesis • 5 expressive voices (Puck, Charon, Kore)</span>
+              </div>
+              <div class="dropdown-item" data-model="groq/orpheus-english">
+                <div class="item-title-row">
+                  <span class="item-name">Groq Orpheus (English)</span>
+                  <span class="item-tag groq-tag" style="background:rgba(249,115,22,0.12);color:#f97316;border:1px solid rgba(249,115,22,0.25);">Groq LPU</span>
+                </div>
+                <span class="item-desc">Ultra-fast LPU generation • 6 English voices • 200 chars/req free</span>
+              </div>
+              <div class="dropdown-item" data-model="groq/orpheus-arabic">
+                <div class="item-title-row">
+                  <span class="item-name">Groq Orpheus (Saudi Arabic)</span>
+                  <span class="item-tag arabic-tag" style="background:rgba(234,179,8,0.12);color:#eab308;border:1px solid rgba(234,179,8,0.25);">Saudi Arabic</span>
+                </div>
+                <span class="item-desc">Native Arabic dialect speech • 6 Saudi voices • Eloquent pronunciation</span>
+              </div>
+              <div class="dropdown-item" data-model="cloudflare/melotts">
+                <div class="item-title-row">
+                  <span class="item-name">Cloudflare MeloTTS</span>
+                  <span class="item-tag cf-tag" style="background:rgba(244,63,94,0.12);color:#f43f5e;border:1px solid rgba(244,63,94,0.25);">10k Neurons</span>
+                </div>
+                <span class="item-desc">Edge synthesis via Cloudflare Workers AI • Multilingual • 9 accents</span>
+              </div>
+              <div class="dropdown-item" data-model="fish-audio/s2.1-pro-free:free">
+                <div class="item-title-row">
+                  <span class="item-name">Fish Audio S2.1 Pro</span>
+                  <span class="item-tag expressive">Expressive</span>
+                </div>
+                <span class="item-desc">Acoustic S2.1 neural architecture • Dynamic storytelling prosody</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Speed Selector Pill -->
+          <div class="speed-dropdown-wrapper">
+            <button class="dock-pill-btn speed-pill" id="dock-speed-pill" title="Speed Multiplier">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <span class="speed-label" id="dock-speed-label">1.0x</span>
+            </button>
+
+            <div class="dock-dropdown-menu speed-menu hidden" id="menu-speed-select">
+              <button class="speed-opt" data-speed="0.75">0.75x</button>
+              <button class="speed-opt active" data-speed="1.0">1.0x (Normal)</button>
+              <button class="speed-opt" data-speed="1.25">1.25x</button>
+              <button class="speed-opt" data-speed="1.5">1.5x</button>
+              <button class="speed-opt" data-speed="2.0">2.0x</button>
+            </div>
+          </div>
+
+          <!-- Quick Mic Recording Shortcut -->
+          <button class="dock-icon-btn mic-btn" id="dock-quick-mic" title="Quick Voice Transcription">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Master Actions Group (Voice Actor & Master Generate) -->
+        <div class="dock-actions-group">
+          <!-- Voice Selector Pill -->
+          <button class="dock-pill-btn voice-pill" id="dock-voice-pill">
+            <div class="voice-avatar-circle" id="dock-voice-avatar">A</div>
+            <div class="dock-pill-text">
+              <span class="pill-title" id="dock-voice-name">Alexis</span>
+              <span class="pill-caption" id="dock-voice-accent">US English</span>
+            </div>
+            <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          <!-- Master Generate Button -->
+          <button class="dock-generate-btn" id="btn-main-generate">
+            <span class="btn-spinner-icon"></span>
+            <svg class="icon-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span class="generate-label" id="label-generate">Generate Speech</span>
+            <span class="shortcut-badge">Ctrl + ↵</span>
+          </button>
+
+          <!-- Cancel Generation Button -->
+          <button class="dock-cancel-btn hidden" id="btn-cancel-generate" title="Cancel Speech Generation" aria-label="Cancel Speech Generation">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="2"/>
+            </svg>
+            <span>Cancel</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Voice Selection Slide-Over Drawer / Bottom Sheet -->
+    <div class="drawer-backdrop hidden" id="voice-drawer-backdrop">
+      <div class="voice-drawer" id="voice-drawer">
+        <!-- Mobile Bottom Sheet Drag Handle -->
+        <div class="drawer-drag-handle"></div>
+
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <h3 id="drawer-title-text">Voices</h3>
+            <span class="drawer-caption" id="drawer-voice-count">36 Voices</span>
+            <span class="drawer-provider-badge" id="drawer-provider-badge">Deepgram Flux</span>
+          </div>
+          <button class="drawer-close-btn" id="btn-close-voice-drawer" aria-label="Close drawer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Strict Provider-Locked Isolation Tabs -->
+        <div class="drawer-provider-tabs" id="drawer-provider-tabs">
+          <button class="provider-tab-btn active" data-provider="deepgram" title="Deepgram Flux Voices">
+            <span class="provider-tab-dot dg-dot"></span>
+            <span class="tab-label">Deepgram</span>
+            <span class="provider-tab-badge">36</span>
+          </button>
+          <button class="provider-tab-btn" data-provider="mistral" title="Mistral Voxtral Personas">
+            <span class="provider-tab-dot mistral-dot"></span>
+            <span class="tab-label">Mistral</span>
+            <span class="provider-tab-badge">4</span>
+          </button>
+          <button class="provider-tab-btn" data-provider="elevenlabs" title="ElevenLabs Studio Voices">
+            <span class="provider-tab-dot" style="background:#a855f7"></span>
+            <span class="tab-label">ElevenLabs</span>
+            <span class="provider-tab-badge">21</span>
+          </button>
+          <button class="provider-tab-btn" data-provider="cartesia" title="Cartesia Sonic Voices">
+            <span class="provider-tab-dot" style="background:#10b981"></span>
+            <span class="tab-label">Cartesia</span>
+            <span class="provider-tab-badge">8</span>
+          </button>
+          <button class="provider-tab-btn" data-provider="gemini" title="Google Gemini Voices">
+            <span class="provider-tab-dot" style="background:#3b82f6"></span>
+            <span class="tab-label">Gemini</span>
+            <span class="provider-tab-badge">5</span>
+          </button>
+          <button class="provider-tab-btn" data-provider="groq" title="Groq Orpheus Voices">
+            <span class="provider-tab-dot" style="background:#f97316"></span>
+            <span class="tab-label">Groq</span>
+            <span class="provider-tab-badge">12</span>
+          </button>
+          <button class="provider-tab-btn" data-provider="cloudflare" title="Cloudflare MeloTTS Voices">
+            <span class="provider-tab-dot" style="background:#f43f5e"></span>
+            <span class="tab-label">Cloudflare</span>
+            <span class="provider-tab-badge">9</span>
+          </button>
+          <button class="provider-tab-btn" data-provider="fish" title="Fish Audio Model">
+            <span class="provider-tab-dot fish-dot"></span>
+            <span class="tab-label">Fish S2.1</span>
+            <span class="provider-tab-badge">1</span>
+          </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="drawer-search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="voice-search-field" placeholder="Search voices or accents..." autocomplete="off">
+        </div>
+
+        <!-- Dynamic Category / Attribute Filter Pills -->
+        <div class="drawer-filters" id="drawer-filters">
+          <button class="filter-pill active" data-filter="all">All</button>
+          <button class="filter-pill filter-pill-fav" data-filter="favorites" id="filter-pill-fav">
+            <svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span>Favorites</span>
+            <span class="pill-count-badge" id="fav-count-badge">0</span>
+          </button>
+          <button class="filter-pill" data-filter="Female">Female</button>
+          <button class="filter-pill" data-filter="Male">Male</button>
+          <button class="filter-pill" data-filter="recommended">Curated Picks</button>
+        </div>
+
+        <!-- Voices List Container -->
+        <div class="drawer-voices-grid" id="drawer-voices-list">
+          <!-- Dynamically Populated with Voice & Persona Cards -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio Library Slide-Over Drawer -->
+    <div class="drawer-backdrop hidden" id="library-drawer-backdrop">
+      <div class="voice-drawer library-drawer" id="library-drawer">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <h3>Saved Audio Library</h3>
+            <span class="drawer-caption">Recent Generations &amp; Transcripts</span>
+          </div>
+          <button class="drawer-close-btn" id="btn-close-library-drawer">×</button>
+        </div>
+
+        <div class="library-toolbar">
+          <span class="lib-storage-hint">Stored safely in local browser storage</span>
+          <button class="lib-clear-btn" id="btn-clear-all-lib">Clear Library</button>
+        </div>
+
+        <div class="library-items-container" id="library-items-list">
+          <!-- Dynamic Items -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Developer API & AI Agent Modal -->
+    <div class="modal-backdrop hidden" id="api-modal-backdrop">
+      <div class="settings-modal-card api-modal-card">
+        <div class="modal-header">
+          <div class="modal-title-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+            <h3>Developer API &amp; Agent Keys</h3>
+          </div>
+          <button class="modal-close-x" id="btn-close-api-modal">×</button>
+        </div>
+
+        <div class="modal-body-content">
+          <p class="modal-explainer">
+            Generate cryptographically signed API keys to programmatically synthesize neural speech, align word timestamps, or transcribe audio with AI agents (Claude, Cursor, Antigravity) and custom apps.
+          </p>
+
+          <div class="api-key-generation-box">
+            <div class="field-label-line">
+              <label for="input-api-key-name">Agent / Application Name</label>
+            </div>
+            <div class="api-gen-input-row">
+              <input type="text" id="input-api-key-name" placeholder="e.g. Claude Desktop, Cursor Agent, My Voice App" value="My AI Agent">
+              <button class="btn-solid btn-gen-key" id="btn-generate-api-key">Generate Key</button>
+            </div>
+          </div>
+
+          <div class="api-key-display-area hidden" id="api-key-display-area">
+            <div class="field-label-line">
+              <label>Your Active API Key</label>
+              <span class="status-pill active">Signed Edge Token</span>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="text" id="display-api-key" readonly>
+              <button class="btn-reveal" id="btn-copy-api-key" title="Copy to clipboard" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              </button>
+            </div>
+            <span class="field-help">Include in HTTP requests as <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-API-Key: &lt;key&gt;</code></span>
+          </div>
+
+          <div class="api-quickstart-tabs">
+            <div class="field-label-line">
+              <label>Quick Start Integration</label>
+            </div>
+            <pre class="api-code-block" id="api-sample-curl"><code>curl -X POST https://voxflow-809.pages.dev/api/tts \
+  -H "Authorization: Bearer YOUR_VOX_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello world from VoxFlow API", "voice": "flux-alexis-en"}' \
+  --output speech.mp3</code></pre>
+          </div>
+
+          <div class="api-links-row">
+            <a href="/api/docs" target="_blank" class="api-link-chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              OpenAPI 3.0 Docs
+            </a>
+            <a href="/api/voices" target="_blank" class="api-link-chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              37+ Voices JSON
+            </a>
+          </div>
+        </div>
+
+        <div class="modal-footer-line">
+          <button class="btn-ghost" id="btn-revoke-api-key">Clear Stored Key</button>
+          <button class="btn-solid" id="btn-close-api-modal-done">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Engine Settings Modal -->
+    <div class="modal-backdrop hidden" id="settings-modal-backdrop">
+      <div class="settings-modal-card">
+        <div class="modal-header">
+          <div class="modal-title-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <h3>Studio Settings</h3>
+          </div>
+          <button class="modal-close-x" id="btn-close-settings-modal">×</button>
+        </div>
+
+        <div class="modal-body-content">
+          <p class="modal-explainer">
+            VoxFlow uses your local server environment keys by default. You can also specify custom personal API keys below to override them.
+          </p>
+
+          <div class="setting-field">
+            <div class="field-label-line">
+              <label for="input-key-deepgram">Deepgram API Key (Official Direct TTS)</label>
+              <span class="status-pill active" id="pill-status-deepgram">Server Key Active</span>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="password" id="input-key-deepgram" placeholder="Token dg_...">
+              <button class="btn-reveal" data-for="input-key-deepgram" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <span class="field-help">Powers native ultra-low latency Deepgram Flux voices (36 characters) directly</span>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-label-line">
+              <label for="input-key-mistral">Mistral AI API Key (Voxtral TTS &amp; Emotions)</label>
+              <span class="status-pill active" id="pill-status-mistral">Server Key Active</span>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="password" id="input-key-mistral" placeholder="mstrl_...">
+              <button class="btn-reveal" data-for="input-key-mistral" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <span class="field-help">Powers Mistral Voxtral TTS with 30 emotional presets (Joy, Sarcasm, Anger) directly</span>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-label-line">
+              <label for="input-key-elevenlabs">ElevenLabs API Key (21 Studio Voices)</label>
+              <span class="status-pill active" id="pill-status-elevenlabs">Server Key Active</span>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="password" id="input-key-elevenlabs" placeholder="sk_...">
+              <button class="btn-reveal" data-for="input-key-elevenlabs" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <span class="field-help">Powers 21 official ElevenLabs premade studio voices (10,000 characters free/mo)</span>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-label-line">
+              <label for="input-key-openrouter">OpenRouter API Key (Alternative TTS Models)</label>
+              <span class="status-pill active" id="pill-status-openrouter">Server Key Active</span>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="password" id="input-key-openrouter" placeholder="sk-or-v1-...">
+              <button class="btn-reveal" data-for="input-key-openrouter" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <span class="field-help">Powers <code>fish-audio/s2.1-pro-free:free</code> &amp; fallback speech endpoints</span>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-label-line">
+              <label for="input-key-groq">Groq API Key (Whisper STT &amp; Orpheus TTS)</label>
+              <span class="status-pill active" id="pill-status-groq">Server Key Active</span>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="password" id="input-key-groq" placeholder="gsk_...">
+              <button class="btn-reveal" data-for="input-key-groq" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <span class="field-help">Powers instantaneous speech-to-text and Groq Orpheus LPU neural synthesis. Accept terms: <a href="https://console.groq.com/playground?model=canopylabs/orpheus-v1-english" target="_blank" rel="noopener" style="color:var(--accent-orange);text-decoration:underline;">English Terms</a> • <a href="https://console.groq.com/playground?model=canopylabs/orpheus-arabic-saudi" target="_blank" rel="noopener" style="color:var(--accent-orange);text-decoration:underline;">Saudi Arabic Terms</a></span>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-label-line">
+              <label for="input-key-gemini">Google Gemini Key (AI Studio Audio)</label>
+              <span class="status-pill active" id="pill-status-gemini">Server Key Active</span>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="password" id="input-key-gemini" placeholder="AIzaSy...">
+              <button class="btn-reveal" data-for="input-key-gemini" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <span class="field-help">Powers Google AI Studio Gemini 2.5 Flash multimodal neural voice synthesis</span>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-label-line">
+              <label for="input-key-cartesia">Cartesia Sonic Key (20k Free Credits/Mo)</label>
+              <span class="status-pill" id="pill-status-cartesia">No Key Set</span>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="password" id="input-key-cartesia" placeholder="Cartesia API Key...">
+              <button class="btn-reveal" data-for="input-key-cartesia" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <span class="field-help">Powers Cartesia Sonic 3.6 hyper-realistic conversational voices. <a href="https://play.cartesia.ai/keys" target="_blank" rel="noopener" style="color:var(--accent-teal);text-decoration:underline;">Get 20,000 free monthly credits at play.cartesia.ai</a></span>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-label-line">
+              <label for="input-key-cf-token">Cloudflare Workers AI Token &amp; Account ID</label>
+              <span class="status-pill" id="pill-status-cloudflare">Edge Ready</span>
+            </div>
+            <div class="secret-input-wrapper" style="margin-bottom:6px;">
+              <input type="password" id="input-key-cf-token" placeholder="Cloudflare API Token...">
+              <button class="btn-reveal" data-for="input-key-cf-token" style="display:inline-flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <div class="secret-input-wrapper">
+              <input type="text" id="input-key-cf-account" placeholder="Cloudflare Account ID (32 hex characters)...">
+            </div>
+            <span class="field-help">Powers Cloudflare Workers AI MeloTTS (10k free daily neurons)</span>
+          </div>
+
+          <!-- Playback Settings -->
+          <div class="setting-toggle-card">
+            <div class="toggle-card-text">
+              <span class="toggle-card-title">Auto-Play Audio</span>
+              <span class="toggle-card-desc">Automatically begin playback as soon as the first speech segment is generated.</span>
+            </div>
+            <label class="studio-switch" for="toggle-autoplay">
+              <input type="checkbox" id="toggle-autoplay" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer-line">
+          <button class="btn-ghost" id="btn-reset-default-keys">Reset to Defaults</button>
+          <button class="btn-solid" id="btn-save-custom-keys">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Persistent Studio Watermark -->
+    <div class="studio-watermark" title="VoxFlow Studio Architecture by A.T.M.R">
+      <span class="watermark-dot"></span>
+      <span class="watermark-label">Engineered by <strong class="watermark-author">A.T.M.R</strong></span>
+    </div>
+
+    <!-- Notification Toast Deck -->
+    <div class="toast-deck" id="toast-deck"></div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
