@@ -130,7 +130,7 @@ jobs:
           apksigner verify --verbose --print-certs "$APK_PATH" > cert_info.txt
           cat cert_info.txt
 
-          ACTUAL_SHA256=$(grep "Signer #1 certificate SHA-256 digest:" cert_info.txt | awk '{print $NF}' | tr -d ' ' | tr '[:upper:]' '[:lower:]')
+          ACTUAL_SHA256=$(grep -i "certificate SHA-256 digest:" cert_info.txt | head -n 1 | awk '{print $NF}' | tr -d ' :' | tr '[:upper:]' '[:lower:]')
           echo "Actual Certificate SHA-256: $ACTUAL_SHA256"
 
           if [ -n "$EXPECTED_SHA256" ]; then
