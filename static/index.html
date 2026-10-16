@@ -715,8 +715,103 @@
          =================================================================== -->
     <section class="hidden flex flex-col w-full" id="view-archive">
       
+      <!-- View Header -->
+      <div class="flex flex-col pt-2 pb-5">
+        <span class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Releases &amp; Storage</span>
+        <h1 class="font-display text-3xl sm:text-4xl text-primary tracking-tight font-normal mt-0.5">Project Archive</h1>
+        <p class="font-mono text-xs text-on-surface-variant mt-1">Official Android client distributions and saved session recordings</p>
+      </div>
+
+      <!-- Official Android Application Release & Download Card -->
+      <div class="mb-8 p-5 sm:p-6 rounded-2xl bg-surface-container border border-white/[0.06] hover:border-tertiary-fixed-dim/30 transition-all shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          
+          <!-- Left: App Identity & Description -->
+          <div class="flex items-start gap-4 min-w-0">
+            <div class="w-12 h-12 rounded-xl bg-tertiary-fixed-dim/15 text-tertiary-fixed-dim border border-tertiary-fixed-dim/30 flex items-center justify-center shrink-0 shadow-inner">
+              <span class="material-symbols-outlined text-[26px]">android</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="font-display text-xl text-primary font-medium tracking-tight">Voice Actors for Android</h3>
+                <span class="font-mono text-[10px] uppercase tracking-wider text-tertiary-fixed-dim bg-tertiary-fixed-dim/10 border border-tertiary-fixed-dim/20 px-2 py-0.5 rounded-full font-semibold">v1.0.0 Release</span>
+                <span class="font-mono text-[10px] text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded-full">9.3 MB</span>
+              </div>
+              <p class="text-xs text-on-surface-variant mt-1.5 leading-relaxed max-w-xl">
+                Official native Android standalone package. Features zero-latency neural streaming, touch-optimized studio canvas, hardware back navigation stack, and seamless in-app over-the-air (OTA) updates.
+              </p>
+              
+              <!-- Key Technical Invariants / Specs -->
+              <div class="flex flex-wrap items-center gap-3 mt-3 font-mono text-[10.5px] text-outline">
+                <span class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  Package: com.atmr.voiceactors
+                </span>
+                <span>•</span>
+                <span>Android 8.0+ (API 26+)</span>
+                <span>•</span>
+                <span>Signed Release APK</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Direct Download CTAs + QR Code -->
+          <div class="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            
+            <!-- Direct Download Button -->
+            <a href="https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk" 
+               class="px-5 py-3 rounded-full bg-tertiary-fixed-dim text-surface-container-lowest font-medium text-xs font-mono uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-[0_4px_16px_rgba(239,190,130,0.25)]" 
+               download="voice-actors-latest.apk"
+               target="_blank" 
+               rel="noopener">
+              <span class="material-symbols-outlined text-[18px]">download</span>
+              <span>Download APK</span>
+            </a>
+
+            <!-- GitHub Release Note Link -->
+            <a href="https://github.com/ATMRaven/voice-actors/releases/tag/v1.0.0" 
+               class="px-4 py-3 rounded-full bg-surface-container-highest hover:bg-surface-container-high text-primary font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 border border-white/[0.06] transition-all" 
+               target="_blank" 
+               rel="noopener">
+              <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+              <span>Release Notes</span>
+            </a>
+
+            <!-- QR Code Card (Desktop / Tablet) -->
+            <div class="hidden sm:flex items-center gap-2 p-2 rounded-xl bg-surface-container-low border border-white/[0.04]">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&amp;data=https%3A%2F%2Fgithub.com%2FATMRaven%2Fvoice-actors%2Freleases%2Flatest%2Fdownload%2Fvoice-actors-latest.apk" 
+                   alt="Scan QR code to download Voice Actors Android APK" 
+                   class="w-12 h-12 rounded bg-white p-0.5" 
+                   loading="lazy">
+              <div class="flex flex-col text-[10px] font-mono text-on-surface-variant leading-tight">
+                <span class="text-primary font-medium">Scan to Install</span>
+                <span>Phone Camera</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Checksum Verification Badge -->
+        <div class="mt-4 pt-3 border-t border-white/[0.04] flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-outline">
+          <div class="flex items-center gap-1.5 truncate max-w-md">
+            <span class="material-symbols-outlined text-[14px] text-tertiary-fixed-dim">verified</span>
+            <span class="truncate">SHA-256: 2ab8d7dbe55386b80409b405e00872bbf95aa4407ec302db46f08d5a58ca4f10</span>
+          </div>
+          <span class="text-tertiary-fixed-dim/90">Cryptographically Signed &amp; Verified</span>
+        </div>
+
+      </div>
+
+      <!-- Divider to Audio Vault -->
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant whitespace-nowrap">Saved Audio Recordings</h2>
+        <div class="h-px bg-white/[0.06] w-full"></div>
+      </div>
+      
       <!-- Minimal Search Bar -->
-      <div class="relative w-full mt-1 mb-4">
+      <div class="relative w-full mb-4">
         <div class="relative flex items-center w-full h-11 rounded-full bg-surface-container-low px-4 border border-white/[0.06] focus-within:border-white/[0.15] transition-all">
           <span class="material-symbols-outlined text-outline text-[18px] mr-2.5">search</span>
           <input class="w-full bg-transparent text-sm text-primary placeholder:text-outline/50 focus:outline-none" id="archiveSearchInput" placeholder="Search saved audio by script or voice..." type="text"/>
