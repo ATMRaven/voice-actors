@@ -347,6 +347,119 @@ export default {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
+    // POST /api/extract-image (Multimodal Screenshot & Image Vision Extractor)
+    if (url.pathname === '/api/extract-image' && request.method === 'POST') {
+      try {
+        const geminiKey = request.headers.get("X-Gemini-Key") || env.GEMINI_API_KEY || env.GEMINI_API_KEY_1 || "";
+        if (!geminiKey) {
+          return jsonResponse({ detail: "Gemini API key is required for multimodal vision. Please configure GEMINI_API_KEY in Settings." }, 400);
+        }
+
+        const contentType = request.headers.get("content-type") || "";
+        let imageBase64 = "";
+        let mimeType = "image/png";
+        let mode = "clean";
+
+        if (contentType.includes("multipart/form-data")) {
+          const formData = await request.formData();
+          mode = formData.get("mode") || "clean";
+          const file = formData.get("file");
+          if (file && typeof file !== "string") {
+            mimeType = file.type || "image/png";
+            const buffer = await file.arrayBuffer();
+            let binary = "";
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            imageBase64 = btoa(binary);
+          } else {
+            imageBase64 = formData.get("image_base64") || "";
+          }
+        } else if (contentType.includes("application/json")) {
+          const body = await request.json();
+          mode = body.mode || "clean";
+          imageBase64 = body.image || body.image_base64 || "";
+        }
+
+        if (imageBase64.includes(",")) {
+          const parts = imageBase64.split(",");
+          if (parts[0].includes("image/")) {
+            mimeType = parts[0].split(";")[0].replace("data:", "");
+          }
+          imageBase64 = parts[1];
+        }
+
+        if (!imageBase64) {
+          return jsonResponse({ detail: "No image provided for text extraction." }, 400);
+        }
+
+        const modeInstructions = {
+          clean: "You are a multimodal text extractor for a text-to-speech audio studio. Extract ONLY the primary human reading text from this image. STRICTLY IGNORE: status bar icons, battery, phone clock, notch, island, web address bars, and ads. Preserve natural reading punctuation so it is ready for speech. Output pure readable text only.",
+          summary: "You are an executive audio briefing generator for a text-to-speech studio. Read this screenshot, ignore all UI chrome and ads, and synthesize the core points into 2 to 3 concise spoken paragraphs suitable for listening on headphones.",
+          devlog: "You are a senior software systems engineer translating technical developer screenshots for an audio studio. Translate what failed into a plain-English explanation of what went wrong, why, and how to fix it, omitting raw memory addresses and hex dumps."
+        };
+
+        const instruction = modeInstructions[mode] || modeInstructions.clean;
+        const visionModels = ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-flash-latest", "gemini-2.5-flash-image"];
+        let gData = null;
+        let lastErr = "";
+
+        for (const vModel of visionModels) {
+          const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${vModel}:generateContent?key=${geminiKey}`;
+          const gPayload = {
+            contents: [{
+              parts: [
+                { text: instruction },
+                { inline_data: { mime_type: mimeType, data: imageBase64 } }
+              ]
+            }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
+          };
+
+          try {
+            const gRes = await fetch(gUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(gPayload)
+            });
+            if (gRes.ok) {
+              gData = await gRes.json();
+              break;
+            } else {
+              lastErr = `${vModel} HTTP ${gRes.status}`;
+            }
+          } catch (e) {
+            lastErr = `${vModel} ${e.message}`;
+          }
+        }
+
+        if (!gData) {
+          return jsonResponse({ detail: `Gemini Vision failed across models: ${lastErr}` }, 502);
+        }
+        let extractedText = "";
+        try {
+          const cand = (gData.candidates && gData.candidates[0]) || {};
+          const parts = (cand.content && cand.content.parts) || [];
+          extractedText = parts.map(p => p.text || "").join("").trim();
+        } catch (e) {
+          return jsonResponse({ detail: "Failed to parse text from Gemini Vision response." }, 502);
+        }
+
+        return jsonResponse({
+          text: extractedText,
+          mode: mode,
+          stats: {
+            chars: extractedText.length,
+            words: extractedText.split(/\s+/).filter(Boolean).length
+          }
+        });
+      } catch (err) {
+        return jsonResponse({ detail: `Vision extraction failed: ${err.message}` }, 500);
+      }
+    }
+
     // 1. GET /api/status
     if (url.pathname === '/api/status' && request.method === 'GET') {
       const deepgramReady = !!(env.DEEPGRAM_API_KEY);

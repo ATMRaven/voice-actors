@@ -1,3 +1,11 @@
+import { putAudio, listAudio } from './js/db.js';
+import { buildFilename, extFromMime } from './js/filename.js';
+import { listPresets, addPreset, removePreset, getPreset } from './js/presets.js';
+import { readFavorites, toggleFavorite, renderFavorites, isFavorite } from './js/favorites.js';
+import { initPalette, openPalette, closePalette, isPaletteOpen } from './js/palette.js';
+import { initKeys } from './js/keys.js';
+import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
+
 /* =====================================================================
    VOXFLOW — ELEVENLABS / APPLE CREATIVE STUDIO CONTROLLER
    Pure Vanilla JS • Web Audio API Waveform • Reactive Floating Dock
@@ -257,6 +265,19 @@
     // TTS Canvas
     textInput: document.getElementById('text-input'),
     btnPaste: document.getElementById('btn-paste'),
+    btnScanImage: document.getElementById('btn-scan-image'),
+    modalScreenshotScan: document.getElementById('modal-screenshot-scan'),
+    btnCloseScreenshotModal: document.getElementById('btn-close-screenshot-modal'),
+    btnCancelScreenshot: document.getElementById('btn-cancel-screenshot'),
+    screenshotDropzone: document.getElementById('screenshot-dropzone'),
+    screenshotFileInput: document.getElementById('screenshot-file-input'),
+    screenshotDropPrompt: document.getElementById('screenshot-drop-prompt'),
+    screenshotPreviewWrap: document.getElementById('screenshot-preview-wrap'),
+    screenshotPreviewImg: document.getElementById('screenshot-preview-img'),
+    btnRemoveScreenshot: document.getElementById('btn-remove-screenshot'),
+    btnExtractScreenshot: document.getElementById('btn-extract-screenshot'),
+    labelExtractBtn: document.getElementById('label-extract-btn'),
+    extractSpinnerIcon: document.getElementById('extract-spinner-icon'),
     btnClear: document.getElementById('btn-clear'),
     presetPills: document.querySelectorAll('.preset-pill'),
     statWords: document.getElementById('stat-words'),
@@ -399,6 +420,8 @@
     setupGetAppMenu();
     setupGenerateButton();
     setupCanvasEvents();
+    setupScreenshotEvents();
+    setupUserScrollIntent();
     setupInteractiveReader();
     setupDockControls();
     setupAudioPlayer();
@@ -490,6 +513,13 @@
         viewEl.classList.toggle('hidden', k !== tabId);
       }
     });
+
+    if (tabId === 'archive') {
+      const vList = document.getElementById('vault-list');
+      if (vList && typeof renderVault === 'function') {
+        renderVault(vList);
+      }
+    }
 
     // Update desktop nav pills in header
     document.querySelectorAll('.vx-nav__item').forEach(btn => {
@@ -722,19 +752,262 @@
     }
   }
 
-  // --- Text Canvas & Metrics ---
+
+  // --- Multimodal Screenshot to Speech Engine ---
+  let activeScreenshotFile = null;
+
+  function openScreenshotModal(fileOrBlob = null) {
+    if (!el.modalScreenshotScan) return;
+    el.modalScreenshotScan.classList.remove('hidden');
+    if (fileOrBlob) {
+      handleImageSelection(fileOrBlob);
+    }
+  }
+
+  function closeScreenshotModal() {
+    if (!el.modalScreenshotScan) return;
+    el.modalScreenshotScan.classList.add('hidden');
+    resetScreenshotModal();
+  }
+
+  function resetScreenshotModal() {
+    activeScreenshotFile = null;
+    if (el.screenshotFileInput) el.screenshotFileInput.value = '';
+    if (el.screenshotPreviewImg) el.screenshotPreviewImg.src = '';
+    if (el.screenshotPreviewWrap) el.screenshotPreviewWrap.classList.add('hidden');
+    if (el.screenshotDropPrompt) el.screenshotDropPrompt.classList.remove('hidden');
+    if (el.btnExtractScreenshot) {
+      el.btnExtractScreenshot.disabled = true;
+      el.btnExtractScreenshot.removeAttribute('aria-busy');
+    }
+    if (el.labelExtractBtn) el.labelExtractBtn.textContent = 'Extract & Insert';
+    if (el.extractSpinnerIcon) el.extractSpinnerIcon.textContent = 'auto_awesome';
+  }
+
+  function handleImageSelection(file) {
+    if (!file || !file.type.startsWith('image/')) {
+      showToast('Please choose a valid image file', 'error');
+      return;
+    }
+    activeScreenshotFile = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (el.screenshotPreviewImg) el.screenshotPreviewImg.src = e.target.result;
+      if (el.screenshotPreviewWrap) el.screenshotPreviewWrap.classList.remove('hidden');
+      if (el.screenshotDropPrompt) el.screenshotDropPrompt.classList.add('hidden');
+      if (el.btnExtractScreenshot) el.btnExtractScreenshot.disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function performImageExtraction() {
+    if (!activeScreenshotFile) return;
+
+    const selectedRadio = document.querySelector('input[name="extract-mode"]:checked');
+    const mode = selectedRadio ? selectedRadio.value : 'clean';
+
+    if (el.btnExtractScreenshot) {
+      el.btnExtractScreenshot.disabled = true;
+      el.btnExtractScreenshot.setAttribute('aria-busy', 'true');
+    }
+    if (el.labelExtractBtn) el.labelExtractBtn.textContent = 'Extracting text...';
+    if (el.extractSpinnerIcon) el.extractSpinnerIcon.textContent = 'progress_activity';
+
+    try {
+      const formData = new FormData();
+      formData.append('file', activeScreenshotFile);
+      formData.append('mode', mode);
+
+      const headers = {};
+      if (state.customGeminiKey) {
+        headers['X-Gemini-Key'] = state.customGeminiKey;
+      }
+
+      const res = await fetch('/api/extract-image', {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || 'Text extraction failed');
+      }
+
+      const data = await res.json();
+      const extractedText = (data.text || '').trim();
+
+      if (!extractedText) {
+        showToast('No readable text found in image', 'info', 2500);
+        return;
+      }
+
+      // Populate textarea, update metrics, dispatch input event
+      el.textInput.value = extractedText;
+      updateCanvasMetrics();
+      el.textInput.dispatchEvent(new Event('input', { bubbles: true }));
+      closeScreenshotModal();
+      el.textInput.focus();
+
+      const wordCount = (data.stats && data.stats.words) || extractedText.split(/\s+/).filter(Boolean).length;
+      showToast(`Extracted ${wordCount} words (${data.mode || mode})`, 'info', 2500);
+
+    } catch (err) {
+      console.error('Extraction error:', err);
+      showToast(`Extraction failed: ${err.message}`, 'error', 4000);
+    } finally {
+      if (el.btnExtractScreenshot) {
+        el.btnExtractScreenshot.disabled = !activeScreenshotFile;
+        el.btnExtractScreenshot.removeAttribute('aria-busy');
+      }
+      if (el.labelExtractBtn) el.labelExtractBtn.textContent = 'Extract & Insert';
+      if (el.extractSpinnerIcon) el.extractSpinnerIcon.textContent = 'auto_awesome';
+    }
+  }
+
+  function setupScreenshotEvents() {
+    if (el.btnScanImage) {
+      el.btnScanImage.addEventListener('click', () => openScreenshotModal());
+    }
+    if (el.btnCloseScreenshotModal) {
+      el.btnCloseScreenshotModal.addEventListener('click', () => closeScreenshotModal());
+    }
+    if (el.btnCancelScreenshot) {
+      el.btnCancelScreenshot.addEventListener('click', () => closeScreenshotModal());
+    }
+    if (el.btnRemoveScreenshot) {
+      el.btnRemoveScreenshot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetScreenshotModal();
+      });
+    }
+
+    // File input change
+    if (el.screenshotFileInput) {
+      el.screenshotFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleImageSelection(e.target.files[0]);
+        }
+      });
+    }
+
+    // Drag and drop on dropzone
+    if (el.screenshotDropzone) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        el.screenshotDropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          el.screenshotDropzone.classList.add('border-primary');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        el.screenshotDropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          el.screenshotDropzone.classList.remove('border-primary');
+        }, false);
+      });
+
+      el.screenshotDropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files[0]) {
+          handleImageSelection(dt.files[0]);
+        }
+      }, false);
+    }
+
+    // Mode chips selection
+    document.querySelectorAll('#screenshot-mode-selector .mode-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#screenshot-mode-selector .mode-chip').forEach(c => {
+          c.classList.remove('border-primary/40', 'bg-primary/10', 'text-primary');
+          c.classList.add('border-white/[0.06]', 'bg-surface-container', 'text-on-surface');
+        });
+        chip.classList.remove('border-white/[0.06]', 'bg-surface-container', 'text-on-surface');
+        chip.classList.add('border-primary/40', 'bg-primary/10', 'text-primary');
+        const radio = chip.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+      });
+    });
+
+    // Extract CTA
+    if (el.btnExtractScreenshot) {
+      el.btnExtractScreenshot.addEventListener('click', () => performImageExtraction());
+    }
+
+    // Global Clipboard Image Paste: If user presses Ctrl+V with image, auto-open modal!
+    window.addEventListener('paste', (e) => {
+      if (!e.clipboardData || !e.clipboardData.items) return;
+      for (const item of e.clipboardData.items) {
+        if (item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          if (blob) {
+            e.preventDefault();
+            openScreenshotModal(blob);
+            break;
+          }
+        }
+      }
+    });
+
+    // Close on Escape or click outside
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && el.modalScreenshotScan && !el.modalScreenshotScan.classList.contains('hidden')) {
+        closeScreenshotModal();
+      }
+    });
+
+    if (el.modalScreenshotScan) {
+      el.modalScreenshotScan.addEventListener('click', (e) => {
+        if (e.target === el.modalScreenshotScan) closeScreenshotModal();
+      });
+    }
+  }
+
+    // --- Text Canvas & Metrics ---
   function setupCanvasEvents() {
     el.textInput.addEventListener('input', updateCanvasMetrics);
 
     el.btnPaste.addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        if (text) {
-          el.textInput.value = text;
-          updateCanvasMetrics();
+      // 1. Immediately delete whatever is currently written in the text input
+      el.textInput.value = '';
+      updateCanvasMetrics();
+
+      let pastedText = '';
+
+      // 2. Check for Capacitor native clipboard plugin (bypasses browser permission popups)
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Clipboard) {
+        try {
+          const res = await window.Capacitor.Plugins.Clipboard.read();
+          if (res && typeof res.value === 'string') {
+            pastedText = res.value;
+          }
+        } catch (capErr) {
+          console.warn('Native clipboard read fallback:', capErr);
         }
-      } catch (e) {
-        showToast('Clipboard access denied', 'error');
+      }
+
+      // 3. Web Clipboard API fallback
+      if (!pastedText && navigator.clipboard && navigator.clipboard.readText) {
+        try {
+          pastedText = await navigator.clipboard.readText();
+        } catch (webErr) {
+          console.warn('Web clipboard read permission rejected/restricted:', webErr);
+        }
+      }
+
+      // 4. Update canvas with retrieved text or allow seamless manual paste
+      if (pastedText) {
+        el.textInput.value = pastedText;
+        updateCanvasMetrics();
+        el.textInput.dispatchEvent(new Event('input', { bubbles: true }));
+        el.textInput.focus();
+        showToast('Text replaced from clipboard', 'info', 1800);
+      } else {
+        el.textInput.focus();
+        showToast('Input cleared — press Ctrl+V / Tap Paste', 'info', 2400);
       }
     });
 
@@ -2476,6 +2749,18 @@
       });
     }
 
+    if (el.btnStageCancel) {
+      el.btnStageCancel.addEventListener('click', () => {
+        if (state.playbackQueue && typeof state.playbackQueue.stop === 'function') {
+          state.playbackQueue.stop();
+        }
+        state.audioElement.pause();
+        state.isPlaying = false;
+        if (el.dockBtnPlay) el.dockBtnPlay.classList.remove('playing');
+        showToast('Audio playback stopped', 'info', 1800);
+      });
+    }
+
     if (el.btnBackToEditor) {
       el.btnBackToEditor.addEventListener('click', () => {
         switchToEditor();
@@ -2835,6 +3120,77 @@
   }
 
   // --- Real-Time Word & Sentence Synchronization Loop ---
+    // Container-isolated auto-scroll: strictly bounds scrolling to reading container, never window
+  function scrollWordIntoContainerView(wordEl) {
+    if (!wordEl || !el.interactiveReadingBody || state.userScrollIntent) return;
+    const container = el.interactiveReadingBody;
+    const containerRect = container.getBoundingClientRect();
+    const wordRect = wordEl.getBoundingClientRect();
+
+    const topMargin = containerRect.height * 0.20;
+    const bottomMargin = containerRect.height * 0.40;
+
+    const isAbove = wordRect.top < containerRect.top + topMargin;
+    const isBelow = wordRect.bottom > containerRect.bottom - bottomMargin;
+
+    if (isAbove || isBelow) {
+      const targetScroll = container.scrollTop + (wordRect.top - containerRect.top) - topMargin;
+      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      container.scrollTo({
+        top: Math.max(0, targetScroll),
+        behavior: prefersReduced ? 'auto' : 'smooth'
+      });
+    }
+  }
+
+  function showScrollResumeIndicator() {
+    let pill = document.getElementById('reading-scroll-resume');
+    if (!pill && el.interactiveStage) {
+      pill = document.createElement('button');
+      pill.id = 'reading-scroll-resume';
+      pill.type = 'button';
+      pill.className = 'reading-scroll-resume-pill';
+      pill.innerHTML = '<span class="material-symbols-outlined text-[14px]">sync</span><span>Auto-scroll paused · Tap to sync</span>';
+      pill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.userScrollIntent = false;
+        hideScrollResumeIndicator();
+        if (state.activeWordId) {
+          const w = document.querySelector(`[data-word-id="${state.activeWordId}"]`);
+          if (w) scrollWordIntoContainerView(w);
+        }
+      });
+      el.interactiveStage.appendChild(pill);
+    }
+    if (pill) pill.classList.add('visible');
+  }
+
+  function hideScrollResumeIndicator() {
+    const pill = document.getElementById('reading-scroll-resume');
+    if (pill) pill.classList.remove('visible');
+  }
+
+  function setupUserScrollIntent() {
+    if (!el.interactiveReadingBody) return;
+    state.userScrollIntent = false;
+    state.userScrollTimer = null;
+
+    const onUserTouchScroll = () => {
+      if (!state.isPlaying && !state.isSyncStageVisible) return;
+      state.userScrollIntent = true;
+      showScrollResumeIndicator();
+      clearTimeout(state.userScrollTimer);
+      state.userScrollTimer = setTimeout(() => {
+        state.userScrollIntent = false;
+        hideScrollResumeIndicator();
+      }, 1200);
+    };
+
+    el.interactiveReadingBody.addEventListener('touchstart', onUserTouchScroll, { passive: true });
+    el.interactiveReadingBody.addEventListener('touchmove', onUserTouchScroll, { passive: true });
+    el.interactiveReadingBody.addEventListener('wheel', onUserTouchScroll, { passive: true });
+  }
+
   function updateWordAndSentenceHighlight(curTime) {
     if (!state.timelineWords || state.timelineWords.length === 0) return;
 
@@ -2883,8 +3239,8 @@
         matchedWord.element.classList.add('active-word');
         matchedWord.element.classList.remove('past-word');
 
-        if (state.isSyncStageVisible) {
-          matchedWord.element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (state.isSyncStageVisible && el.interactiveReadingBody && !state.userScrollIntent) {
+          scrollWordIntoContainerView(matchedWord.element);
         }
       }
 
@@ -3075,14 +3431,23 @@
   }
 
   // --- Smart Clause Splitter for Instant Sub-Second TTFA ---
-  function segmentTextIntoChunks(text, targetLen = 120) {
+  function segmentTextIntoChunks(text, targetLen = 600) {
     const trimmed = text.trim();
     if (!trimmed) return [];
 
     // Groq Orpheus free tier enforces strict 200 char limit per request
     const isGroq = state.model && (state.model.includes('orpheus') || state.model.includes('groq'));
     if (isGroq) {
-      targetLen = Math.min(targetLen, 160);
+      targetLen = 160;
+    } else {
+      // Adaptive chunking based on script volume: prevents HTTP request explosion
+      if (trimmed.length > 6000) {
+        targetLen = 1200;
+      } else if (trimmed.length > 2000) {
+        targetLen = 800;
+      } else {
+        targetLen = 600;
+      }
     }
 
     let chunk0 = '';
@@ -3226,21 +3591,43 @@
       headers['Authorization'] = `Bearer ${state.customOpenRouterKey}`;
     }
 
-    const res = await fetch('/api/tts', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-      signal
-    });
+    const retryDelays = [500, 1000, 2000, 4000];
+    let lastError = null;
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || 'Synthesis failed');
+    for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+      if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+      try {
+        const res = await fetch('/api/tts', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+          signal
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: res.statusText }));
+          if ((res.status === 429 || res.status >= 500) && attempt < retryDelays.length) {
+            console.warn(`[TTS Retry] Attempt ${attempt + 1} hit HTTP ${res.status}. Retrying in ${retryDelays[attempt]}ms...`);
+            await new Promise(r => setTimeout(r, retryDelays[attempt]));
+            continue;
+          }
+          throw new Error(err.detail || `Synthesis failed (HTTP ${res.status})`);
+        }
+
+        const contentType = res.headers.get('Content-Type') || 'audio/wav';
+        const blob = await res.blob();
+        return new Blob([blob], { type: contentType.split(';')[0].trim() });
+      } catch (err) {
+        if (err.name === 'AbortError' || (signal && signal.aborted)) throw err;
+        lastError = err;
+        if (attempt < retryDelays.length) {
+          console.warn(`[TTS Network Retry] Attempt ${attempt + 1} error: ${err.message}. Retrying in ${retryDelays[attempt]}ms...`);
+          await new Promise(r => setTimeout(r, retryDelays[attempt]));
+        }
+      }
     }
 
-    const contentType = res.headers.get('Content-Type') || 'audio/wav';
-    const blob = await res.blob();
-    return new Blob([blob], { type: contentType.split(';')[0].trim() });
+    throw lastError || new Error('Synthesis failed after multiple retries');
   }
 
   // --- TTS Synthesis Engine (Native HTML5 Streaming Pipeline with Rock-Solid Pitch Preservation) ---
@@ -3424,13 +3811,37 @@
             return;
           }
           console.error(`Error processing chunk ${idx}:`, err);
-          showToast(`Chunk ${idx + 1} failed: ${err.message}`, 'error', 4000);
+
+          // Non-blocking recovery: mark chunk as skipped so queue playback is NEVER stalled or hung
+          state.playbackQueue.chunks[idx] = { skipped: true, duration: 0.1, offset: state.continuousDuration };
+          state.playbackQueue.completedChunksCount++;
+
+          // If playback was actively waiting for this failed chunk, advance immediately
+          if (state.playbackQueue.waitingForChunk === idx) {
+            state.playbackQueue.waitingForChunk = -1;
+            // Advance to next available chunk
+            for (let nextIdx = idx + 1; nextIdx < totalChunks; nextIdx++) {
+              const nextChunk = state.playbackQueue.chunks[nextIdx];
+              if (nextChunk && !nextChunk.skipped) {
+                state.playbackQueue.currentIndex = nextIdx;
+                state.playbackQueue.currentChunkOffset = nextChunk.offset;
+                state.audioElement.src = nextChunk.url;
+                state.audioElement.playbackRate = state.speed;
+                state.audioElement.preservesPitch = true;
+                state.audioElement.currentTime = 0;
+                state.audioElement.play().catch(e => console.warn('Next chunk play error:', e));
+                break;
+              }
+            }
+          }
+
+          showToast(`Segment ${idx + 1} skipped — playback continues`, 'info', 2200);
         } finally {
           inFlight--;
           pumpQueue();
 
           // Check if all chunks received
-          if (state.playbackQueue.completedChunksCount === totalChunks) {
+          if (state.playbackQueue && state.playbackQueue.completedChunksCount >= totalChunks) {
             onAllChunksCompleted();
           }
         }
@@ -3494,6 +3905,12 @@
           text: text,
           timestamp: new Date().toISOString()
         });
+        if (typeof captureGeneratedAudio === 'function') {
+          captureGeneratedAudio(masterBlob, text).catch((err) => {
+            console.error('vault write failed', err);
+            showToast('Could not save to vault', true);
+          });
+        }
 
         el.btnMainGenerate.disabled = false;
         el.btnMainGenerate.classList.remove('loading');
@@ -4506,3 +4923,260 @@
     init();
   }
 })();
+
+
+/* === PERSONAL STUDIO ES MODULE EXTENSIONS === */
+
+const studioState = {
+  voices: [],
+  currentVoiceId: localStorage.getItem('nas.lastVoice') || null,
+  lastAudioId: null
+};
+
+function showToast(message, isError) {
+  const stack = document.getElementById('toast-stack');
+  if (!stack) return;
+  const toast = document.createElement('div');
+  toast.className = isError ? 'toast is-error' : 'toast';
+  toast.setAttribute('role', 'status');
+  toast.textContent = message;
+  stack.appendChild(toast);
+  while (stack.children.length > 3) stack.removeChild(stack.firstElementChild);
+  setTimeout(() => toast.remove(), isError ? 8000 : 4000);
+}
+
+async function loadVoices() {
+  try {
+    const res = await fetch('/api/voices');
+    if (!res.ok) throw new Error('voices');
+    const data = await res.json();
+    studioState.voices = Array.isArray(data) ? data : data.voices || [];
+  } catch (err) {
+    studioState.voices = [];
+  }
+  return studioState.voices;
+}
+
+function updateFavoriteToggleBtn() {
+  const btn = document.getElementById('favorite-toggle');
+  if (!btn) return;
+  const isFav = isFavorite(studioState.currentVoiceId);
+  btn.classList.toggle('text-tertiary-fixed-dim', isFav);
+  btn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+  btn.title = isFav ? 'Unpin from favorites' : 'Pin to favorites';
+  const label = btn.querySelector('.font-mono');
+  if (label) label.textContent = isFav ? 'Pinned' : 'Pin';
+}
+
+function wireFavoriteToggle() {
+  const btn = document.getElementById('favorite-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (!studioState.currentVoiceId) return;
+    toggleFavorite(studioState.currentVoiceId);
+    updateFavoriteToggleBtn();
+    renderFavorites(
+      document.getElementById('favorites-strip'),
+      studioState.voices,
+      studioState.currentVoiceId,
+      selectVoice
+    );
+  });
+  updateFavoriteToggleBtn();
+}
+
+function selectVoice(voiceId) {
+  studioState.currentVoiceId = voiceId;
+  localStorage.setItem('nas.lastVoice', voiceId);
+  const select = document.getElementById('voice-select');
+  if (select) select.value = voiceId;
+  updateFavoriteToggleBtn();
+  renderFavorites(document.getElementById('favorites-strip'), studioState.voices, voiceId, selectVoice);
+}
+
+function renderPresets() {
+  const container = document.getElementById('presets-list');
+  if (!container) return;
+  container.innerHTML = '';
+  for (const preset of listPresets()) {
+    const card = document.createElement('article');
+    card.className = 'preset-card';
+    card.dataset.presetId = preset.id;
+    card.tabIndex = 0;
+
+    const name = document.createElement('h3');
+    name.className = 'preset-card-name';
+    name.title = preset.name;
+    name.textContent = preset.name;
+
+    const preview = document.createElement('p');
+    preview.className = 'preset-card-preview';
+    preview.title = preset.text;
+    preview.textContent = preset.text;
+
+    card.appendChild(name);
+    card.appendChild(preview);
+
+    if (!preset.builtin) {
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'icon-button preset-card-delete';
+      del.setAttribute('aria-label', `Delete preset ${preset.name}`);
+      del.textContent = '×';
+      del.addEventListener('click', (event) => {
+        event.stopPropagation();
+        removePreset(preset.id);
+        renderPresets();
+      });
+      card.appendChild(del);
+    }
+
+    card.addEventListener('click', () => {
+      const textarea = document.getElementById('script-input') || document.querySelector('textarea');
+      if (textarea) textarea.value = preset.text;
+    });
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        card.click();
+      }
+    });
+
+    container.appendChild(card);
+  }
+}
+
+function wirePresetForm() {
+  const toggle = document.getElementById('preset-add-toggle');
+  const form = document.getElementById('preset-form');
+  const cancel = document.getElementById('preset-cancel');
+  const errorEl = document.getElementById('preset-error');
+  if (!toggle || !form) return;
+
+  toggle.addEventListener('click', () => {
+    form.hidden = !form.hidden;
+    if (!form.hidden) document.getElementById('preset-name').focus();
+  });
+
+  if (cancel) {
+    cancel.addEventListener('click', () => {
+      form.hidden = true;
+      if (errorEl) errorEl.hidden = true;
+    });
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const name = document.getElementById('preset-name').value;
+    const text = document.getElementById('preset-text').value;
+    try {
+      addPreset(name, text);
+      form.reset();
+      form.hidden = true;
+      if (errorEl) errorEl.hidden = true;
+      renderPresets();
+      showToast('Preset saved', false);
+    } catch (err) {
+      if (errorEl) {
+        errorEl.textContent = err.message;
+        errorEl.hidden = false;
+      }
+    }
+  });
+}
+
+async function refreshEngineStatus() {
+  const el = document.getElementById('engine-status');
+  if (!el) return;
+  const label = el.querySelector('.engine-status-label');
+  try {
+    const res = await fetch('/api/status');
+    if (!res.ok) throw new Error('status');
+    const data = await res.json();
+    const ready = data && (data.ready === true || data.status === 'ok' || data.status === 'ready' || data.engine === 'ready');
+    el.classList.toggle('is-ready', !!ready);
+    el.classList.toggle('is-error', !ready);
+    if (label) label.textContent = ready ? 'Engine ready' : 'Engine idle';
+  } catch (err) {
+    el.classList.remove('is-ready');
+    el.classList.add('is-error');
+    if (label) label.textContent = 'Engine offline';
+  }
+}
+
+async function captureGeneratedAudio(blob, text) {
+  if (!studioState.voices || !studioState.voices.length) {
+    await loadVoices();
+  }
+  const voice = studioState.voices.find((v) => v.id === studioState.currentVoiceId);
+  const voiceName = voice ? voice.name : (studioState.currentVoiceId || 'voice');
+  const createdAt = Date.now();
+  const ext = extFromMime(blob.type);
+  const filename = buildFilename({ voice: voiceName, text, createdAt, ext });
+  const id = `clip-${createdAt}-${Math.random().toString(36).slice(2, 8)}`;
+  const duration = await new Promise((resolve) => {
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    audio.onloadedmetadata = () => {
+      const d = Number.isFinite(audio.duration) ? audio.duration : 0;
+      URL.revokeObjectURL(url);
+      resolve(d);
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(0);
+    };
+    audio.src = url;
+  });
+  await putAudio({ id, filename, voiceId: studioState.currentVoiceId, voiceName, text, createdAt, duration, mime: blob.type }, blob);
+  studioState.lastAudioId = id;
+  await renderVault(document.getElementById('vault-list'));
+  return id;
+}
+
+window.__nas = {
+  studioState,
+  captureGeneratedAudio,
+  showToast,
+  selectVoice,
+  renderPresets,
+  refreshEngineStatus
+};
+
+async function boot() {
+  await loadVoices();
+  renderFavorites(document.getElementById('favorites-strip'), studioState.voices, studioState.currentVoiceId, selectVoice);
+  renderPresets();
+  wirePresetForm();
+  wireFavoriteToggle();
+  await renderVault(document.getElementById('vault-list'));
+  await refreshEngineStatus();
+  setInterval(refreshEngineStatus, 30000);
+
+  initPalette({
+    voicesProvider: async () => studioState.voices.length ? studioState.voices : await loadVoices(),
+    onSelect: (voiceId) => {
+      selectVoice(voiceId);
+      showToast('Voice switched', false);
+    }
+  });
+
+  initKeys({
+    onPlayPause: () => togglePlayPause(),
+    onDownload: () => {
+      if (studioState.lastAudioId) download(studioState.lastAudioId);
+      else showToast('Nothing to download yet', true);
+    },
+    onEscape: () => {
+      const form = document.getElementById('preset-form');
+      if (form && !form.hidden) form.hidden = true;
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}

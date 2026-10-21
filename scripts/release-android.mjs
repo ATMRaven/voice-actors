@@ -114,7 +114,9 @@ async function main() {
   console.log(`\x1b[36mAttaching to CI run for ${tagName}...\x1b[0m\n`);
   
   const repoSlug = runSilent('gh repo view --json nameWithOwner -q .nameWithOwner');
-  const watchResult = spawnSync('gh', ['run', 'watch'], { stdio: 'inherit' });
+  const runId = runSilent('gh run list -L 1 --json databaseId -q ".[0].databaseId"');
+  const watchArgs = runId ? ['run', 'watch', runId] : ['run', 'watch'];
+  const watchResult = spawnSync('gh', watchArgs, { stdio: 'inherit' });
 
   if (watchResult.status !== 0) {
     console.error('\n\x1b[31m[ERROR]\x1b[0m GitHub Actions build failed or was cancelled.');

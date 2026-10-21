@@ -28,3 +28,12 @@ Thumbs.db
 /verify_*.js
 /redesign_ref/
 /test_*.js
+
+/artifacts/
+/run_rigorous_verification.mjs
+scripts/apply_*.py
+scripts/find_*.py
+scripts/list_*.py
+scripts/test_*.py
+scripts/test_*.mjs
+scripts/update_vision_models.py

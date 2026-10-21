@@ -1223,6 +1223,146 @@ async def align_speech_words(
         "segments": result.get("segments", [])
     }
 
+@app.post("/api/extract-image")
+async def extract_image_text(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    mode: str = Form("clean"),
+    image_base64: Optional[str] = Form(None)
+):
+    """
+    Multimodal Vision text extractor using Gemini 2.5 Flash Vision.
+    Filters out status bar chrome (clock, battery, Wi-Fi, notch), ads, and navigation bars.
+    Modes:
+      - 'clean': verbatim reading text
+      - 'summary': concise spoken summary
+      - 'devlog': plain English spoken explanation of developer logs/errors
+    """
+    raw_bytes = None
+    mime_type = "image/png"
+
+    # Support JSON payload as well as multipart
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                image_base64 = body.get("image") or body.get("image_base64")
+                mode = body.get("mode", mode)
+        except Exception:
+            pass
+
+    if file:
+        raw_bytes = await file.read()
+        mime_type = file.content_type or "image/png"
+    elif image_base64:
+        if "," in image_base64:
+            header, encoded = image_base64.split(",", 1)
+            if "image/" in header:
+                mime_type = header.split(";")[0].replace("data:", "")
+            raw_bytes = base64.b64decode(encoded)
+        else:
+            raw_bytes = base64.b64decode(image_base64)
+
+    if not raw_bytes:
+        raise HTTPException(status_code=400, detail="No image provided for text extraction.")
+
+    gemini_key = request.headers.get("X-Gemini-Key") or DEFAULT_GEMINI_KEY
+    if not gemini_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Gemini API key is required for multimodal vision. Please configure GEMINI_API_KEY in Settings/environment."
+        )
+
+    mode_instructions = {
+        "clean": (
+            "You are a multimodal text extractor for a text-to-speech audio studio. "
+            "Extract ONLY the primary human reading text, article body, or chat content from this image. "
+            "STRICTLY IGNORE AND OMIT: status bar icons, battery percentage, phone clock, notch, island, "
+            "operating system navigation bars, web browser address bars, ads, cookie notices, and footer clutter. "
+            "Preserve paragraphs and natural reading punctuation so it sounds natural when spoken aloud. "
+            "Output pure readable text with no markdown commentary, no quotes around the output, and no filler."
+        ),
+        "summary": (
+            "You are an executive audio briefing generator for a text-to-speech studio. "
+            "Read this screenshot, ignore all UI chrome (status bar, time, battery, notch, ads, navbars), "
+            "and synthesize the core points into 2 to 3 concise, high-signal spoken paragraphs. "
+            "Write in fluent, natural spoken English suitable for listening on headphones. "
+            "Do not output bullet points, headers, or markdown filler."
+        ),
+        "devlog": (
+            "You are a senior software systems engineer translating technical developer screenshots for an audio studio. "
+            "The screenshot shows technical developer logs, compiler errors, stack traces, or terminal output. "
+            "Ignore battery/status bar chrome. "
+            "Translate what failed into a plain-English explanation of: 1) What went wrong; 2) The exact root cause; "
+            "3) The recommended fix. "
+            "Write it conversationally for someone listening to audio, omitting raw memory addresses, hex dumps, and repetitive traceback file paths."
+        )
+    }
+
+    instruction = mode_instructions.get(mode, mode_instructions["clean"])
+    b64_img = base64.b64encode(raw_bytes).decode("utf-8")
+
+    vision_models = ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-flash-latest", "gemini-2.5-flash-image"]
+    resp = None
+    last_err = ""
+
+    for v_model in vision_models:
+        g_url = f"https://generativelanguage.googleapis.com/v1beta/models/{v_model}:generateContent?key={gemini_key}"
+        g_payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": instruction},
+                        {
+                            "inline_data": {
+                                "mime_type": mime_type,
+                                "data": b64_img
+                            }
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 2048
+            }
+        }
+        try:
+            r = requests.post(g_url, json=g_payload, timeout=20)
+            if r.status_code == 200:
+                resp = r
+                break
+            else:
+                last_err = f"{v_model} returned {r.status_code}: {r.text[:200]}"
+                logger.warn(f"Gemini Vision fallback ({v_model}): {last_err}")
+        except Exception as e:
+            last_err = f"{v_model} exception: {e}"
+            logger.warn(f"Gemini Vision error ({v_model}): {e}")
+
+    if not resp:
+        raise HTTPException(status_code=502, detail=f"Gemini Vision API failed across models: {last_err}")
+
+    res_json = resp.json()
+    extracted_text = ""
+    try:
+        cand = res_json.get("candidates", [{}])[0]
+        parts = cand.get("content", {}).get("parts", [])
+        extracted_text = "".join(p.get("text", "") for p in parts).strip()
+    except Exception as e:
+        logger.error(f"Failed to parse Gemini Vision response: {e}")
+        raise HTTPException(status_code=502, detail="Failed to parse text from Gemini Vision response.")
+
+    return {
+        "text": extracted_text,
+        "mode": mode,
+        "stats": {
+            "chars": len(extracted_text),
+            "words": len(extracted_text.split())
+        }
+    }
+
+
 # Mount static files directory
 STATIC_DIR = Path(__file__).parent / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
