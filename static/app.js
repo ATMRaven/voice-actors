@@ -1039,6 +1039,31 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       el.textInput.focus();
     });
 
+    // Drag-and-drop image file directly onto script input canvas
+    if (el.textareaStage) {
+      el.textareaStage.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.textareaStage.classList.add('is-dragover');
+      });
+      el.textareaStage.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.textareaStage.classList.remove('is-dragover');
+      });
+      el.textareaStage.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.textareaStage.classList.remove('is-dragover');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          const file = e.dataTransfer.files[0];
+          if (file.type && file.type.startsWith('image/')) {
+            openScreenshotModal(file);
+          }
+        }
+      });
+    }
+
     document.querySelectorAll('.preset-pill').forEach(pill => {
       pill.addEventListener('click', () => {
         const text = pill.getAttribute('data-text');

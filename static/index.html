@@ -184,7 +184,7 @@
   <!-- =====================================================================
        2. PRIMARY VIEWPORT CONTAINER
        ===================================================================== -->
-  <main class="flex-1 w-full max-w-4xl mx-auto pt-20 pb-28 md:pb-16 px-gutter-mobile">
+  <main class="flex-1 w-full max-w-4xl mx-auto pt-20 pb-32 md:pb-32 px-gutter-mobile">
     
     <!-- ===================================================================
          VIEW 1: TTS STUDIO (Neural Acoustic Speech Engine)
@@ -310,18 +310,31 @@
       <div class="relative flex flex-col p-4 sm:p-5 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] focus-within:border-white/[0.12] transition-colors duration-200" id="textarea-stage">
         
         <!-- Script Header -->
-        <div class="flex items-center justify-between pb-2 mb-2 text-on-surface-variant border-b border-white/[0.04]">
-          <span class="font-mono text-[11px] uppercase tracking-widest text-outline">Script Input</span>
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 text-on-surface-variant border-b border-white/[0.06]">
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-xs uppercase tracking-widest text-primary font-medium">Script Input</span>
+            <span class="hidden sm:inline-block font-mono text-[10px] text-outline px-1.5 py-0.5 rounded bg-surface-container-highest/60 border border-white/[0.04]">Text &amp; Vision</span>
+          </div>
           
           <div class="flex items-center gap-2">
-            <button class="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-white/[0.04]" id="btn-scan-image" type="button" title="Scan screenshot or image to speech (or press Ctrl+V)">
-              <span class="material-symbols-outlined text-[13px]">document_scanner</span>
-              <span>Scan Image</span>
+            <!-- Prominent Scan Image / Screenshot Button -->
+            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-highest hover:bg-white/[0.1] text-primary border border-white/[0.1] hover:border-amber-400/50 text-xs font-medium transition-all shadow-sm active:scale-95 cursor-pointer group" id="btn-scan-image" type="button" title="Scan screenshot or image to speech (or press Ctrl+V)">
+              <span class="material-symbols-outlined text-[16px] text-tertiary-fixed-dim group-hover:scale-110 transition-transform">document_scanner</span>
+              <span class="font-medium">Scan Image</span>
+              <span class="hidden md:inline-block font-mono text-[9.5px] px-1.5 py-0.5 rounded bg-black/40 text-outline border border-white/[0.06]">Ctrl+V</span>
             </button>
-            <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer px-1 py-0.5" id="btn-clear" type="button" title="Clear the script">Clear</button>
-            <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer px-1 py-0.5" id="btn-paste" type="button" title="Paste from clipboard and replace">Paste</button>
+
+            <!-- Prominent Paste & Replace Button -->
+            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary border border-white/[0.06] hover:border-white/[0.14] text-xs font-medium transition-all active:scale-95 cursor-pointer" id="btn-paste" type="button" title="Paste clipboard content and replace existing text">
+              <span class="material-symbols-outlined text-[15px]">content_paste</span>
+              <span>Paste</span>
+            </button>
+
+            <!-- Clear Script Button -->
+            <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-outline hover:text-error hover:bg-error/10 text-xs font-mono uppercase tracking-wider transition-all cursor-pointer" id="btn-clear" type="button" title="Clear script">
+              <span class="material-symbols-outlined text-[14px]">clear</span>
+              <span>Clear</span>
+            </button>
           </div>
         </div>
 
@@ -340,7 +353,7 @@
         <div class="hidden" id="samples-popover"></div>
 
         <!-- Textarea -->
-        <textarea class="w-full bg-transparent font-sans text-base text-primary placeholder:text-outline/40 focus:outline-none resize-none leading-relaxed tracking-tight min-h-[105px]" id="text-input" placeholder="Type or paste text to synthesize...">In the quiet corners of deep space, silence is the canvas upon which cosmic light writes its timeless symphony.</textarea>
+        <textarea class="w-full bg-transparent font-sans text-base text-primary placeholder:text-outline/40 focus:outline-none resize-none leading-relaxed tracking-tight min-h-[105px]" id="text-input" placeholder="Type or paste text to synthesize, drop an image, or press Ctrl+V to scan a screenshot...">In the quiet corners of deep space, silence is the canvas upon which cosmic light writes its timeless symphony.</textarea>
 
         <!-- Script Footer Metrics -->
         <div class="flex items-center justify-between pt-3 mt-1 text-on-surface-variant border-t border-white/[0.04]">
@@ -946,7 +959,7 @@
        3. FLOATING BOTTOM NAVIGATION DOCK (4-Pillar, Mobile Only)
        Labels raised from 9px to 11px for small-phone legibility.
        ===================================================================== -->
-  <div class="md:hidden fixed bottom-0 inset-x-0 z-40 pointer-events-none pb-safe px-gutter-mobile" id="main-dock">
+  <div class="fixed bottom-0 inset-x-0 z-40 pointer-events-none pb-safe px-gutter-mobile" id="main-dock">
     <nav class="vx-dock__nav pointer-events-auto" aria-label="Primary">
       
       <!-- Studio Tab -->
