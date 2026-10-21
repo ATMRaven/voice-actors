@@ -95,6 +95,24 @@ async function main() {
   pkg.version = newVersion;
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
 
+  // Also update static/latest.json
+  const latestJsonPath = resolve(process.cwd(), 'static/latest.json');
+  try {
+    const vParts = newVersion.split('.').map(p => parseInt(p, 10));
+    const vCode = (vParts[0] * 10000) + (vParts[1] * 100) + vParts[2];
+    const latestData = JSON.parse(readFileSync(latestJsonPath, 'utf-8'));
+    latestData.version = newVersion;
+    latestData.versionName = newVersion;
+    latestData.versionCode = vCode;
+    latestData.publishedAt = new Date().toISOString();
+    writeFileSync(latestJsonPath, JSON.stringify(latestData, null, 2) + '\n', 'utf-8');
+    const rootLatestJsonPath = resolve(process.cwd(), 'latest.json');
+    writeFileSync(rootLatestJsonPath, JSON.stringify(latestData, null, 2) + '\n', 'utf-8');
+    console.log(`\x1b[32m✔\x1b[0m Synchronized static/latest.json & root latest.json to ${newVersion} (${vCode})`);
+  } catch (err) {
+    console.warn('[WARN] Could not update static/latest.json:', err.message);
+  }
+
   // Step 3: Git commit and tag
   console.log(`\x1b[32m✔\x1b[0m Creating release commit and git tag \x1b[36m${tagName}\x1b[0m...`);
   run(`git commit -am "chore(release): ${tagName}"`);

@@ -1,11 +1,12 @@
 {
-  "versionName": "1.0.0",
-  "versionCode": 10000,
+  "version": "1.0.2",
+  "versionName": "1.0.2",
+  "versionCode": 10002,
   "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
-  "sha256": "2ab8d7dbe55386b80409b405e00872bbf95aa4407ec302db46f08d5a58ca4f10",
-  "sizeBytes": 9766361,
+  "sha256": "ede940cd6ff36b7552cda7ca04c2a6adf0657162a043717d7f74e23968ee2e4d",
+  "sizeBytes": 9794678,
   "minSupportedVersionCode": 1,
   "mandatory": false,
-  "releaseNotes": "Release v1.0.0 with native stability and in-app updates.",
-  "publishedAt": "2026-10-16T16:10:54Z"
+  "releaseNotes": "Release v1.0.2: Mobile auto-scroll decoupling, multimodal screenshot vision-to-speech, instant paste-replace, and resilient synthesis.",
+  "publishedAt": "2026-10-21T15:04:08Z"
 }

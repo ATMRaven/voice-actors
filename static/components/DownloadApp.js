@@ -295,7 +295,7 @@ class DownloadAppElement extends HTMLElement {
       <div class="settings-row">
         <div class="app-info">
           Voice Actors Native Android
-          <span id="native-app-version">Version 1.0.0</span>
+          <span id="native-app-version">Version 1.0.2</span>
         </div>
         <button id="btn-trigger-check" class="btn-check-update">Check for Updates</button>
       </div>

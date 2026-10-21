@@ -33,20 +33,26 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     console.log('[NativeBridge] Proxied /api calls to Cloudflare Pages edge:', API_REMOTE_HOST);
   }
 
-  // Hide splash screen & init back navigation once DOM loads
-  window.addEventListener('DOMContentLoaded', () => {
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+  // Hide splash screen & init back navigation / update manager once runtime is ready
+  function initNativeBridge() {
+    if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
       try {
         window.Capacitor.Plugins?.SplashScreen?.hide();
       } catch (e) {}
-      if (window.backNavigation) {
+      if (window.backNavigation && typeof window.backNavigation.init === 'function') {
         window.backNavigation.init();
       }
-      if (window.updateManager) {
+      if (window.updateManager && typeof window.updateManager.init === 'function') {
         window.updateManager.init();
       }
     }
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initNativeBridge);
+  } else {
+    initNativeBridge();
+  }
 
   // Pre-cached Deepgram Flux voice catalog for zero-latency instant startup
   const DEFAULT_DEEPGRAM_VOICES = [
@@ -624,11 +630,27 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     fetch('/latest.json', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!d || !el.getAppMeta) return;
+        if (!d) return;
+        const vName = d.versionName || d.version;
+        const sizeMb = d.sizeBytes ? (d.sizeBytes / (1024 * 1024)).toFixed(1) : null;
         const parts = [];
-        if (d.versionName) parts.push(`v${d.versionName}`);
-        if (d.sizeBytes) parts.push(`${(d.sizeBytes / (1024 * 1024)).toFixed(1)} MB`);
-        if (parts.length) el.getAppMeta.textContent = parts.join(' · ');
+        if (vName) parts.push(`v${vName}`);
+        if (sizeMb) parts.push(`${sizeMb} MB`);
+        if (parts.length && el.getAppMeta) {
+          el.getAppMeta.textContent = parts.join(' · ');
+        }
+        const vBadge = document.getElementById('download-version-badge');
+        if (vBadge && vName) {
+          vBadge.textContent = `v${vName} Release`;
+        }
+        const sBadge = document.getElementById('download-size-badge');
+        if (sBadge && sizeMb) {
+          sBadge.textContent = `${sizeMb} MB`;
+        }
+        const rLink = document.getElementById('download-release-link');
+        if (rLink && vName) {
+          rLink.href = `https://github.com/ATMRaven/voice-actors/releases/tag/v${vName}`;
+        }
       })
       .catch(() => { /* keep the static fallback */ });
   }
