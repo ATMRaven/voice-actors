@@ -1,0 +1,793 @@
+/* =====================================================================
+   VOICE ACTORS — MOBILE ERGONOMIC LAYER
+   Loaded last. Scoped to phones (< 768px) so the desktop console is
+   untouched. Goals: no clipped content, no duplicated nav, 44px targets,
+   one clear primary action, and a reader that behaves like a reading app.
+   ===================================================================== */
+
+/* ---------- 0. Global phone hygiene -------------------------------- */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Generation progress is a phone affordance (the desktop CTA stays compact) */
+#gen-progress {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --dock-h: 66px;
+    --dock-gap: 12px;
+    --phone-pad: 14px;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Remove the grey flash on tap; we draw our own active states */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* iOS/Android zoom-on-focus when a field is under 16px */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* ---------- 1. Header ------------------------------------------- */
+  .vx-header__bar {
+    height: 54px;
+    padding-inline: var(--phone-pad);
+    gap: 0.5rem;
+  }
+
+  .vx-brand {
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .vx-brand__mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .vx-brand__mark svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .vx-brand__name {
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Navigation lives in the dock — the header nav is desktop-only */
+  .vx-nav {
+    display: none !important;
+  }
+
+  .vx-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .vx-iconbtn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .vx-iconbtn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* The API modal is a desktop/agent surface — keep the phone header to
+     two controls (settings + get app). */
+  #btn-open-api {
+    display: none !important;
+  }
+
+  /* The old duplicate "Engine ready" pill that hung off the header edge */
+  #engine-status {
+    display: none !important;
+  }
+
+  .vx-menu__panel {
+    right: 0;
+    left: auto;
+    min-width: min(78vw, 280px);
+  }
+
+  /* ---------- 2. Page frame --------------------------------------- */
+  main {
+    padding-top: calc(54px + env(safe-area-inset-top, 0px) + 14px) !important;
+    padding-bottom: calc(var(--dock-h) + var(--dock-gap) + env(safe-area-inset-bottom, 0px) + 92px) !important;
+    padding-inline: var(--phone-pad) !important;
+    max-width: 100% !important;
+  }
+
+  /* ---------- 3. Studio heading + engine pill --------------------- */
+  #view-tts > div:first-of-type {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding-top: 0;
+    padding-bottom: 12px;
+  }
+
+  #view-tts h1 {
+    font-size: 1.375rem;
+    line-height: 1.15;
+  }
+
+  #view-tts h1 + p {
+    font-size: 9.5px;
+    letter-spacing: 0.13em;
+    margin-top: 3px;
+  }
+
+  #dock-model-pill {
+    padding: 0.4rem 0.7rem;
+    gap: 0.35rem;
+    margin-top: 2px;
+  }
+
+  #dock-model-name {
+    max-width: 92px;
+    font-size: 10.5px;
+  }
+
+  #menu-model-select {
+    width: min(88vw, 320px);
+    right: 0;
+    max-height: 62vh;
+    overflow-y: auto;
+  }
+
+  /* Pinned voice strip: single rail, no wrap mid-card. Empty state is noise
+     on a phone, so collapse it instead of eating 64px above the title. */
+  .favorites-strip {
+    gap: 8px;
+    min-height: 0;
+    padding: 0;
+    margin-bottom: 2px;
+  }
+
+  .favorites-empty {
+    display: none;
+  }
+
+  /* ---------- 4. Active voice card -------------------------------- */
+  #active-persona-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+  }
+
+  #active-persona-card > div:first-child {
+    gap: 10px;
+    width: 100%;
+  }
+
+  #dock-voice-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  #dock-voice-name {
+    font-size: 0.95rem;
+    white-space: normal;
+  }
+
+  /* Never ellipsize the accent/gender — it used to read "US · FE…" */
+  #dock-voice-accent {
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+  }
+
+  /* Action cluster drops to its own full-width row */
+  #active-persona-card > div:last-child {
+    width: 100%;
+    gap: 8px;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  }
+
+  #active-persona-card > div:last-child > button {
+    flex: 1 1 0;
+    justify-content: center;
+    min-height: 40px;
+    padding-inline: 8px;
+    border-radius: 11px;
+  }
+
+  #favorite-toggle span.font-mono,
+  #dock-voice-pill span.font-mono {
+    display: inline !important;
+    font-size: 9px;
+  }
+
+  /* ---------- 5. Script card -------------------------------------- */
+  #textarea-stage {
+    padding: 12px !important;
+    border-radius: 14px;
+    margin-bottom: 12px !important;
+  }
+
+  #textarea-stage > div:first-child {
+    gap: 8px;
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+  }
+
+  #textarea-stage > div:first-child > div:first-child > span:first-child {
+    font-size: 10px;
+  }
+
+  /* Toolbar: a tidy 2x2 grid instead of four unequal pills fighting for width */
+  #textarea-stage > div:first-child {
+    gap: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+  }
+
+  #textarea-stage > div:first-child > div:last-child {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  #btn-scan-image,
+  #btn-paste,
+  #btn-load-file,
+  #btn-clear {
+    min-height: 38px;
+    padding-inline: 10px;
+    border-radius: 10px;
+    justify-content: center;
+  }
+
+  /* The clear action used to float label-less outside the button language */
+  /* Utilities on this button win the cascade on Android WebView, so the
+     label styling has to be explicit. */
+  #btn-clear {
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    background: var(--bg-card, #1f2021) !important;
+    padding-inline: 9px !important;
+    color: var(--text-main, #f4f5f7) !important;
+    font-family: inherit !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: 12px !important;
+  }
+
+  #btn-clear span:not(.material-symbols-outlined) {
+    font-size: 12px;
+  }
+
+  #btn-scan-image span:not(.material-symbols-outlined),
+  #btn-paste span:not(.material-symbols-outlined),
+  #btn-load-file span:not(.material-symbols-outlined) {
+    font-size: 11px;
+  }
+
+  #btn-clear span:not(.material-symbols-outlined) {
+    display: inline;
+    font-size: 11px;
+  }
+
+  #presets-quick-bar {
+    gap: 6px;
+    padding-bottom: 8px;
+    margin-bottom: 0;
+    scroll-snap-type: x proximity;
+  }
+
+  #presets-quick-bar > button {
+    scroll-snap-align: start;
+    min-height: 30px;
+    font-size: 11.5px;
+  }
+
+  /* A script field that behaves like a field, not a black hole */
+  #text-input {
+    min-height: 132px !important;
+    max-height: 38vh;
+    overflow-y: auto;
+    font-size: 16px !important;
+    line-height: 1.55 !important;
+    padding-block: 6px;
+  }
+
+  #textarea-stage > div:last-child {
+    padding-top: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  #textarea-stage > div:last-child span {
+    font-size: 9.5px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ---------- 6. Script presets section --------------------------- */
+  #presets-manager {
+    margin-top: 4px;
+  }
+
+  .presets-header {
+    align-items: center;
+    gap: 8px;
+  }
+
+  .presets-title {
+    font-size: 0.95rem;
+  }
+
+  #preset-add-toggle {
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 11px;
+    border-radius: 9px;
+  }
+
+  .presets-list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* ---------- 7. Speech rate card --------------------------------- */
+  #view-tts > div.p-4.rounded-xl.bg-surface-container:not(#active-persona-card) {
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  /* ---------- 8. Generate CTA — pinned above the dock --------------- */
+  #cta-generate-zone {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(var(--dock-h) + var(--dock-gap) + env(safe-area-inset-bottom, 0px) + 6px);
+    z-index: 35;
+    margin: 0;
+    padding: 8px;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--bg-page) 84%, transparent);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.07));
+    box-shadow: 0 18px 36px -18px rgba(0, 0, 0, 0.9);
+    transition: opacity 160ms var(--ease-out, ease), transform 160ms var(--ease-out, ease);
+  }
+
+  /* Never fight the keyboard, and get out of the way of the reading stage */
+  body.keyboard-open #cta-generate-zone,
+  body.reader-mode #cta-generate-zone {
+    opacity: 0;
+    transform: translateY(14px);
+    pointer-events: none;
+  }
+
+  #btn-main-generate {
+    height: 50px !important;
+    border-radius: 13px !important;
+    font-size: 0.95rem !important;
+    gap: 8px;
+  }
+
+  #btn-cancel-generate {
+    height: 44px !important;
+    border-radius: 13px !important;
+    margin-top: 6px;
+    font-size: 10.5px;
+  }
+
+  /* The latency micro-copy is pure decoration on a phone */
+  #cta-generate-zone > div:last-child {
+    display: none;
+  }
+
+  /* Streaming progress rail (long scripts) */
+  #gen-progress {
+    flex-direction: column;
+    gap: 5px;
+    padding: 2px 4px 0;
+  }
+
+  #gen-progress.is-active {
+    display: flex;
+  }
+
+  #gen-progress__track {
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+  }
+
+  #gen-progress__fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #efbe82, #f7d9b0);
+    transition: width 240ms var(--ease-out, ease);
+  }
+
+  #gen-progress__label {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-code, monospace);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary, #a4a8ae);
+  }
+
+  /* ---------- 9. Player card ------------------------------------- */
+  #dock-player {
+    padding: 12px !important;
+    border-radius: 14px !important;
+    margin-bottom: 12px !important;
+  }
+
+  #waveform-scrub-zone {
+    height: 60px !important;
+    border-radius: 10px;
+  }
+
+  #dock-btn-play {
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  #dock-player #btn-dock-download,
+  #dock-player #btn-toggle-reader {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  #dock-player .pt-3 {
+    padding-top: 10px;
+    margin-top: 8px;
+  }
+
+  #player-time-display {
+    font-size: 10.5px;
+  }
+
+  /* Autoplay was blocked: make the transport control impossible to miss */
+  #dock-btn-play.needs-tap {
+    animation: tap-pulse 1.6s ease-in-out infinite;
+    box-shadow: 0 0 0 0 rgba(239, 190, 130, 0.55);
+  }
+
+  @keyframes tap-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 190, 130, 0.5); }
+    70% { box-shadow: 0 0 0 12px rgba(239, 190, 130, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 190, 130, 0); }
+  }
+
+  #player-label-voice,
+  #player-speed-text {
+    font-size: 10px;
+  }
+
+  /* ---------- 10. Karaoke reader stage --------------------------- */
+  #interactive-stage {
+    padding: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  #interactive-stage > div:first-child {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  #interactive-stage > div:first-child > div:first-child > span:last-child {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  #btn-stage-cancel {
+    min-height: 34px;
+    padding-inline: 10px;
+    font-size: 10px;
+  }
+
+  #btn-back-to-editor {
+    min-height: 34px;
+    font-size: 10px;
+  }
+
+  #interactive-reading-body {
+    max-height: 52vh !important;
+    min-height: 46vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding: 10px 2px !important;
+    font-size: 1.0625rem !important;
+    line-height: 1.85 !important;
+    letter-spacing: 0.002em;
+    /* keep the active line clear of the progress ribbon */
+    scroll-padding-block: 40% 40%;
+    /* soft edges so a half-scrolled line reads as "more below", not as clipping */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 20px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 20px), transparent 100%);
+  }
+
+  .reader-sentence {
+    padding: 2px 0;
+    margin-bottom: 10px;
+    border-left: none;
+  }
+
+  /* Long-script mode: one highlightable phrase per line */
+  .reader-line {
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    border-left: 2px solid transparent;
+    transition: background-color 180ms var(--ease-out, ease), border-color 180ms var(--ease-out, ease);
+  }
+
+  .reader-line.active-line {
+    background: rgba(239, 190, 130, 0.1);
+    border-left-color: var(--accent-amber, #efbe82);
+    color: var(--text-main, #f4f5f7);
+  }
+
+  .reader-word.active-word {
+    background: rgba(239, 190, 130, 0.2);
+    box-shadow: 0 0 0 2px rgba(239, 190, 130, 0.2);
+    border-radius: 4px;
+  }
+
+  #ribbon-track {
+    height: 8px !important;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.09) !important;
+  }
+
+  #ribbon-progress {
+    background: var(--accent-amber, #efbe82) !important;
+  }
+
+  #continuous-timeline-ribbon > div:last-child span {
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  #ribbon-segments-badge {
+    max-width: 58%;
+    text-align: right;
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  /* ---------- 11. Bottom dock ------------------------------------ */
+  #main-dock {
+    display: block !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .vx-dock__nav {
+    margin: 0 auto calc(var(--dock-gap) + 4px) !important;
+    padding: 5px 6px !important;
+    border-radius: 18px !important;
+    gap: 2px;
+  }
+
+  .vx-dock__btn {
+    min-height: 46px;
+    border-radius: 14px !important;
+    gap: 2px;
+  }
+
+  .vx-dock__btn svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .vx-dock__label {
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+  }
+
+  .vx-dock__btn[aria-current="page"] {
+    border-radius: 14px !important;
+  }
+
+  /* ---------- 12. Toasts / modals -------------------------------- */
+  #toast-deck {
+    top: auto !important;
+    bottom: calc(var(--dock-h) + var(--dock-gap) + env(safe-area-inset-bottom, 0px) + 76px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    transform: none !important;
+    align-items: stretch !important;
+  }
+
+  #toast-deck > * {
+    width: 100%;
+  }
+
+  #voice-drawer {
+    height: min(88vh, 100%) !important;
+    border-radius: 18px 18px 0 0;
+  }
+
+  #settings-modal-backdrop,
+  #api-modal-backdrop,
+  #modal-screenshot-scan {
+    padding: 10px !important;
+    align-items: flex-end !important;
+  }
+
+  #settings-modal,
+  #api-modal,
+  #modal-screenshot-scan > div {
+    max-height: 88vh;
+    border-radius: 18px !important;
+    padding: 16px !important;
+  }
+
+  /* ---------- 13. Missing-file / import affordance ---------------- */
+  #btn-load-file {
+    display: inline-flex !important;
+  }
+}
+
+/* Desktop: the dock is a phone affordance, never a second nav bar */
+@media (min-width: 768px) {
+  #main-dock {
+    display: none !important;
+  }
+}
+
+/* Touch laptops and tablets in portrait keep the desktop header nav */
+@media (min-width: 768px) and (max-width: 900px) {
+  .vx-nav__item span,
+  .vx-nav__item {
+    font-size: 0.66rem;
+  }
+}
+/* =====================================================================
+   14. MODELS + TRANSCRIBE VIEWS (phone)
+   ===================================================================== */
+@media (max-width: 767px) {
+  /* Provider cards: give the copy room instead of clipping every subtitle */
+  .engine-row {
+    padding: 12px !important;
+    gap: 10px;
+    align-items: flex-start !important;
+  }
+
+  .engine-row > div:first-child {
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .engine-row .w-10,
+  .engine-row .h-10 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .engine-row .truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  .engine-row .font-medium.text-sm {
+    font-size: 13px !important;
+    line-height: 1.25;
+  }
+
+  .engine-row > button {
+    margin-top: 2px;
+  }
+
+
+  /* JS-rendered provider cards (Models tab) — same treatment as .engine-row */
+  .engine-card {
+    padding: 12px !important;
+  }
+
+  .engine-card > div:first-child {
+    gap: 10px;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+  }
+
+  .engine-card > div:first-child > div:first-child {
+    gap: 10px;
+    align-items: flex-start;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .engine-card .w-10.h-10 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .engine-card .truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.35;
+  }
+
+  .engine-card .font-medium.text-sm {
+    font-size: 13px !important;
+    line-height: 1.25;
+  }
+
+  /* Titles wrap only when they must; badges follow on the same line */
+  .engine-card .flex.items-center.gap-2 {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .engine-card .btn-toggle-voices {
+    padding: 4px 8px !important;
+    font-size: 9.5px !important;
+    letter-spacing: 0.04em !important;
+    height: 30px;
+  }
+
+  .engine-card .btn-toggle-voices span:first-child {
+    white-space: nowrap;
+  }
+
+
+  .engine-card .engine-desc {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+    display: block;
+  }
+
+  /* Audio dropzone: stack the copy above the Browse action */
+  #stt-dropzone {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  #stt-dropzone > div:last-child {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Live transcript header actions get real touch targets */
+  #btn-copy-transcript,
+  #btn-send-to-studio {
+    min-height: 34px;
+    padding-inline: 10px !important;
+  }
+}

@@ -1,8 +1,9 @@
-const CACHE_NAME = 'voxflow-v2';
+const CACHE_NAME = 'voxflow-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
+  '/mobile.css',
   '/app.js',
   '/manifest.json',
   '/favicon.svg',

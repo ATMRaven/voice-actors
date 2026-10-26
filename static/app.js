@@ -285,6 +285,12 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     labelExtractBtn: document.getElementById('label-extract-btn'),
     extractSpinnerIcon: document.getElementById('extract-spinner-icon'),
     btnClear: document.getElementById('btn-clear'),
+    btnLoadFile: document.getElementById('btn-load-file'),
+    inputScriptFile: document.getElementById('input-script-file'),
+    genProgress: document.getElementById('gen-progress'),
+    genProgressFill: document.getElementById('gen-progress__fill'),
+    genProgressStage: document.getElementById('gen-progress__stage'),
+    genProgressCount: document.getElementById('gen-progress__count'),
     presetPills: document.querySelectorAll('.preset-pill'),
     statWords: document.getElementById('stat-words'),
     statChars: document.getElementById('stat-chars'),
@@ -443,6 +449,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
     await loadServerStatus();
     updateCanvasMetrics();
+    restoreScriptDraft();
     renderLibraryItems();
     window.__VOXFLOW_STATE__ = state;
     console.log('%c VoxFlow Neural Audio %c Built by A.T.M.R %c', 'background:#18181b;color:#f59e0b;font-weight:700;padding:4px 8px;border-radius:4px 0 0 4px;font-family:sans-serif;', 'background:#f59e0b;color:#0e0f11;font-weight:800;padding:4px 8px;border-radius:0 4px 4px 0;font-family:sans-serif;', '');
@@ -988,9 +995,157 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     }
   }
 
-    // --- Text Canvas & Metrics ---
+  // --- Text Canvas, Long-Script Import & Draft Recovery ---
+
+  // Long scripts can be huge; keep per-keystroke work cheap by debouncing the
+  // metrics pass and never re-laying-out the textarea on every character.
+  const MAX_SCRIPT_CHARS = 180000;
+  const DRAFT_KEY = 'voxflow_script_draft_v1';
+  let metricsTimer = null;
+  let draftTimer = null;
+
+  function scheduleCanvasMetrics() {
+    if (metricsTimer) clearTimeout(metricsTimer);
+    metricsTimer = setTimeout(() => {
+      metricsTimer = null;
+      updateCanvasMetrics();
+    }, 180);
+  }
+
+  function scheduleDraftSave() {
+    if (draftTimer) clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+      draftTimer = null;
+      saveScriptDraft();
+    }, 700);
+  }
+
+  function saveScriptDraft() {
+    try {
+      const text = el.textInput ? el.textInput.value : '';
+      if (!text) {
+        localStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+      if (text.length > 120000) return; // localStorage cannot hold very large scripts
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ text, at: Date.now() }));
+    } catch (e) {
+      try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
+    }
+  }
+
+  function restoreScriptDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (!draft || typeof draft.text !== 'string' || !draft.text.trim()) return;
+      if (Date.now() - (draft.at || 0) > 7 * 24 * 60 * 60 * 1000) return;
+      const current = el.textInput.value.trim();
+      if (current && !current.startsWith('In the quiet corners of deep space')) return;
+      el.textInput.value = draft.text;
+      updateCanvasMetrics();
+      showToast('Restored your last script', 'info', 2000);
+    } catch (e) { /* corrupt draft: ignore */ }
+  }
+
+  // Accept .txt/.md/.csv/.srt/.vtt and turn subtitles or markdown into clean
+  // speakable prose. Cue numbers and timecodes must never be read aloud.
+  function normalizeScriptText(raw) {
+    let text = String(raw || '').replace(/\r\n?/g, '\n');
+
+    if (text.includes('-->')) {
+      text = text.split('\n').filter(line => {
+        const t = line.trim();
+        if (!t) return false;
+        if (/^\d+$/.test(t)) return false;
+        if (/^\d{1,2}:\d{2}(:\d{2})?[.,]\d{3}\s*-->/.test(t)) return false;
+        if (/^WEBVTT/i.test(t)) return false;
+        return true;
+      }).join(' ');
+    }
+
+    text = text
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/^[>*\-+]\s+/gm, '')
+      .replace(/`{1,3}/g, '')
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    return text;
+  }
+
+  async function loadScriptFromFile(file) {
+    if (!file) return;
+    const looksText = /^(text\/|application\/json)/.test(file.type || '') ||
+      /\.(txt|md|markdown|csv|srt|vtt|log|text)$/i.test(file.name || '');
+    if (!looksText) {
+      showToast('That is not a text file — pick .txt, .md or .srt', true, 3200);
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('File is over 8 MB — split it into smaller parts', true, 3600);
+      return;
+    }
+
+    try {
+      const raw = await file.text();
+      const cleaned = normalizeScriptText(raw);
+      if (!cleaned) {
+        showToast('No readable text found in that file', true, 3200);
+        return;
+      }
+
+      const text = cleaned.slice(0, MAX_SCRIPT_CHARS);
+      el.textInput.value = text;
+      updateCanvasMetrics();
+      saveScriptDraft();
+      el.textInput.scrollTop = 0;
+      el.textInput.focus();
+
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      const estSec = Math.round((words / 150) * 60);
+      const truncated = cleaned.length > text.length ? ' (trimmed to the studio limit)' : '';
+      showToast('Loaded ' + file.name + ': ' + words.toLocaleString() + ' words, about ' + fmtTime(estSec) + ' of speech' + truncated, 'success', 4200);
+    } catch (err) {
+      console.error('Script file read failed', err);
+      showToast('Could not read that file', true, 3200);
+    }
+  }
+
   function setupCanvasEvents() {
-    el.textInput.addEventListener('input', updateCanvasMetrics);
+    el.textInput.addEventListener('input', () => {
+      scheduleCanvasMetrics();
+      scheduleDraftSave();
+    });
+
+    // Hide the pinned Generate bar only while an on-screen keyboard actually
+    // covers the page — not merely because the script field has focus.
+    const syncKeyboardInset = () => {
+      const vv = window.visualViewport;
+      const covered = vv ? (window.innerHeight - vv.height) > 140 : false;
+      document.body.classList.toggle('keyboard-open', covered);
+    };
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncKeyboardInset);
+      window.visualViewport.addEventListener('scroll', syncKeyboardInset);
+    }
+    window.addEventListener('orientationchange', () => setTimeout(syncKeyboardInset, 250));
+
+    // Load a long script straight from the device (no clipboard, no limits)
+    if (el.btnLoadFile && el.inputScriptFile) {
+      el.btnLoadFile.addEventListener('click', () => el.inputScriptFile.click());
+      el.inputScriptFile.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) loadScriptFromFile(file);
+        e.target.value = '';
+      });
+    }
 
     el.btnPaste.addEventListener('click', async () => {
       // 1. Immediately delete whatever is currently written in the text input
@@ -1360,7 +1515,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
               <span class="font-medium text-sm text-primary">${prov.name}</span>
               <span class="font-mono text-[10px] ${prov.badgeColor} px-1.5 py-0.5 rounded-full font-medium">${prov.badge}</span>
             </div>
-            <span class="text-xs text-on-surface-variant truncate">${prov.desc}</span>
+            <span class="text-xs text-on-surface-variant engine-desc">${prov.desc}</span>
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
@@ -2853,6 +3008,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
   function switchToSyncStage() {
     state.isSyncStageVisible = true;
+    document.body.classList.add('reader-mode');
     if (el.textareaStage) el.textareaStage.classList.add('hidden');
     if (el.interactiveStage) el.interactiveStage.classList.remove('hidden');
     if (el.labelReaderToggle) el.labelReaderToggle.textContent = 'Edit Prompt';
@@ -2860,6 +3016,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
   function switchToEditor() {
     state.isSyncStageVisible = false;
+    document.body.classList.remove('reader-mode');
     if (el.interactiveStage) el.interactiveStage.classList.add('hidden');
     if (el.textareaStage) el.textareaStage.classList.remove('hidden');
     if (el.labelReaderToggle) el.labelReaderToggle.textContent = 'Live Sync';
@@ -2867,37 +3024,73 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
   }
 
   // --- Real-Time Word & Sentence Canvas Rendering ---
+  // Phones choke on 10k <span> nodes with 10k listeners. Two modes:
+  //   * per-word (short scripts)     -> karaoke highlight, delegated clicks
+  //   * per-sentence (long scripts)  -> a few hundred nodes, tap a line to seek
+  const READER_WORD_MODE_LIMIT = 2200;
+
+  function splitChunkIntoLines(chunkText) {
+    const parts = chunkText.match(/[^.!?\n]+[.!?]+["')\]]*\s*|[^.!?\n]+\s*$/g) || [chunkText];
+    return parts.map(p => p.trim()).filter(Boolean);
+  }
+
   function renderInteractiveText(chunks) {
     if (!el.interactiveReadingBody) return;
     el.interactiveReadingBody.innerHTML = '';
     state.timelineWords = [];
     state.timelineSentences = [];
+    state.timelineLines = [];
+    state.wordIndexById = new Map();
     state.activeWordId = null;
+    state.activeWordIdx = -1;
     state.activeSentenceIdx = -1;
+    state.activeLineIdx = -1;
+    state.highlightClock = -1;
 
     const allWordsCount = chunks.reduce((acc, c) => acc + c.split(/\s+/).filter(Boolean).length, 0);
     const estTotalSec = Math.max(2, (allWordsCount / 150) * 60 / state.speed);
+    const perWordMode = allWordsCount <= READER_WORD_MODE_LIMIT;
+    state.readerPerWordMode = perWordMode;
 
+    const frag = document.createDocumentFragment();
     let cumulativeEstTime = 0;
 
     chunks.forEach((chunkText, sIdx) => {
       const sentenceDiv = document.createElement('div');
       sentenceDiv.className = 'reader-sentence';
-      sentenceDiv.setAttribute('data-sentence-idx', sIdx);
+      sentenceDiv.setAttribute('data-sentence-idx', String(sIdx));
+      sentenceDiv.setAttribute('data-start', cumulativeEstTime.toFixed(2));
 
       const words = chunkText.split(/\s+/).filter(Boolean);
       const sentenceWords = [];
       const sEstDur = (words.length / Math.max(1, allWordsCount)) * estTotalSec;
+      const chunkFirstWordIdx = state.timelineWords.length;
+      const wordFrag = document.createDocumentFragment();
+
+      // Long scripts: one block per sentence, so the active highlight is a
+      // readable phrase instead of a 900-character wall of text.
+      if (!perWordMode) {
+        let cursor = 0;
+        splitChunkIntoLines(chunkText).forEach((lineText) => {
+          const count = lineText.split(/\s+/).filter(Boolean).length;
+          if (!count) return;
+          const lineEl = document.createElement('div');
+          lineEl.className = 'reader-line';
+          lineEl.setAttribute('data-line-idx', String(state.timelineLines.length));
+          lineEl.textContent = lineText + ' ';
+          sentenceDiv.appendChild(lineEl);
+          state.timelineLines.push({
+            element: lineEl,
+            firstWordIdx: chunkFirstWordIdx + cursor,
+            lastWordIdx: chunkFirstWordIdx + cursor + count - 1,
+            chunkIdx: sIdx
+          });
+          cursor += count;
+        });
+      }
 
       words.forEach((wText, wIdx) => {
-        const wordId = `w_${sIdx}_${wIdx}`;
-        const wSpan = document.createElement('span');
-        wSpan.className = 'reader-word pending-alignment';
-        wSpan.setAttribute('data-word-id', wordId);
-        wSpan.setAttribute('data-sentence-idx', sIdx);
-        wSpan.textContent = wText + ' ';
-
-        // Provisional timing enables instant clickability before Whisper responds
+        const wordId = 'w_' + sIdx + '_' + wIdx;
         const wEstStart = cumulativeEstTime + (wIdx / words.length) * sEstDur;
         const wEstEnd = cumulativeEstTime + ((wIdx + 1) / words.length) * sEstDur;
 
@@ -2908,25 +3101,27 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           wordIdx: wIdx,
           globalStart: parseFloat(wEstStart.toFixed(2)),
           globalEnd: parseFloat(wEstEnd.toFixed(2)),
-          element: wSpan
+          element: null
         };
 
-        wSpan.setAttribute('data-start', wordObj.globalStart);
-        wSpan.setAttribute('data-end', wordObj.globalEnd);
-        wSpan.title = `▶ Jump to ~${fmtTime(wordObj.globalStart)}`;
+        if (perWordMode) {
+          const wSpan = document.createElement('span');
+          wSpan.className = 'reader-word pending-alignment';
+          wSpan.setAttribute('data-word-id', wordId);
+          wSpan.textContent = wText + ' ';
+          wordObj.element = wSpan;
+          wordFrag.appendChild(wSpan);
+        }
 
-        wSpan.addEventListener('click', (e) => {
-          e.stopPropagation();
-          handleWordClick(wordObj);
-        });
-
-        sentenceDiv.appendChild(wSpan);
         sentenceWords.push(wordObj);
         state.timelineWords.push(wordObj);
+        state.wordIndexById.set(wordId, wordObj);
       });
 
+      if (perWordMode) sentenceDiv.appendChild(wordFrag);
+
       cumulativeEstTime += sEstDur;
-      el.interactiveReadingBody.appendChild(sentenceDiv);
+      frag.appendChild(sentenceDiv);
 
       state.timelineSentences.push({
         idx: sIdx,
@@ -2939,8 +3134,31 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       });
     });
 
+    el.interactiveReadingBody.appendChild(frag);
+
+    if (!state.readerClickWired) {
+      state.readerClickWired = true;
+      el.interactiveReadingBody.addEventListener('click', (e) => {
+        const wordEl = e.target.closest('[data-word-id]');
+        if (wordEl) {
+          const wordObj = state.wordIndexById && state.wordIndexById.get(wordEl.getAttribute('data-word-id'));
+          if (wordObj) handleWordClick(wordObj);
+          return;
+        }
+        const sentEl = e.target.closest('.reader-sentence');
+        if (sentEl) {
+          const sIdx = parseInt(sentEl.getAttribute('data-sentence-idx'), 10);
+          const sentence = state.timelineSentences[sIdx];
+          if (sentence && sentence.words && sentence.words.length) {
+            handleWordClick(sentence.words[0]);
+          }
+        }
+      });
+    }
+
     if (el.ribbonSegmentsBadge) {
-      el.ribbonSegmentsBadge.textContent = `${chunks.length} ${chunks.length === 1 ? 'Sentence' : 'Sentences'} Initialized`;
+      const label = perWordMode ? 'Sentences' : 'Lines';
+      el.ribbonSegmentsBadge.textContent = chunks.length + ' ' + (chunks.length === 1 ? label.slice(0, -1) : label) + ' Initialized';
     }
   }
 
@@ -2965,7 +3183,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         state.audioElement.preservesPitch = true;
         state.audioElement.addEventListener('loadedmetadata', () => {
           state.audioElement.currentTime = seekTime;
-          state.audioElement.play().catch(e => console.warn('Word seek play error:', e));
+          playAudioSafe(state.audioElement, 'word seek');
           state.isPlaying = true;
           if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
           startSyncLoop();
@@ -2976,7 +3194,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       } else {
         state.audioElement.currentTime = seekTime;
         if (state.audioElement.paused) {
-          state.audioElement.play().catch(e => console.warn('Word seek play error:', e));
+          playAudioSafe(state.audioElement, 'word seek');
         }
         state.isPlaying = true;
         if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
@@ -3017,7 +3235,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           state.audioElement.preservesPitch = true;
           state.audioElement.addEventListener('loadedmetadata', () => {
             state.audioElement.currentTime = targetLocalTime;
-            state.audioElement.play().catch(e => console.warn('Chunk seek play error:', e));
+            playAudioSafe(state.audioElement, 'chunk seek');
             state.isPlaying = true;
             if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
             startSyncLoop();
@@ -3025,7 +3243,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         } else {
           state.audioElement.currentTime = targetLocalTime;
           if (state.audioElement.paused) {
-            state.audioElement.play().catch(e => console.warn('Chunk seek play error:', e));
+            playAudioSafe(state.audioElement, 'chunk seek');
           }
           state.isPlaying = true;
           if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
@@ -3042,7 +3260,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     // Single chunk fallback
     state.audioElement.currentTime = seekTime;
     if (state.audioElement.paused) {
-      state.audioElement.play().catch(e => console.warn('Word seek play error:', e));
+      playAudioSafe(state.audioElement, 'word seek');
     }
     state.isPlaying = true;
     if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
@@ -3238,80 +3456,125 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     el.interactiveReadingBody.addEventListener('wheel', onUserTouchScroll, { passive: true });
   }
 
+  // Binary search keeps highlighting O(log n). A 10k-word script used to scan
+  // the whole word list on every animation frame and lock the phone up.
+  function findWordIndexAt(curTime) {
+    const words = state.timelineWords;
+    let lo = 0;
+    let hi = words.length - 1;
+    let res = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const st = words[mid].globalStart;
+      if (st === null || st === undefined) return -1;
+      if (st <= curTime) {
+        res = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return res;
+  }
+
+  function paintWordState(wordObj, mode) {
+    if (!wordObj || !wordObj.element) return;
+    const cls = wordObj.element.classList;
+    cls.remove('active-word');
+    cls.remove('past-word');
+    if (mode === 'active') cls.add('active-word');
+    else if (mode === 'past') cls.add('past-word');
+  }
+
+  function findLineIndexAt(wordIdx) {
+    const lines = state.timelineLines;
+    if (!lines || lines.length === 0) return -1;
+    let lo = 0;
+    let hi = lines.length - 1;
+    let res = 0;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (lines[mid].firstWordIdx <= wordIdx) {
+        res = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return res;
+  }
+
+  function updateActiveLine(lineIdx) {
+    const lines = state.timelineLines;
+    if (!lines || lineIdx < 0 || lineIdx >= lines.length) return;
+    if (state.activeLineIdx === lineIdx) return;
+
+    if (state.activeLineIdx >= 0) {
+      const prev = lines[state.activeLineIdx];
+      if (prev && prev.element) prev.element.classList.remove('active-line');
+    }
+    state.activeLineIdx = lineIdx;
+
+    const line = lines[lineIdx];
+    if (line && line.element) {
+      line.element.classList.add('active-line');
+      if (state.isSyncStageVisible && !state.userScrollIntent) {
+        scrollWordIntoContainerView(line.element);
+      }
+    }
+  }
+
   function updateWordAndSentenceHighlight(curTime) {
-    if (!state.timelineWords || state.timelineWords.length === 0) return;
+    const words = state.timelineWords;
+    if (!words || words.length === 0) return;
 
-    let matchedWord = null;
-    for (let i = 0; i < state.timelineWords.length; i++) {
-      const w = state.timelineWords[i];
-      if (w.globalStart !== null && w.globalEnd !== null) {
-        if (curTime >= w.globalStart && curTime <= w.globalEnd + 0.04) {
-          matchedWord = w;
-          break;
-        }
-      }
-    }
+    // The sync loop runs at 60fps; word changes read fine at ~25fps
+    if (Math.abs(curTime - (state.highlightClock || 0)) < 0.04) return;
+    state.highlightClock = curTime;
 
-    if (!matchedWord) {
-      for (let i = 0; i < state.timelineWords.length; i++) {
-        const w = state.timelineWords[i];
-        if (w.globalStart !== null && curTime < w.globalStart) {
-          matchedWord = i > 0 ? state.timelineWords[i - 1] : state.timelineWords[0];
-          break;
-        }
-      }
-    }
+    const idx = findWordIndexAt(curTime);
+    if (idx < 0) return;
 
-    const lastWord = state.timelineWords[state.timelineWords.length - 1];
-    if (!matchedWord && lastWord && lastWord.globalEnd !== null && curTime > lastWord.globalEnd + 0.1) {
-      if (state.activeWordId) {
-        const prevEl = document.querySelector(`[data-word-id="${state.activeWordId}"]`);
-        if (prevEl) {
-          prevEl.classList.remove('active-word');
-          prevEl.classList.add('past-word');
+    const perWordMode = state.readerPerWordMode !== false;
+    const prevIdx = state.activeWordIdx;
+
+    if (perWordMode) {
+      const matchedWord = words[idx];
+      const isSeek = prevIdx < 0 || Math.abs(idx - prevIdx) > 3;
+
+      if (!isSeek && matchedWord.id === state.activeWordId) {
+        if (matchedWord.sentenceIdx !== state.activeSentenceIdx) {
+          updateActiveSentence(matchedWord.sentenceIdx);
         }
-        state.activeWordId = null;
-      }
-    } else if (matchedWord && matchedWord.id !== state.activeWordId) {
-      if (state.activeWordId) {
-        const prevEl = document.querySelector(`[data-word-id="${state.activeWordId}"]`);
-        if (prevEl) {
-          prevEl.classList.remove('active-word');
-          prevEl.classList.add('past-word');
-        }
+        return;
       }
 
+      if (isSeek) {
+        for (let i = 0; i < words.length; i++) {
+          if (words[i].element) paintWordState(words[i], i < idx ? 'past' : null);
+        }
+      } else if (prevIdx >= 0) {
+        paintWordState(words[prevIdx], 'past');
+      }
+
+      paintWordState(matchedWord, 'active');
+
+      state.activeWordIdx = idx;
       state.activeWordId = matchedWord.id;
-      if (matchedWord.element) {
-        matchedWord.element.classList.add('active-word');
-        matchedWord.element.classList.remove('past-word');
-
-        if (state.isSyncStageVisible && el.interactiveReadingBody && !state.userScrollIntent) {
-          scrollWordIntoContainerView(matchedWord.element);
-        }
-      }
 
       if (matchedWord.sentenceIdx !== state.activeSentenceIdx) {
-        if (state.activeSentenceIdx >= 0) {
-          const prevSent = document.querySelector(`.reader-sentence[data-sentence-idx="${state.activeSentenceIdx}"]`);
-          if (prevSent) prevSent.classList.remove('active-sentence');
-        }
-        state.activeSentenceIdx = matchedWord.sentenceIdx;
-        const curSent = document.querySelector(`.reader-sentence[data-sentence-idx="${state.activeSentenceIdx}"]`);
-        if (curSent) curSent.classList.add('active-sentence');
+        updateActiveSentence(matchedWord.sentenceIdx);
       }
+
+      if (matchedWord.element && state.isSyncStageVisible && el.interactiveReadingBody && !state.userScrollIntent) {
+        scrollWordIntoContainerView(matchedWord.element);
+      }
+      return;
     }
 
-    // Past / Upcoming word status
-    state.timelineWords.forEach(w => {
-      if (w.element && w.id !== state.activeWordId) {
-        if (w.globalEnd !== null && curTime > w.globalEnd) {
-          w.element.classList.add('past-word');
-        } else {
-          w.element.classList.remove('past-word');
-        }
-      }
-    });
+    // Long-script mode: highlight the sentence the current word belongs to
+    state.activeWordIdx = idx;
+    updateActiveLine(findLineIndexAt(idx));
   }
 
   function updateRibbonPlayhead(curTime) {
@@ -3477,7 +3740,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     }
   }
 
-  // --- Smart Clause Splitter for Instant Sub-Second TTFA ---
+  // --- Smart Progressive Ramp Clause Splitter for Instant Sub-Second TTFA & Gapless Streaming ---
   function segmentTextIntoChunks(text, targetLen = 600) {
     const trimmed = text.trim();
     if (!trimmed) return [];
@@ -3509,17 +3772,17 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       // Look for early clause boundary (, ; : — -- - ) within the first 14 to 70 chars
       const earlySub = trimmed.slice(0, 80);
       const clauseMatch = earlySub.match(/^([^,;:—–\n]+[,;:—–])\s*/);
-      if (clauseMatch && clauseMatch[1].trim().length >= 14 && clauseMatch[1].trim().length <= (isGroq ? 60 : 70)) {
+      if (clauseMatch && clauseMatch[1].trim().length >= 14 && clauseMatch[1].trim().length <= (isGroq ? 55 : 65)) {
         chunk0 = clauseMatch[1].trim();
         restText = trimmed.slice(clauseMatch[0].length).trim();
       } else {
         // Fallback: natural word boundary around 28-48 chars
         const words = trimmed.split(/\s+/);
-        if (words.length > 5) {
+        if (words.length > 4) {
           let acc = '';
           let wordIdx = 0;
           for (let w of words) {
-            if ((acc + ' ' + w).trim().length > (isGroq ? 35 : 45) && acc.length >= 20) {
+            if ((acc + ' ' + w).trim().length > (isGroq ? 35 : 48) && acc.length >= 20) {
               break;
             }
             acc = (acc + ' ' + w).trim();
@@ -3537,9 +3800,21 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
     chunk0 = chunk0.trim().replace(/^[,;:—–\s]+/, '');
     const chunks = [chunk0];
-    if (!restText) return chunks;
+    if (!restText) return chunks.filter(c => c && c.trim().length > 0);
 
-    // 2. Segment remaining text into natural sentences/clauses
+    // 2. Progressive Ramp Table:
+    // Chunk 0: 40-55 chars (Instant Launchpad: TTFA < 800ms, plays ~2.5s)
+    // Chunk 1: 160-220 chars (Bridge Ramp: synthesizes in ~1s, arrives before Chunk 0 finishes!)
+    // Chunk 2: 350-450 chars (Expansion Ramp: synthesizes in ~1.8s, arrives while Chunk 1 plays)
+    // Chunk 3+: Steady-State targetLen (Cruising: arrives with 20s+ buffer cushion)
+    function getTargetLength(chunkIdx) {
+      if (isGroq) return chunkIdx <= 1 ? 120 : 160;
+      if (chunkIdx === 1) return 190;
+      if (chunkIdx === 2) return 420;
+      return targetLen;
+    }
+
+    // 3. Segment remaining text into natural sentences/clauses
     const sentenceRegex = /[^.!?\n]+(?:[.!?\n]+|$)/g;
     const rawSentences = (restText.match(sentenceRegex) || [restText])
       .map(s => s.trim())
@@ -3566,12 +3841,14 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
     let cur = '';
     for (let s of rawSentences) {
-      if (s.length > targetLen) {
+      let activeTarget = getTargetLength(chunks.length);
+      if (s.length > activeTarget) {
         if (cur) {
           chunks.push(cur.replace(/^[,;:—–\s]+/, ''));
           cur = '';
         }
-        const subs = splitLongSentence(s, targetLen);
+        activeTarget = getTargetLength(chunks.length);
+        const subs = splitLongSentence(s, activeTarget);
         for (let sub of subs) {
           if (sub) chunks.push(sub);
         }
@@ -3580,7 +3857,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
       if (!cur) {
         cur = s;
-      } else if ((cur + ' ' + s).length <= targetLen) {
+      } else if ((cur + ' ' + s).length <= activeTarget) {
         cur += ' ' + s;
       } else {
         chunks.push(cur.replace(/^[,;:—–\s]+/, ''));
@@ -3590,6 +3867,88 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     if (cur) chunks.push(cur.replace(/^[,;:—–\s]+/, ''));
 
     return chunks.filter(c => c && c.trim().length > 0);
+  }
+
+  // A blocked autoplay used to leave the UI claiming "playing" while the audio
+  // sat paused. Start playback through this so the state always matches reality.
+  function playAudioSafe(audio, label) {
+    if (!audio) return;
+    const attempt = audio.play();
+    if (!attempt || typeof attempt.catch !== 'function') return;
+    attempt.catch((err) => {
+      if (err && err.name === 'NotAllowedError') {
+        state.isPlaying = false;
+        if (el.dockBtnPlay) {
+          el.dockBtnPlay.classList.remove('playing');
+          el.dockBtnPlay.classList.add('needs-tap');
+        }
+        const pi = document.getElementById('play-pause-icon');
+        if (pi) pi.textContent = 'play_arrow';
+        stopSyncLoop();
+        showToast('Tap play to start the audio — this browser blocks autoplay', 'info', 3600);
+      } else {
+        console.warn('[Audio] play error' + (label ? ' (' + label + ')' : '') + ':', err && err.message);
+      }
+    });
+  }
+
+  // Bounded Whisper alignment: a 40-chunk script used to fire 40 parallel
+  // uploads, which stalls the phone radio and keeps every chunk blob alive.
+  const alignmentQueue = [];
+  let alignInFlight = 0;
+  const ALIGN_MAX_CONCURRENT = 2;
+
+  function enqueueAlignment(task) {
+    alignmentQueue.push(task);
+    pumpAlignments();
+  }
+
+  function pumpAlignments() {
+    while (alignInFlight < ALIGN_MAX_CONCURRENT && alignmentQueue.length) {
+      const task = alignmentQueue.shift();
+      alignInFlight++;
+      Promise.resolve()
+        .then(task)
+        .catch((err) => console.warn('[Align] task note:', err && err.message))
+        .finally(() => {
+          alignInFlight--;
+          pumpAlignments();
+        });
+    }
+  }
+
+  // One reusable element instead of a new Audio() per chunk (which leaked a
+  // media element and a decoder per chunk on long scripts).
+  function preloadChunkAudio(url) {
+    try {
+      if (!state.preloadAudio) {
+        state.preloadAudio = new Audio();
+        state.preloadAudio.preload = 'auto';
+        state.preloadAudio.muted = true;
+      }
+      state.preloadAudio.src = url;
+      state.preloadAudio.load();
+    } catch (_) { /* preload is best-effort */ }
+  }
+
+  function showGenProgress(total, stage) {
+    if (!el.genProgress) return;
+    el.genProgress.classList.add('is-active');
+    if (el.genProgressFill) el.genProgressFill.style.width = '0%';
+    if (el.genProgressCount) el.genProgressCount.textContent = '0 / ' + total;
+    if (el.genProgressStage) el.genProgressStage.textContent = stage || 'Starting';
+  }
+
+  function updateGenProgress(done, total, stage) {
+    if (!el.genProgress) return;
+    const pct = total > 0 ? Math.max(2, Math.min(100, (done / total) * 100)) : 0;
+    if (el.genProgressFill) el.genProgressFill.style.width = pct.toFixed(1) + '%';
+    if (el.genProgressCount) el.genProgressCount.textContent = done + ' / ' + total;
+    if (stage && el.genProgressStage) el.genProgressStage.textContent = stage;
+  }
+
+  function hideGenProgress() {
+    if (el.genProgress) el.genProgress.classList.remove('is-active');
   }
 
   async function fetchTtsChunk(chunkText, signal) {
@@ -3694,6 +4053,21 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     state.currentAbortController = abortController;
     const signal = abortController.signal;
 
+    // Release the previous run's audio before allocating a new one — on a
+    // phone this is the difference between a smooth second run and a crash.
+    try {
+      if (state.playbackQueue && Array.isArray(state.playbackQueue.chunks)) {
+        state.playbackQueue.chunks.forEach(c => { if (c && c.url) URL.revokeObjectURL(c.url); });
+      }
+      if (state.continuousMasterUrl) {
+        URL.revokeObjectURL(state.continuousMasterUrl);
+        state.continuousMasterUrl = null;
+      }
+    } catch (_) { /* ignore */ }
+
+    state.continuousMasterBlob = null;
+    state.masterDeferred = false;
+
     el.btnMainGenerate.disabled = true;
     el.btnMainGenerate.classList.add('loading');
     el.btnMainGenerate.setAttribute('aria-busy', 'true');
@@ -3704,6 +4078,8 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     const t0 = performance.now();
     const chunks = segmentTextIntoChunks(text);
     const totalChunks = chunks.length;
+
+    if (totalChunks > 1) showGenProgress(totalChunks, 'Streaming speech');
 
     // Switch to interactive reading stage and initialize words immediately
     switchToSyncStage();
@@ -3778,6 +4154,8 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
           state.playbackQueue.chunks[idx] = chunkItem;
           state.playbackQueue.completedChunksCount++;
+          updateGenProgress(state.playbackQueue.completedChunksCount, totalChunks,
+            state.playbackQueue.completedChunksCount >= totalChunks ? 'Buffered' : 'Streaming speech');
 
           // First chunk arrival: instant playback on native HTMLAudioElement with preserved pitch!
           if (idx === 0) {
@@ -3829,7 +4207,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
             state.playbackQueue.isPlayingQueue = totalChunks > 1;
 
             if (state.autoPlay) {
-              state.audioElement.play().catch(e => console.warn('Play error:', e));
+              playAudioSafe(state.audioElement, 'first chunk');
               state.isPlaying = true;
               el.dockBtnPlay.classList.add('playing');
               startSyncLoop();
@@ -3838,20 +4216,37 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
             // Audio was waiting for this chunk!
             state.playbackQueue.waitingForChunk = -1;
             state.playbackQueue.currentIndex = idx;
-            state.playbackQueue.currentChunkOffset = chunkGlobalOffset;
+
+            // Safe offset accumulation
+            let offsetSum = 0;
+            for (let k = 0; k < idx; k++) {
+              const ch = state.playbackQueue.chunks[k];
+              offsetSum += (ch && ch.duration) || 0;
+            }
+            state.playbackQueue.currentChunkOffset = offsetSum;
+
             state.audioElement.src = chunkUrl;
             state.audioElement.playbackRate = state.speed;
             state.audioElement.preservesPitch = true;
             state.audioElement.currentTime = 0;
-            state.audioElement.play().catch(e => console.warn('Chunk play error:', e));
+            playAudioSafe(state.audioElement, 'resume chunk');
+
+            state.isPlaying = true;
+            if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
+            const pi = document.getElementById('play-pause-icon');
+            if (pi) pi.textContent = 'pause';
+            startSyncLoop();
           }
+
+          // Keep the next segment warm for a gapless hand-off
+          preloadChunkAudio(chunkUrl);
 
           if (el.ribbonSegmentsBadge) {
             el.ribbonSegmentsBadge.textContent = `${state.playbackQueue.completedChunksCount} of ${totalChunks} Buffered (${state.continuousDuration.toFixed(1)}s)`;
           }
 
-          // Fire parallel Whisper word-level alignment (non-blocking)
-          alignChunkWithWhisper(chunkBlob, chunks[idx], chunkGlobalOffset, idx, signal);
+          // Word-level alignment, queued so long scripts never flood the radio
+          enqueueAlignment(() => alignChunkWithWhisper(chunkBlob, chunks[idx], chunkGlobalOffset, idx, signal));
 
         } catch (err) {
           if (err.name === 'AbortError' || signal.aborted) {
@@ -3862,6 +4257,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           // Non-blocking recovery: mark chunk as skipped so queue playback is NEVER stalled or hung
           state.playbackQueue.chunks[idx] = { skipped: true, duration: 0.1, offset: state.continuousDuration };
           state.playbackQueue.completedChunksCount++;
+          updateGenProgress(state.playbackQueue.completedChunksCount, totalChunks, 'Skipped a failed segment');
 
           // If playback was actively waiting for this failed chunk, advance immediately
           if (state.playbackQueue.waitingForChunk === idx) {
@@ -3869,14 +4265,29 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
             // Advance to next available chunk
             for (let nextIdx = idx + 1; nextIdx < totalChunks; nextIdx++) {
               const nextChunk = state.playbackQueue.chunks[nextIdx];
-              if (nextChunk && !nextChunk.skipped) {
+              if (nextChunk && !nextChunk.skipped && nextChunk.url) {
                 state.playbackQueue.currentIndex = nextIdx;
-                state.playbackQueue.currentChunkOffset = nextChunk.offset;
+                let offsetSum = 0;
+                for (let k = 0; k < nextIdx; k++) {
+                  const ch = state.playbackQueue.chunks[k];
+                  offsetSum += (ch && ch.duration) || 0;
+                }
+                state.playbackQueue.currentChunkOffset = offsetSum;
                 state.audioElement.src = nextChunk.url;
                 state.audioElement.playbackRate = state.speed;
                 state.audioElement.preservesPitch = true;
                 state.audioElement.currentTime = 0;
-                state.audioElement.play().catch(e => console.warn('Next chunk play error:', e));
+                playAudioSafe(state.audioElement, 'next chunk');
+                state.isPlaying = true;
+                if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
+                const pi = document.getElementById('play-pause-icon');
+                if (pi) pi.textContent = 'pause';
+                startSyncLoop();
+                break;
+              } else if (!nextChunk) {
+                // Next chunk is in flight, wait for it
+                state.playbackQueue.waitingForChunk = nextIdx;
+                state.playbackQueue.currentIndex = nextIdx;
                 break;
               }
             }
@@ -3898,8 +4309,37 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         if (signal.aborted || state.playbackQueue.generationId !== currentGenId) return;
 
         const allBlobs = state.playbackQueue.chunks.map(c => c && c.blob).filter(Boolean);
-        const masterBlob = await combineAudioBlobs(allBlobs);
+        const totalBytes = allBlobs.reduce((acc, b) => acc + (b.size || 0), 0);
+        const isWavMaster = allBlobs.length > 0 && /wav|pcm/i.test(allBlobs[0].type || '');
+
+        // Merging WAV in the browser means holding every PCM chunk in JS memory
+        // at once (~2 MB per spoken minute). Above this budget we keep the
+        // per-segment playback queue and only merge if a download is requested.
+        const deferredMaster = isWavMaster && totalBytes > 48 * 1024 * 1024;
+        const masterBlob = deferredMaster ? null : await combineAudioBlobs(allBlobs);
+        state.masterDeferred = deferredMaster;
         if (signal.aborted || state.playbackQueue.generationId !== currentGenId) return;
+
+        if (deferredMaster) {
+          hideGenProgress();
+          showToast('Long script buffered — segments play continuously; the download button packs them on demand', 'info', 4200);
+          if (el.ribbonSegmentsBadge) {
+            el.ribbonSegmentsBadge.textContent = state.playbackQueue.completedChunksCount + ' of ' + totalChunks + ' Buffered (' + state.continuousDuration.toFixed(1) + 's)';
+          }
+          if (el.interactiveStatusLabel) {
+            el.interactiveStatusLabel.textContent = 'Speech Complete · Tap a word to jump';
+          }
+          el.btnMainGenerate.disabled = false;
+          el.btnMainGenerate.classList.remove('loading');
+          el.btnMainGenerate.removeAttribute('aria-busy');
+          el.labelGenerate.textContent = 'Generate Speech';
+          if (el.btnCancelGenerate) el.btnCancelGenerate.classList.add('hidden');
+          if (el.btnStageCancel) el.btnStageCancel.classList.add('hidden');
+          state.currentAbortController = null;
+          return;
+        }
+
+        hideGenProgress();
 
         const masterUrl = URL.createObjectURL(masterBlob);
         state.continuousMasterBlob = masterBlob;
@@ -4026,6 +4466,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
     audio.addEventListener('play', () => {
       state.isPlaying = true;
+      el.dockBtnPlay.classList.remove('needs-tap');
       el.dockBtnPlay.classList.add('playing');
       const pi = document.getElementById('play-pause-icon');
       if (pi) pi.textContent = 'pause';
@@ -4045,35 +4486,70 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     audio.addEventListener('ended', () => {
       // If progressive streaming queue is active, advance to next chunk
       if (state.playbackQueue && state.playbackQueue.isPlayingQueue) {
-        const nextIdx = state.playbackQueue.currentIndex + 1;
-        if (nextIdx < state.playbackQueue.chunks.length) {
-          state.playbackQueue.currentIndex = nextIdx;
+        let nextIdx = state.playbackQueue.currentIndex + 1;
+
+        // Skip any slots marked as skipped/failed
+        while (nextIdx < state.playbackQueue.totalExpected) {
+          const slot = state.playbackQueue.chunks[nextIdx];
+          if (slot && slot.skipped) {
+            nextIdx++;
+          } else {
+            break;
+          }
+        }
+
+        if (nextIdx < state.playbackQueue.totalExpected) {
           const nextChunk = state.playbackQueue.chunks[nextIdx];
 
-          // Accumulate offsets
-          let offsetSum = 0;
-          for (let k = 0; k < nextIdx; k++) {
-            offsetSum += state.playbackQueue.chunks[k].duration || 0;
-          }
-          state.playbackQueue.currentChunkOffset = offsetSum;
+          if (nextChunk && nextChunk.url) {
+            // Next chunk is already buffered and ready!
+            state.playbackQueue.currentIndex = nextIdx;
+            state.playbackQueue.waitingForChunk = -1;
 
-          audio.src = nextChunk.url;
-          audio.playbackRate = state.speed;
-          audio.preservesPitch = true;
-          audio.play().catch(e => console.warn('Next chunk play error:', e));
-          return;
-        } else if (nextIdx < state.playbackQueue.totalExpected) {
-          // Waiting for next chunk to buffer
-          state.playbackQueue.waitingForChunk = nextIdx;
-          return;
+            // Safe offset accumulation
+            let offsetSum = 0;
+            for (let k = 0; k < nextIdx; k++) {
+              const ch = state.playbackQueue.chunks[k];
+              offsetSum += (ch && ch.duration) || 0;
+            }
+            state.playbackQueue.currentChunkOffset = offsetSum;
+
+            audio.src = nextChunk.url;
+            audio.playbackRate = state.speed;
+            audio.preservesPitch = true;
+            audio.currentTime = 0;
+            playAudioSafe(audio, 'queue advance');
+
+            state.isPlaying = true;
+            if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
+            const pi = document.getElementById('play-pause-icon');
+            if (pi) pi.textContent = 'pause';
+            startSyncLoop();
+            return;
+          } else {
+            // Next chunk is still buffering / in flight!
+            state.playbackQueue.waitingForChunk = nextIdx;
+            state.playbackQueue.currentIndex = nextIdx;
+
+            if (el.ribbonSegmentsBadge) {
+              el.ribbonSegmentsBadge.textContent = `Buffering section ${nextIdx + 1} of ${state.playbackQueue.totalExpected}...`;
+            }
+
+            state.isPlaying = true;
+            if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
+            const pi = document.getElementById('play-pause-icon');
+            if (pi) pi.textContent = 'pause';
+            return;
+          }
         } else {
           // Finished playing all chunks!
           state.playbackQueue.isPlayingQueue = false;
+          state.playbackQueue.waitingForChunk = -1;
           if (state.continuousMasterUrl) {
             state.currentUrl = state.continuousMasterUrl;
             audio.src = state.continuousMasterUrl;
             audio.currentTime = 0;
-            state.duration = audio.duration;
+            state.duration = state.continuousDuration || audio.duration;
           }
         }
       }
@@ -4104,7 +4580,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         }
         audio.playbackRate = state.speed;
         audio.preservesPitch = true;
-        audio.play().catch(e => console.warn('Play error:', e));
+        playAudioSafe(audio, 'player');
       } else {
         audio.pause();
       }
@@ -4166,7 +4642,30 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     el.playerTimeDisplay.textContent = `${fmtTime(cur)} / ${fmtTime(total)}`;
   }
 
-  function downloadCurrentAudio() {
+  async function ensureMasterBlob() {
+    if (state.continuousMasterBlob) return state.continuousMasterBlob;
+    const chunks = (state.playbackQueue && state.playbackQueue.chunks) || [];
+    const blobs = chunks.map(c => c && c.blob).filter(Boolean);
+    if (blobs.length === 0) return state.currentBlob || null;
+    const totalBytes = blobs.reduce((acc, b) => acc + (b.size || 0), 0);
+    if (totalBytes > 140 * 1024 * 1024) return null;
+    const master = await combineAudioBlobs(blobs);
+    if (master) {
+      state.continuousMasterBlob = master;
+      state.currentBlob = master;
+    }
+    return master;
+  }
+
+  async function downloadCurrentAudio() {
+    if (state.masterDeferred && !state.continuousMasterBlob) {
+      showToast('Packing segments into one file…', 'info', 2600);
+      const packed = await ensureMasterBlob();
+      if (!packed) {
+        showToast('This script is too long for a single file on this device — generate it in two parts', true, 5200);
+        return;
+      }
+    }
     if (!state.currentBlob) return;
     const url = URL.createObjectURL(state.currentBlob);
     const a = document.createElement('a');

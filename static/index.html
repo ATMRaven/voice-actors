@@ -82,6 +82,7 @@
   <link rel="stylesheet" href="styles.css">
   <!-- UI/UX overhaul layer (additive; loads after the base system) -->
   <link rel="stylesheet" href="styles-overhaul.css">
+  <link rel="stylesheet" href="mobile.css">
 </head>
 
 <body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-surface-variant selection:text-primary font-body antialiased">
@@ -324,11 +325,18 @@
               <span class="hidden md:inline-block font-mono text-[9.5px] px-1.5 py-0.5 rounded bg-black/40 text-outline border border-white/[0.06]">Ctrl+V</span>
             </button>
 
-            <!-- Prominent Paste & Replace Button -->
+            <!-- Paste & Replace Button -->
             <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary border border-white/[0.06] hover:border-white/[0.14] text-xs font-medium transition-all active:scale-95 cursor-pointer" id="btn-paste" type="button" title="Paste clipboard content and replace existing text">
               <span class="material-symbols-outlined text-[15px]">content_paste</span>
               <span>Paste</span>
             </button>
+
+            <!-- Load a long script from a text file (phone-friendly) -->
+            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary border border-white/[0.06] hover:border-white/[0.14] text-xs font-medium transition-all active:scale-95 cursor-pointer" id="btn-load-file" type="button" title="Load a .txt or .md script from this device">
+              <span class="material-symbols-outlined text-[15px]">upload_file</span>
+              <span>Load file</span>
+            </button>
+            <input class="hidden" id="input-script-file" type="file" accept=".txt,.md,.markdown,.csv,.srt,.vtt,text/plain,text/markdown" />
 
             <!-- Clear Script Button -->
             <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-outline hover:text-error hover:bg-error/10 text-xs font-mono uppercase tracking-wider transition-all cursor-pointer" id="btn-clear" type="button" title="Clear script">
@@ -416,6 +424,15 @@
 
       <!-- Primary Generation CTA (Directly visible on Desktop without scrolling) -->
       <div class="flex flex-col gap-2 pt-1 mb-4" id="cta-generate-zone">
+        <!-- Streaming progress for long scripts -->
+        <div id="gen-progress" aria-hidden="true">
+          <div id="gen-progress__track"><div id="gen-progress__fill"></div></div>
+          <div id="gen-progress__label">
+            <span id="gen-progress__stage">Preparing</span>
+            <span id="gen-progress__count">0 / 0</span>
+          </div>
+        </div>
+
         <button class="vx-generate w-full h-12 rounded-full bg-primary text-on-primary flex items-center justify-center gap-2 shadow-[0_12px_28px_-6px_rgba(255,255,255,0.18)] hover:bg-primary-container active:scale-[0.98] transition-all duration-150 font-medium text-base tracking-tight cursor-pointer" id="btn-main-generate" type="button">
           <span class="vx-generate__spinner" id="generate-spinner" aria-hidden="true"></span>
           <span class="material-symbols-outlined text-[20px]" id="generate-icon">graphic_eq</span>
