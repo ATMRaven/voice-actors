@@ -3,10 +3,10 @@
   "versionName": "1.1.0",
   "versionCode": 10100,
   "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
-  "sha256": "",
-  "sizeBytes": 0,
+  "sha256": "4201859247fec0d8efc72603aa2dc9be41f0b2e4b076ac8299cfe6c0ef7e263d",
+  "sizeBytes": 9764852,
   "minSupportedVersionCode": 1,
   "mandatory": false,
-  "releaseNotes": "v1.1.0 mobile overhaul: pinned Generate bar, 2x2 script toolbar, file import for long scripts (.txt/.md/.srt with timecode stripping), sentence-level karaoke reader with auto-scroll, gapless segment playback fixed in the Android WebView, bounded alignment requests, and memory-safe handling of very long scripts.",
-  "publishedAt": "2026-10-26T17:39:48Z"
+  "releaseNotes": "v1.1.0 mobile rebuild: long scripts now play start-to-finish in the app. Pinned Generate bar, tidier script tools, file import for .txt/.md/.srt, sentence-level karaoke with auto-scroll, memory-safe handling of hour-long text.",
+  "publishedAt": "2026-10-26T17:45:11Z"
 }
