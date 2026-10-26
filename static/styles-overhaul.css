@@ -380,24 +380,8 @@ body.theme-light {
 }
 
 /* =====================================================================
-   3. STUDIO — presets scroll affordance, generate button feedback
+   3. STUDIO — generate button feedback
    ===================================================================== */
-
-/* Preset row: signal that it scrolls. The old row silently truncated
-   "Podcast" with no hint anything was hidden. */
-.vx-presets {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent 100%);
-  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent 100%);
-}
-
-.vx-presets::-webkit-scrollbar { display: none; }
-
-.vx-presets[data-at-end="true"] {
-  -webkit-mask-image: none;
-  mask-image: none;
-}
 
 /* --- Primary Generate button --- */
 .vx-generate {
@@ -521,7 +505,6 @@ body.theme-light {
 
 /* === PERSONAL STUDIO RESPONSIVE LAYOUT RULES === */
 @media (min-width: 768px) {
-  .presets-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
   .vault-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
   .favorites-strip { flex-wrap: wrap; overflow-x: visible; }
   .command-palette { padding-top: 96px; }
@@ -529,14 +512,12 @@ body.theme-light {
 }
 
 @media (min-width: 1280px) {
-  .presets-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
   .vault-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
   .favorites-strip { flex-wrap: nowrap; }
 }
 
 @media (max-width: 767px) {
   .archive-item-actions { flex-direction: row; }
-  .presets-header { flex-wrap: wrap; }
 }
 
 

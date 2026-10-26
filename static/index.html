@@ -346,17 +346,6 @@
           </div>
         </div>
 
-        <!-- 1-Click Presets. The old row silently truncated ("Podcas") with no
-             hint that more existed; it now fades at the edge to signal scroll. -->
-        <div class="vx-presets flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-1" id="presets-quick-bar">
-          <span class="font-mono text-[10px] uppercase tracking-wider text-outline/80 shrink-0 mr-1">Presets</span>
-          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Welcome to Voice Actors Neural Studio. Experience high-fidelity acoustic speech synthesis across eight state-of-the-art providers." type="button">Welcome</button>
-          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="In the quiet corners of deep space, silence is the canvas upon which cosmic light writes its timeless symphony." type="button">Cosmic</button>
-          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Thank you for calling customer support. Your account verification has been processed successfully. How may I assist you today?" type="button">Support</button>
-          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="Hey everyone, welcome back to the channel. Today we are exploring the frontiers of real-time edge speech models." type="button">Podcast</button>
-          <button class="preset-pill px-2.5 py-1 rounded-full text-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary transition-all whitespace-nowrap border border-white/[0.04] cursor-pointer" data-text="أهلاً بكم في استوديو فويس أكتورز لتوليد الصوت بالذكاء الاصطناعي بنقاء فائق وتزامن حي." type="button" lang="ar">Arabic</button>
-        </div>
-
         <button class="hidden" id="btn-samples-menu" type="button"></button>
         <div class="hidden" id="samples-popover"></div>
 
@@ -377,25 +366,6 @@
           </div>
         </div>
       </div>
-
-      <section id="presets-manager" class="presets-manager" aria-label="Script presets">
-        <div class="presets-header">
-          <h2 class="presets-title">Script presets</h2>
-          <button type="button" id="preset-add-toggle" class="btn-secondary">Add preset</button>
-        </div>
-        <form id="preset-form" class="preset-form" novalidate hidden>
-          <label class="field-label" for="preset-name">Preset name</label>
-          <input id="preset-name" class="input" type="text" maxlength="60" required />
-          <label class="field-label" for="preset-text">Preset text</label>
-          <textarea id="preset-text" class="input" rows="4" maxlength="4000" required></textarea>
-          <p id="preset-error" class="field-error" hidden></p>
-          <div class="preset-form-actions">
-            <button type="submit" class="btn-primary">Save preset</button>
-            <button type="button" id="preset-cancel" class="btn-secondary">Cancel</button>
-          </div>
-        </form>
-        <div id="presets-list" class="presets-list"></div>
-      </section>
 
       <!-- Fine Audio Controls (Speed Slider & Cadence) -->
       <div class="p-4 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] space-y-3">

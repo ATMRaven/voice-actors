@@ -1,6 +1,5 @@
 import { putAudio, listAudio } from './js/db.js';
 import { buildFilename, extFromMime } from './js/filename.js';
-import { listPresets, addPreset, removePreset, getPreset } from './js/presets.js';
 import { readFavorites, toggleFavorite, renderFavorites, isFavorite } from './js/favorites.js';
 import { initPalette, openPalette, closePalette, isPaletteOpen } from './js/palette.js';
 import { initKeys } from './js/keys.js';
@@ -291,7 +290,6 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     genProgressFill: document.getElementById('gen-progress__fill'),
     genProgressStage: document.getElementById('gen-progress__stage'),
     genProgressCount: document.getElementById('gen-progress__count'),
-    presetPills: document.querySelectorAll('.preset-pill'),
     statWords: document.getElementById('stat-words'),
     statChars: document.getElementById('stat-chars'),
     statDuration: document.getElementById('stat-duration'),
@@ -494,18 +492,6 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       document.body.classList.add('vx-mac');
       const kbd = document.getElementById('generate-kbd');
       if (kbd) kbd.textContent = '⌘ ↵';
-    }
-
-    // Preset row: drop the scroll fade once the end is reached
-    const bar = document.getElementById('presets-quick-bar');
-    if (bar) {
-      const syncFade = () => {
-        const atEnd = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 2;
-        bar.dataset.atEnd = atEnd ? 'true' : 'false';
-      };
-      bar.addEventListener('scroll', syncFade, { passive: true });
-      window.addEventListener('resize', syncFade);
-      syncFade();
     }
   }
 
@@ -1219,16 +1205,6 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       });
     }
 
-    document.querySelectorAll('.preset-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        const text = pill.getAttribute('data-text');
-        if (text && el.textInput) {
-          el.textInput.value = text;
-          updateCanvasMetrics();
-          el.textInput.focus();
-        }
-      });
-    });
   }
 
   function updateCanvasMetrics() {
@@ -5540,97 +5516,6 @@ function selectVoice(voiceId) {
   renderFavorites(document.getElementById('favorites-strip'), studioState.voices, voiceId, selectVoice);
 }
 
-function renderPresets() {
-  const container = document.getElementById('presets-list');
-  if (!container) return;
-  container.innerHTML = '';
-  for (const preset of listPresets()) {
-    const card = document.createElement('article');
-    card.className = 'preset-card';
-    card.dataset.presetId = preset.id;
-    card.tabIndex = 0;
-
-    const name = document.createElement('h3');
-    name.className = 'preset-card-name';
-    name.title = preset.name;
-    name.textContent = preset.name;
-
-    const preview = document.createElement('p');
-    preview.className = 'preset-card-preview';
-    preview.title = preset.text;
-    preview.textContent = preset.text;
-
-    card.appendChild(name);
-    card.appendChild(preview);
-
-    if (!preset.builtin) {
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'icon-button preset-card-delete';
-      del.setAttribute('aria-label', `Delete preset ${preset.name}`);
-      del.textContent = '×';
-      del.addEventListener('click', (event) => {
-        event.stopPropagation();
-        removePreset(preset.id);
-        renderPresets();
-      });
-      card.appendChild(del);
-    }
-
-    card.addEventListener('click', () => {
-      const textarea = document.getElementById('script-input') || document.querySelector('textarea');
-      if (textarea) textarea.value = preset.text;
-    });
-    card.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        card.click();
-      }
-    });
-
-    container.appendChild(card);
-  }
-}
-
-function wirePresetForm() {
-  const toggle = document.getElementById('preset-add-toggle');
-  const form = document.getElementById('preset-form');
-  const cancel = document.getElementById('preset-cancel');
-  const errorEl = document.getElementById('preset-error');
-  if (!toggle || !form) return;
-
-  toggle.addEventListener('click', () => {
-    form.hidden = !form.hidden;
-    if (!form.hidden) document.getElementById('preset-name').focus();
-  });
-
-  if (cancel) {
-    cancel.addEventListener('click', () => {
-      form.hidden = true;
-      if (errorEl) errorEl.hidden = true;
-    });
-  }
-
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const name = document.getElementById('preset-name').value;
-    const text = document.getElementById('preset-text').value;
-    try {
-      addPreset(name, text);
-      form.reset();
-      form.hidden = true;
-      if (errorEl) errorEl.hidden = true;
-      renderPresets();
-      showToast('Preset saved', false);
-    } catch (err) {
-      if (errorEl) {
-        errorEl.textContent = err.message;
-        errorEl.hidden = false;
-      }
-    }
-  });
-}
-
 async function refreshEngineStatus() {
   const el = document.getElementById('engine-status');
   if (!el) return;
@@ -5686,15 +5571,12 @@ window.__nas = {
   captureGeneratedAudio,
   showToast,
   selectVoice,
-  renderPresets,
   refreshEngineStatus
 };
 
 async function boot() {
   await loadVoices();
   renderFavorites(document.getElementById('favorites-strip'), studioState.voices, studioState.currentVoiceId, selectVoice);
-  renderPresets();
-  wirePresetForm();
   wireFavoriteToggle();
   await renderVault(document.getElementById('vault-list'));
   await refreshEngineStatus();
@@ -5714,10 +5596,7 @@ async function boot() {
       if (studioState.lastAudioId) download(studioState.lastAudioId);
       else showToast('Nothing to download yet', true);
     },
-    onEscape: () => {
-      const form = document.getElementById('preset-form');
-      if (form && !form.hidden) form.hidden = true;
-    }
+    onEscape: () => {}
   });
 }
 

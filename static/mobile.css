@@ -296,19 +296,6 @@ html {
     font-size: 11px;
   }
 
-  #presets-quick-bar {
-    gap: 6px;
-    padding-bottom: 8px;
-    margin-bottom: 0;
-    scroll-snap-type: x proximity;
-  }
-
-  #presets-quick-bar > button {
-    scroll-snap-align: start;
-    min-height: 30px;
-    font-size: 11.5px;
-  }
-
   /* A script field that behaves like a field, not a black hole */
   #text-input {
     min-height: 132px !important;
@@ -328,32 +315,6 @@ html {
   #textarea-stage > div:last-child span {
     font-size: 9.5px;
     letter-spacing: 0.05em;
-  }
-
-  /* ---------- 6. Script presets section --------------------------- */
-  #presets-manager {
-    margin-top: 4px;
-  }
-
-  .presets-header {
-    align-items: center;
-    gap: 8px;
-  }
-
-  .presets-title {
-    font-size: 0.95rem;
-  }
-
-  #preset-add-toggle {
-    min-height: 32px;
-    padding: 0 12px;
-    font-size: 11px;
-    border-radius: 9px;
-  }
-
-  .presets-list {
-    grid-template-columns: 1fr;
-    gap: 10px;
   }
 
   /* ---------- 7. Speech rate card --------------------------------- */
