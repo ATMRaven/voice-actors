@@ -247,6 +247,50 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
   window.voxAudio = state.audioElement;
   window.__VOX_STATE = state;
 
+  // --- On-device diagnostics -------------------------------------------
+  // Android WebView failures are invisible from the desktop, so keep a small
+  // log and let the user copy it from Settings.
+  const diagLog = [];
+  function diag(kind, msg) {
+    try {
+      diagLog.push(new Date().toISOString().slice(11, 19) + ' ' + kind + ' ' + msg);
+      if (diagLog.length > 250) diagLog.shift();
+    } catch (_) {}
+  }
+
+  window.addEventListener('error', (e) => {
+    diag('ERR', (e.message || 'script error') + ' @' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || ''));
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    diag('REJ', String((e.reason && (e.reason.message || e.reason)) || 'unknown rejection'));
+  });
+
+  window.__VOX_DIAG = () => {
+    const q = state.playbackQueue || {};
+    const a = state.audioElement || {};
+    return JSON.stringify({
+      app: 'voice-actors',
+      native: isCapacitorNative,
+      visibility: document.visibilityState,
+      online: navigator.onLine,
+      model: state.model,
+      voice: state.voice,
+      speed: state.speed,
+      chunks: q.totalExpected,
+      buffered: q.completedChunksCount,
+      index: q.currentIndex,
+      waitingForChunk: q.waitingForChunk,
+      claimsPlaying: state.isPlaying,
+      audioPaused: a.paused,
+      audioTime: a.currentTime,
+      audioDuration: a.duration,
+      audioReady: a.readyState,
+      audioSrc: a.src ? String(a.src).slice(0, 22) : null,
+      ua: navigator.userAgent,
+      log: diagLog.slice(-70)
+    }, null, 1);
+  };
+
   // --- Element Selectors ---
   const el = {
     // Mode toggles
@@ -3500,6 +3544,16 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     }
   }
 
+  function updateActiveSentence(sentenceIdx) {
+    if (state.activeSentenceIdx >= 0) {
+      const prevSent = document.querySelector('.reader-sentence[data-sentence-idx="' + state.activeSentenceIdx + '"]');
+      if (prevSent) prevSent.classList.remove('active-sentence');
+    }
+    state.activeSentenceIdx = sentenceIdx;
+    const curSent = document.querySelector('.reader-sentence[data-sentence-idx="' + sentenceIdx + '"]');
+    if (curSent) curSent.classList.add('active-sentence');
+  }
+
   function updateWordAndSentenceHighlight(curTime) {
     const words = state.timelineWords;
     if (!words || words.length === 0) return;
@@ -3577,12 +3631,21 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       }
 
       if (isAudPlaying) {
-        const total = state.continuousDuration || (state.audioElement ? state.audioElement.duration : 0) || 1;
-        updateWordAndSentenceHighlight(curTime);
-        updateRibbonPlayhead(curTime);
-        updateTimeDisplay(curTime, total);
-        const pct = Math.max(0, Math.min(100, (curTime / total) * 100));
-        el.dockPlayhead.style.left = `${pct}%`;
+        try {
+          const total = state.continuousDuration || (state.audioElement ? state.audioElement.duration : 0) || 1;
+          updateWordAndSentenceHighlight(curTime);
+          updateRibbonPlayhead(curTime);
+          updateTimeDisplay(curTime, total);
+          const pct = Math.max(0, Math.min(100, (curTime / total) * 100));
+          if (el.dockPlayhead) el.dockPlayhead.style.left = `${pct}%`;
+        } catch (err) {
+          // Never let a highlight error tear down the animation loop.
+          if (!state.syncLoopWarned) {
+            state.syncLoopWarned = true;
+            console.warn('[SyncLoop] render error (suppressed):', err && err.message);
+            if (typeof diag === 'function') diag('SYNC', String(err && err.message));
+          }
+        }
       }
       state.syncRafId = requestAnimationFrame(loop);
     }
@@ -3847,13 +3910,120 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
   // A blocked autoplay used to leave the UI claiming "playing" while the audio
   // sat paused. Start playback through this so the state always matches reality.
+  async function resumePlayback(reason) {
+    const audio = state.audioElement;
+    const q = state.playbackQueue;
+    if (!audio) return;
+
+    if (!q || !q.isPlayingQueue || !q.chunks) {
+      if (audio.src && audio.paused) playAudioSafe(audio, reason || 'resume');
+      return;
+    }
+
+    let idx = q.currentIndex || 0;
+    let item = q.chunks[idx];
+
+    // Skip past failed/empty slots to the next thing we can actually play
+    if (!item || !item.url) {
+      for (let i = idx; i < q.totalExpected; i++) {
+        const c = q.chunks[i];
+        if (c && (c.url || c.evicted || c.skipped)) {
+          if (c.url) { idx = i; item = c; break; }
+        }
+        if (!c) break;
+      }
+    }
+
+    if (!item || !item.url) {
+      try {
+        item = await ensurePlayableChunk(idx);
+      } catch (err) {
+        console.warn('[Recovery] segment rebuild failed:', err && err.message);
+      }
+    }
+
+    if (!item || !item.url) {
+      diag('RESUME', 'no playable segment at #' + idx);
+      state.isPlaying = false;
+      if (el.dockBtnPlay) el.dockBtnPlay.classList.remove('playing');
+      showToast('Could not resume this segment — press Generate to rebuild it', 'error', 4200);
+      return;
+    }
+
+    let offsetSum = 0;
+    for (let k = 0; k < idx; k++) offsetSum += (q.chunks[k] && q.chunks[k].duration) || 0;
+    q.currentIndex = idx;
+    q.currentChunkOffset = offsetSum;
+    q.waitingForChunk = -1;
+
+    if (audio.src !== item.url) {
+      audio.src = item.url;
+      audio.currentTime = 0;
+    }
+    audio.playbackRate = state.speed;
+    audio.preservesPitch = true;
+    playAudioSafe(audio, reason || 'resume');
+
+    state.isPlaying = true;
+    if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
+    const pi = document.getElementById('play-pause-icon');
+    if (pi) pi.textContent = 'pause';
+    startSyncLoop();
+    if (q.pump) q.pump();
+    diag('RESUME', (reason || 'manual') + ' -> #' + idx + ' t=' + (audio.currentTime || 0).toFixed(1));
+  }
+
+  // A wedged WebView can leave us "playing" while the element sits still.
+  // This watchdog notices and repairs it instead of silently freezing.
+  function startPlaybackWatchdog() {
+    if (state.watchdogId) return;
+    state.watchdogId = setInterval(() => {
+      const q = state.playbackQueue;
+      const audio = state.audioElement;
+      if (!audio) return;
+
+      if (!state.isPlaying) { state.frozenTicks = 0; return; }
+
+      // Only treat a pause as legitimate while the awaited segment is genuinely
+      // missing. A stale flag used to switch recovery off for good.
+      if (q && q.waitingForChunk >= 0) {
+        const awaited = q.chunks ? q.chunks[q.waitingForChunk] : null;
+        if (!awaited || !awaited.url) { state.frozenTicks = 0; return; }
+      }
+
+      if (audio.paused) {
+        state.frozenTicks = (state.frozenTicks || 0) + 1;
+        if (state.frozenTicks >= 2) {
+          state.frozenTicks = 0;
+          resumePlayback('watchdog-paused');
+        }
+        return;
+      }
+
+      const t = audio.currentTime || 0;
+      if (Math.abs(t - (state.lastWatchdogTime || 0)) < 0.05) {
+        state.frozenTicks = (state.frozenTicks || 0) + 1;
+        if (state.frozenTicks >= 4) {
+          state.frozenTicks = 0;
+          resumePlayback('watchdog-frozen');
+        }
+      } else {
+        state.frozenTicks = 0;
+      }
+      state.lastWatchdogTime = t;
+    }, 1200);
+  }
+
   function playAudioSafe(audio, label) {
     if (!audio) return;
     const attempt = audio.play();
     if (!attempt || typeof attempt.catch !== 'function') return;
     attempt.catch((err) => {
       if (err && err.name === 'NotAllowedError') {
+        diag('AUTOPLAY', 'blocked (' + (label || 'audio') + ')');
         state.isPlaying = false;
+        // Wait for a real tap instead of retrying forever.
+        state.wantsPlayback = false;
         if (el.dockBtnPlay) {
           el.dockBtnPlay.classList.remove('playing');
           el.dockBtnPlay.classList.add('needs-tap');
@@ -3866,6 +4036,46 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         console.warn('[Audio] play error' + (label ? ' (' + label + ')' : '') + ':', err && err.message);
       }
     });
+  }
+
+  // Once a segment has been heard, drop its audio so an hour-long script does
+  // not keep hundreds of megabytes of WAV alive in the WebView.
+  function releasePlayedChunks(currentIdx) {
+    diag('MEM', 'releasing before #' + currentIdx);
+    const q = state.playbackQueue;
+    if (!q || !q.chunks || q.totalExpected <= 8) return;
+    for (let i = 0; i < currentIdx - 1; i++) {
+      const c = q.chunks[i];
+      if (c && c.url && c.blob && c.blob.size > 512 * 1024) {
+        try { URL.revokeObjectURL(c.url); } catch (_) {}
+        c.url = null;
+        c.blob = null;
+        c.evicted = true;
+      }
+    }
+  }
+
+  // Rebuild one segment from its source text (used after eviction, or when the
+  // media element wedges and needs a fresh source).
+  async function ensurePlayableChunk(idx) {
+    const q = state.playbackQueue;
+    if (!q || !q.chunks) return null;
+    const existing = q.chunks[idx];
+    if (existing && existing.url) return existing;
+    const text = q.texts && q.texts[idx];
+    if (!text) return null;
+
+    const signal = state.currentAbortController ? state.currentAbortController.signal : undefined;
+    const blob = await fetchTtsChunk(text, signal);
+    const decoded = await decodeAudioBlob(blob);
+    const item = existing || {};
+    item.blob = blob;
+    item.url = URL.createObjectURL(blob);
+    item.duration = decoded.duration || item.duration || 3;
+    item.skipped = false;
+    item.evicted = false;
+    q.chunks[idx] = item;
+    return item;
   }
 
   // Bounded Whisper alignment: a 40-chunk script used to fire 40 parallel
@@ -4056,6 +4266,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     const totalChunks = chunks.length;
 
     if (totalChunks > 1) showGenProgress(totalChunks, 'Streaming speech');
+    diag('GEN', 'chunks=' + totalChunks + ' chars=' + text.length + ' model=' + state.model);
 
     // Switch to interactive reading stage and initialize words immediately
     switchToSyncStage();
@@ -4072,16 +4283,19 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     state.playbackQueue = {
       generationId: currentGenId,
       chunks: new Array(totalChunks),
+      texts: chunks.slice(),
       totalExpected: totalChunks,
       completedChunksCount: 0,
       currentIndex: 0,
       currentChunkOffset: 0,
       isPlayingQueue: totalChunks > 1,
       waitingForChunk: -1,
+      pump: null,
 
       stop() {
         this.isPlayingQueue = false;
         this.generationId = null;
+        state.wantsPlayback = false;
       }
     };
 
@@ -4094,9 +4308,12 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       let nextIndexToFetch = 0;
       const MAX_CONCURRENT = 2; // Sliding prefetch window
 
+      const PREFETCH_WINDOW = 4; // segments buffered ahead of the playhead
+
       function pumpQueue() {
-        if (signal.aborted || state.playbackQueue.generationId !== currentGenId) return;
-        while (inFlight < MAX_CONCURRENT && nextIndexToFetch < totalChunks) {
+        if (!state.playbackQueue || signal.aborted || state.playbackQueue.generationId !== currentGenId) return;
+        const windowEnd = state.playbackQueue.currentIndex + PREFETCH_WINDOW;
+        while (inFlight < MAX_CONCURRENT && nextIndexToFetch < totalChunks && nextIndexToFetch < windowEnd) {
           const idx = nextIndexToFetch++;
           inFlight++;
           fetchAndProcessChunk(idx);
@@ -4200,6 +4417,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
               offsetSum += (ch && ch.duration) || 0;
             }
             state.playbackQueue.currentChunkOffset = offsetSum;
+            if (state.playbackQueue.pump) state.playbackQueue.pump();
 
             state.audioElement.src = chunkUrl;
             state.audioElement.playbackRate = state.speed;
@@ -4229,6 +4447,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
             return;
           }
           console.error(`Error processing chunk ${idx}:`, err);
+          diag('CHUNK', '#' + idx + ' failed: ' + (err && err.message));
 
           // Non-blocking recovery: mark chunk as skipped so queue playback is NEVER stalled or hung
           state.playbackQueue.chunks[idx] = { skipped: true, duration: 0.1, offset: state.continuousDuration };
@@ -4385,6 +4604,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       }
 
       // Kick off pipeline
+      state.playbackQueue.pump = pumpQueue;
       pumpQueue();
 
     } catch (err) {
@@ -4414,6 +4634,31 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
   function setupAudioPlayer() {
     const audio = state.audioElement;
 
+    startPlaybackWatchdog();
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        state.wasPlayingBeforeHide = state.isPlaying;
+      } else if (state.wasPlayingBeforeHide) {
+        state.wasPlayingBeforeHide = false;
+        setTimeout(() => resumePlayback('tab-visible'), 250);
+      }
+    });
+
+    const CapApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (CapApp && typeof CapApp.addListener === 'function') {
+      try {
+        CapApp.addListener('appStateChange', (st) => {
+          if (!st.isActive) {
+            state.wasPlayingBeforeHide = state.isPlaying;
+          } else if (state.wasPlayingBeforeHide) {
+            state.wasPlayingBeforeHide = false;
+            setTimeout(() => resumePlayback('app-resume'), 400);
+          }
+        });
+      } catch (_) {}
+    }
+
     audio.addEventListener('loadedmetadata', () => {
       state.duration = audio.duration;
       updateTimeDisplay(audio.currentTime, audio.duration);
@@ -4442,6 +4687,9 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
     audio.addEventListener('play', () => {
       state.isPlaying = true;
+      state.wantsPlayback = true;
+      if (state.playbackQueue) state.playbackQueue.waitingForChunk = -1;
+      state.frozenTicks = 0;
       el.dockBtnPlay.classList.remove('needs-tap');
       el.dockBtnPlay.classList.add('playing');
       const pi = document.getElementById('play-pause-icon');
@@ -4457,6 +4705,19 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       if (pi) pi.textContent = 'play_arrow';
       drawDockWaveform();
       stopSyncLoop();
+
+      // Android pauses media when the app loses focus or audio focus. If the
+      // user did not ask for this, put the queue back on its feet.
+      const q = state.playbackQueue;
+      if (state.wantsPlayback && !state.userPaused && !audio.ended && q && q.isPlayingQueue) {
+        clearTimeout(state.interruptTimer);
+        state.interruptTimer = setTimeout(() => {
+          if (state.wantsPlayback && !state.userPaused && audio.paused) {
+            diag('PAUSE', 'involuntary pause -> recovering');
+            resumePlayback('interrupted');
+          }
+        }, 900);
+      }
     });
 
     audio.addEventListener('ended', () => {
@@ -4489,6 +4750,8 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
               offsetSum += (ch && ch.duration) || 0;
             }
             state.playbackQueue.currentChunkOffset = offsetSum;
+            releasePlayedChunks(nextIdx);
+            if (state.playbackQueue.pump) state.playbackQueue.pump();
 
             audio.src = nextChunk.url;
             audio.playbackRate = state.speed;
@@ -4506,6 +4769,8 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
             // Next chunk is still buffering / in flight!
             state.playbackQueue.waitingForChunk = nextIdx;
             state.playbackQueue.currentIndex = nextIdx;
+            releasePlayedChunks(nextIdx);
+            if (state.playbackQueue.pump) state.playbackQueue.pump();
 
             if (el.ribbonSegmentsBadge) {
               el.ribbonSegmentsBadge.textContent = `Buffering section ${nextIdx + 1} of ${state.playbackQueue.totalExpected}...`;
@@ -4554,10 +4819,15 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           audio.src = state.continuousMasterUrl;
           state.currentUrl = state.continuousMasterUrl;
         }
+        state.userPaused = false;
+        state.wantsPlayback = true;
         audio.playbackRate = state.speed;
         audio.preservesPitch = true;
         playAudioSafe(audio, 'player');
       } else {
+        state.userPaused = true;
+        state.wantsPlayback = false;
+        clearTimeout(state.interruptTimer);
         audio.pause();
       }
     });
@@ -5124,6 +5394,25 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
   // --- Settings Modal ---
   function setupSettingsModal() {
+    const btnCopyDiag = document.getElementById('btn-copy-diag');
+    if (btnCopyDiag) {
+      btnCopyDiag.addEventListener('click', async () => {
+        const payload = typeof window.__VOX_DIAG === 'function' ? window.__VOX_DIAG() : 'diagnostics unavailable';
+        try {
+          await navigator.clipboard.writeText(payload);
+          showToast('Diagnostics copied — paste them into a message', 'success', 3200);
+        } catch (err) {
+          const ta = document.createElement('textarea');
+          ta.value = payload;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); showToast('Diagnostics copied', 'success', 2600); }
+          catch (_) { showToast('Could not copy diagnostics', true, 3000); }
+          ta.remove();
+        }
+      });
+    }
+
     el.btnOpenSettings.addEventListener('click', () => {
       if (el.inputKeyDeepgram) el.inputKeyDeepgram.value = state.customDeepgramKey;
       if (el.inputKeyMistral) el.inputKeyMistral.value = state.customMistralKey;
@@ -5360,7 +5649,10 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
   // --- Progressive Web App (PWA) Controller ---
   function setupPWA() {
-    if ('serviceWorker' in navigator) {
+    // Never register the worker during local development: it masks code changes
+    // behind a stale cache and makes "it works on the server" impossible to test.
+    const isLocalDev = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    if ('serviceWorker' in navigator && !isLocalDev) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then((reg) => {
           console.log('VoxFlow Service Worker registered:', reg.scope);

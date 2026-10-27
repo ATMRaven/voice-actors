@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Voice Actors — Offline</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      background: #121315;
+      color: #f4f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .card { max-width: 420px; width: 100%; text-align: center; }
+    .mark {
+      width: 52px; height: 52px; margin: 0 auto 18px;
+      border-radius: 15px; display: grid; place-items: center;
+      background: linear-gradient(145deg, #2a2b2d, #16171a);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #efbe82;
+    }
+    h1 { font-size: 1.35rem; margin: 0 0 8px; font-weight: 600; }
+    p { margin: 0 0 22px; color: #a4a8ae; font-size: 0.92rem; line-height: 1.55; }
+    button {
+      width: 100%; height: 50px; border: 0; border-radius: 14px;
+      background: #f4f5f7; color: #16171a; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer;
+    }
+    button:active { transform: scale(0.985); }
+    .hint { margin-top: 14px; font-size: 0.78rem; color: #7b7f86; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M3 12v3M7.5 8v11M12 4v16M16.5 9v6M21 11v2" />
+      </svg>
+    </div>
+    <h1>Can’t reach the studio</h1>
+    <p>The app loads its interface from the network. Check your connection and try again.</p>
+    <button id="retry" type="button">Try again</button>
+    <div class="hint">If this keeps happening the site itself may be down.</div>
+  </div>
+  <script>
+    document.getElementById('retry').addEventListener('click', function () {
+      location.replace('https://voxflow-809.pages.dev/');
+    });
+  </script>
+</body>
+</html>

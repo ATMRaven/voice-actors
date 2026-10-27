@@ -4,7 +4,12 @@
   "webDir": "static",
   "server": {
     "androidScheme": "https",
-    "cleartext": false
+    "cleartext": false,
+    "url": "https://voxflow-809.pages.dev",
+    "errorPath": "offline.html",
+    "allowNavigation": [
+      "voxflow-809.pages.dev"
+    ]
   },
   "plugins": {
     "SplashScreen": {

@@ -2,11 +2,11 @@
   "version": "1.1.1",
   "versionName": "1.1.1",
   "versionCode": 10101,
-  "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
+  "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/download/v1.1.1/voice-actors-1.1.1.apk",
   "sha256": "ecb9034c171c187149f18a50d845c99d0cbaff97580872b7cc00d479a394b844",
   "sizeBytes": 9761466,
   "minSupportedVersionCode": 1,
   "mandatory": false,
-  "releaseNotes": "v1.1.1: script presets removed \u2014 the studio is just your script, your voice and Generate. Same long-script engine as 1.1.0.",
-  "publishedAt": "2026-10-26T21:28:59Z"
+  "releaseNotes": "v1.1.1: script presets removed.",
+  "publishedAt": "2026-10-27T17:16:37Z"
 }
