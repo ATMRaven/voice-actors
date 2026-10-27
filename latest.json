@@ -1,12 +1,12 @@
 {
-  "version": "1.1.1",
-  "versionName": "1.1.1",
-  "versionCode": 10101,
-  "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/download/v1.1.1/voice-actors-1.1.1.apk",
-  "sha256": "ecb9034c171c187149f18a50d845c99d0cbaff97580872b7cc00d479a394b844",
-  "sizeBytes": 9761466,
+  "version": "1.1.2",
+  "versionName": "1.1.2",
+  "versionCode": 10102,
+  "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
+  "sha256": "98d813ed1fe230be9f4a42c3993a7a40f9a81f996921bf5cff7f3f2168c93496",
+  "sizeBytes": 9765920,
   "minSupportedVersionCode": 1,
   "mandatory": false,
-  "releaseNotes": "v1.1.1: script presets removed.",
-  "publishedAt": "2026-10-27T17:16:37Z"
+  "releaseNotes": "v1.1.2 playback repair: involuntary pauses resume themselves, a watchdog revives a stalled media element, long scripts buffer only a few segments at a time, and the karaoke loop no longer throws every frame. The app now loads the live web build, so the APK and the browser behave the same.",
+  "publishedAt": "2026-10-27T17:24:10Z"
 }
