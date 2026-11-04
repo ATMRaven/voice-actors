@@ -3184,103 +3184,79 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
   // --- Click on Any Word on Screen to Seek Audio ---
   function handleWordClick(wordObj) {
-    if (!state.audioElement) return;
-
+    const audio = state.audioElement;
+    if (!audio) return;
+    const q = state.playbackQueue;
     const seekTime = Math.max(0, (wordObj.globalStart || 0) + 0.02);
 
-    if (state.playbackQueue) {
-      state.playbackQueue.isPlayingQueue = false;
-      if (typeof state.playbackQueue.stop === 'function') {
-        state.playbackQueue.stop();
-      }
-    }
-
-    // If master unified continuous audio is ready, seek directly on master track
+    // A complete merged master is the cleanest seek target.
     if (state.continuousMasterUrl) {
-      if (state.audioElement.src !== state.continuousMasterUrl) {
-        state.audioElement.src = state.continuousMasterUrl;
-        state.audioElement.playbackRate = state.speed;
-        state.audioElement.preservesPitch = true;
-        state.audioElement.addEventListener('loadedmetadata', () => {
-          state.audioElement.currentTime = seekTime;
-          playAudioSafe(state.audioElement, 'word seek');
-          state.isPlaying = true;
-          if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
-          startSyncLoop();
-          updateWordAndSentenceHighlight(seekTime);
-          updateRibbonPlayhead(seekTime);
-          drawDockWaveform();
-        }, { once: true });
-      } else {
-        state.audioElement.currentTime = seekTime;
-        if (state.audioElement.paused) {
-          playAudioSafe(state.audioElement, 'word seek');
-        }
+      // The segment queue must stop advancing, otherwise the ending segment
+      // overwrites this src a moment later and the seek is lost.
+      if (q) {
+        q.isPlayingQueue = false;
+        q.waitingForChunk = -1;
+        q.finished = false;
+      }
+      state.userPaused = false;
+      state.wantsPlayback = true;
+      // Use the master's own length, not audio.duration: a still-pending load of
+      // the previous segment can fire loadedmetadata after the src switch and
+      // clamp the seek to the old segment's end.
+      const masterDur = state.continuousDuration || (state.continuousMasterBlob ? 0 : audio.duration) || 0;
+      const clamped = Math.max(0, Math.min(seekTime, Math.max(0, masterDur - 0.05)));
+      const seekMaster = () => {
+        if (audio.src !== state.continuousMasterUrl) return; // stale media event
+        try { audio.currentTime = clamped; diag('SEEK', 'master -> ' + clamped.toFixed(2) + ' (now ' + audio.currentTime.toFixed(2) + ')'); }
+        catch (err) { diag('SEEK', 'master failed: ' + (err && err.message)); }
+        playAudioSafe(audio, 'word seek');
         state.isPlaying = true;
         if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
         startSyncLoop();
-        updateWordAndSentenceHighlight(seekTime);
-        updateRibbonPlayhead(seekTime);
+        updateWordAndSentenceHighlight(clamped);
+        updateRibbonPlayhead(clamped);
         drawDockWaveform();
+      };
+      if (audio.src !== state.continuousMasterUrl) {
+        audio.src = state.continuousMasterUrl;
+        audio.playbackRate = state.speed;
+        audio.preservesPitch = true;
+        audio.addEventListener('loadedmetadata', seekMaster, { once: true });
+      } else {
+        seekMaster();
       }
-      // toast silenced for calm UX
       return;
     }
 
-    // If streaming queue is actively playing individual buffered chunks:
-    if (state.playbackQueue && state.playbackQueue.chunks && state.playbackQueue.chunks.length > 0) {
-      let offsetSum = 0;
-      let targetChunkIdx = 0;
-      let targetLocalTime = seekTime;
+    if (q && Array.isArray(q.chunks) && q.totalExpected > 0) {
+      // Every rendered sentence is exactly one queue segment, so the clicked word
+      // already names the segment to fetch. Walking durations instead used to fall
+      // through to segment 0 (unbuffered segments have no duration yet), which
+      // turned "jump ahead" into silence at the very start.
+      let targetIdx = typeof wordObj.sentenceIdx === 'number' ? wordObj.sentenceIdx : 0;
+      targetIdx = Math.max(0, Math.min(targetIdx, q.totalExpected - 1));
+      let local = seekTime - chunkOffset(targetIdx);
+      if (!isFinite(local) || local < 0) local = 0;
 
-      for (let k = 0; k < state.playbackQueue.chunks.length; k++) {
-        const ch = state.playbackQueue.chunks[k];
-        if (!ch) continue;
-        const dur = ch.duration || 0;
-        if (seekTime >= offsetSum && seekTime <= offsetSum + dur) {
-          targetChunkIdx = k;
-          targetLocalTime = seekTime - offsetSum;
-          break;
-        }
-        offsetSum += dur;
-      }
+      q.isPlayingQueue = q.totalExpected > 1;
+      q.finished = false;
+      q.currentIndex = targetIdx;
+      q.currentChunkOffset = chunkOffset(targetIdx);
+      state.userPaused = false;
+      state.wantsPlayback = true;
 
-      state.playbackQueue.currentIndex = targetChunkIdx;
-      state.playbackQueue.currentChunkOffset = offsetSum;
-      const targetChunk = state.playbackQueue.chunks[targetChunkIdx];
-      if (targetChunk) {
-        if (state.audioElement.src !== targetChunk.url) {
-          state.audioElement.src = targetChunk.url;
-          state.audioElement.playbackRate = state.speed;
-          state.audioElement.preservesPitch = true;
-          state.audioElement.addEventListener('loadedmetadata', () => {
-            state.audioElement.currentTime = targetLocalTime;
-            playAudioSafe(state.audioElement, 'chunk seek');
-            state.isPlaying = true;
-            if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
-            startSyncLoop();
-          }, { once: true });
-        } else {
-          state.audioElement.currentTime = targetLocalTime;
-          if (state.audioElement.paused) {
-            playAudioSafe(state.audioElement, 'chunk seek');
-          }
-          state.isPlaying = true;
-          if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
-          startSyncLoop();
-        }
-      }
       updateWordAndSentenceHighlight(seekTime);
       updateRibbonPlayhead(seekTime);
       drawDockWaveform();
-      // toast silenced for calm UX
+
+      playQueueIndex(targetIdx, 'word seek', local);
       return;
     }
 
-    // Single chunk fallback
-    state.audioElement.currentTime = seekTime;
-    if (state.audioElement.paused) {
-      playAudioSafe(state.audioElement, 'word seek');
+    // Single blob fallback
+    audio.currentTime = seekTime;
+    if (audio.paused) {
+      playAudioSafe(audio, 'word seek');
     }
     state.isPlaying = true;
     if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
@@ -3288,7 +3264,6 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     updateWordAndSentenceHighlight(seekTime);
     updateRibbonPlayhead(seekTime);
     drawDockWaveform();
-    // toast silenced for calm UX
   }
 
   // --- Parallel Groq Whisper Word-Level Alignment (Track B) ---
@@ -3660,7 +3635,42 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     }
   }
 
-  // Combine multiple audio chunks (WAV PCM or MP3) into a single continuous valid audio blob
+  // Walk a RIFF file properly instead of assuming a canonical 44-byte header.
+  // Providers ship LIST/fact/JUNK chunks, and copying the first 44 bytes of
+  // those produced a corrupt merged file that the player silently refused.
+  function parseWavChunks(ab) {
+    if (ab.byteLength < 44) return null;
+    const dv = new DataView(ab);
+    if (dv.getUint32(0, false) !== 0x52494646) return null;
+
+    let offset = 12;
+    let fmt = null;
+    let pcm = null;
+    while (offset + 8 <= ab.byteLength) {
+      const id = String.fromCharCode(
+        dv.getUint8(offset), dv.getUint8(offset + 1), dv.getUint8(offset + 2), dv.getUint8(offset + 3)
+      );
+      const size = dv.getUint32(offset + 4, true);
+      const start = offset + 8;
+      if (id === 'fmt ' && start + 16 <= ab.byteLength) {
+        fmt = {
+          audioFormat: dv.getUint16(start, true),
+          channels: dv.getUint16(start + 2, true),
+          sampleRate: dv.getUint32(start + 4, true),
+          byteRate: dv.getUint32(start + 8, true),
+          blockAlign: dv.getUint16(start + 12, true),
+          bitsPerSample: dv.getUint16(start + 14, true)
+        };
+      } else if (id === 'data') {
+        pcm = new Uint8Array(ab, start, Math.min(size, Math.max(0, ab.byteLength - start)));
+        break;
+      }
+      offset = start + size + (size % 2); // RIFF chunks are word aligned
+    }
+    return pcm && pcm.byteLength ? { fmt, pcm } : null;
+  }
+
+  // Combine multiple audio chunks (WAV PCM or MP3) into one continuous blob
   async function combineAudioBlobs(blobs) {
     if (!blobs || blobs.length === 0) return null;
     if (blobs.length === 1) return blobs[0];
@@ -3674,47 +3684,44 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
     try {
       const buffers = await Promise.all(blobs.map(b => b.arrayBuffer()));
+      const parsed = buffers.map(parseWavChunks);
+      if (parsed.some(p => !p) || !parsed[0].fmt) return null;
 
-      // Verify RIFF WAVE header
-      const dv0 = new DataView(buffers[0]);
-      if (dv0.getUint32(0, false) !== 0x52494646) {
-        return new Blob(blobs, { type: 'audio/wav' });
-      }
+      const fmt0 = parsed[0].fmt;
+      const blockAlign = fmt0.blockAlign || (fmt0.channels * Math.max(1, fmt0.bitsPerSample / 8));
+      // Byte concatenation is only valid when every segment shares the format.
+      const sameFormat = parsed.every(p => p.fmt &&
+        p.fmt.audioFormat === fmt0.audioFormat && p.fmt.channels === fmt0.channels &&
+        p.fmt.sampleRate === fmt0.sampleRate && p.fmt.bitsPerSample === fmt0.bitsPerSample);
+      if (!sameFormat) return null;
 
-      function getPcm(ab) {
-        const dv = new DataView(ab);
-        let offset = 12;
-        while (offset < ab.byteLength - 8) {
-          const chunkId = String.fromCharCode(
-            dv.getUint8(offset), dv.getUint8(offset + 1), dv.getUint8(offset + 2), dv.getUint8(offset + 3)
-          );
-          const chunkSize = dv.getUint32(offset + 4, true);
-          if (chunkId === 'data') {
-            const dataStart = offset + 8;
-            const dataLen = Math.min(chunkSize, ab.byteLength - dataStart);
-            return new Uint8Array(ab, dataStart, dataLen);
-          }
-          offset += 8 + chunkSize;
-        }
-        return new Uint8Array(ab, 44);
-      }
-
-      const pcmParts = buffers.map(getPcm);
+      const pcmParts = parsed.map(p => {
+        const usable = blockAlign ? p.pcm.byteLength - (p.pcm.byteLength % blockAlign) : p.pcm.byteLength;
+        return usable > 0 ? p.pcm.subarray(0, usable) : new Uint8Array(0);
+      });
       const totalPcmLength = pcmParts.reduce((acc, p) => acc + p.byteLength, 0);
+      if (!totalPcmLength) return null;
 
-      // Create new 44-byte WAV header based on the first chunk
-      const header = new Uint8Array(buffers[0].slice(0, 44));
+      // Build a fresh canonical 44-byte header from the parsed fmt fields.
+      const header = new Uint8Array(44);
       const hv = new DataView(header.buffer);
-      hv.setUint32(4, 36 + totalPcmLength, true); // Total file size - 8
-      hv.setUint32(40, totalPcmLength, true);      // Data chunk length
+      const tag = (off, s) => { for (let i = 0; i < 4; i++) header[off + i] = s.charCodeAt(i); };
+      tag(0, 'RIFF'); hv.setUint32(4, 36 + totalPcmLength, true); tag(8, 'WAVE');
+      tag(12, 'fmt '); hv.setUint32(16, 16, true);
+      hv.setUint16(20, fmt0.audioFormat, true);
+      hv.setUint16(22, fmt0.channels, true);
+      hv.setUint32(24, fmt0.sampleRate, true);
+      hv.setUint32(28, fmt0.byteRate || fmt0.sampleRate * blockAlign, true);
+      hv.setUint16(32, blockAlign, true);
+      hv.setUint16(34, fmt0.bitsPerSample || 16, true);
+      tag(36, 'data'); hv.setUint32(40, totalPcmLength, true);
 
       return new Blob([header, ...pcmParts], { type: 'audio/wav' });
     } catch (e) {
-      console.warn('WAV merge error, falling back to blob concatenation:', e);
-      return new Blob(blobs, { type: 'audio/wav' });
+      console.warn('WAV merge error:', e);
+      return null;
     }
   }
-
   // --- High-Performance Web Audio API Singleton Engine ---
   function getOrCreateAudioContext() {
     if (!state.audioContext || state.audioContext.state === 'closed') {
@@ -4038,6 +4045,125 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     });
   }
 
+  // Durations come back out of order (two requests in flight), so an offset must
+  // always be derived by walking the queue in script order. Accumulating on
+  // arrival used to put chunk 1 before chunk 0 and mis-time every word.
+  function recomputeChunkOffsets() {
+    const q = state.playbackQueue;
+    if (!q || !Array.isArray(q.chunks)) return 0;
+    let acc = 0;
+    for (let i = 0; i < q.totalExpected; i++) {
+      const c = q.chunks[i];
+      if (c && typeof c.duration === 'number' && isFinite(c.duration)) {
+        c.offset = acc;
+        acc += c.duration;
+      }
+    }
+    state.continuousDuration = acc;
+    return acc;
+  }
+
+  function chunkOffset(idx) {
+    const q = state.playbackQueue;
+    if (!q || !Array.isArray(q.chunks)) return 0;
+    let acc = 0;
+    for (let i = 0; i < idx && i < q.totalExpected; i++) {
+      const d = q.chunks[i] && q.chunks[i].duration;
+      if (typeof d === 'number' && isFinite(d)) acc += d;
+    }
+    return acc;
+  }
+
+  function queueHasPlayableAudio() {
+    const q = state.playbackQueue;
+    return !!(q && Array.isArray(q.chunks) && q.chunks.some(c => c && c.url));
+  }
+
+  // Play one specific segment, waiting for it (or rebuilding it) instead of
+  // dropping playback when a slot is late or was evicted from memory.
+  async function playQueueIndex(idx, reason, startAt = 0) {
+    const q = state.playbackQueue;
+    const audio = state.audioElement;
+    if (!q || !audio || idx < 0 || idx >= q.totalExpected) return false;
+
+    // A newer jump/pause wins over an older one whose segment is still loading.
+    q.playToken = (q.playToken || 0) + 1;
+    const token = q.playToken;
+
+    q.currentIndex = idx;
+    q.currentChunkOffset = chunkOffset(idx);
+    q.finished = false;
+
+    let item = q.chunks[idx];
+    if (!item || !item.url) {
+      q.waitingForChunk = idx;
+      if (el.ribbonSegmentsBadge) {
+        el.ribbonSegmentsBadge.textContent = `Buffering section ${idx + 1} of ${q.totalExpected}…`;
+      }
+      try { item = await ensurePlayableChunk(idx); } catch (err) { item = null; }
+      q.waitingForChunk = -1;
+    }
+
+    if (!item || !item.url) {
+      diag('QUEUE', '#' + idx + ' unavailable');
+      if (idx + 1 < q.totalExpected) return playQueueIndex(idx + 1, reason, 0);
+      return false;
+    }
+
+    if (q.playToken !== token) return false;
+
+    releasePlayedChunks(idx);
+    if (q.pump) q.pump();
+
+    if (audio.src !== item.url) audio.src = item.url;
+    audio.playbackRate = state.speed;
+    audio.preservesPitch = true;
+    if (startAt > 0) {
+      const cap = typeof item.duration === 'number' && item.duration > 0 ? Math.max(0, item.duration - 0.05) : startAt;
+      const target = Math.min(startAt, cap);
+      const applySeek = () => { try { audio.currentTime = target; } catch (_) {} };
+      if (audio.readyState >= 1) applySeek();
+      else audio.addEventListener('loadedmetadata', applySeek, { once: true });
+    } else {
+      audio.currentTime = 0;
+    }
+    state.currentUrl = item.url;
+    state.duration = item.duration || state.duration;
+
+    if (state.userPaused) {
+      state.isPlaying = false;
+      return true;
+    }
+
+    playAudioSafe(audio, reason || 'queue');
+    state.isPlaying = true;
+    if (el.dockBtnPlay) {
+      el.dockBtnPlay.classList.add('playing');
+      el.dockBtnPlay.classList.remove('needs-tap');
+    }
+    const pi = document.getElementById('play-pause-icon');
+    if (pi) pi.textContent = 'pause';
+    startSyncLoop();
+    return true;
+  }
+
+  // A finished long script has no merged master, so "play" restarts the queue.
+  async function restartQueueFromStart(reason) {
+    const q = state.playbackQueue;
+    if (!q || !q.chunks) return false;
+    state.userPaused = false;
+    state.wantsPlayback = true;
+    q.isPlayingQueue = q.totalExpected > 1;
+    q.finished = false;
+    q.currentIndex = 0;
+    q.currentChunkOffset = 0;
+    q.waitingForChunk = -1;
+    if (q.pump) q.pump();
+    const ok = await playQueueIndex(0, reason || 'restart', 0);
+    if (!ok) showToast('Could not restart this script — press Generate to rebuild it', 'error', 4200);
+    return ok;
+  }
+
   // Once a segment has been heard, drop its audio so an hour-long script does
   // not keep hundreds of megabytes of WAV alive in the WebView.
   function releasePlayedChunks(currentIdx) {
@@ -4062,6 +4188,15 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     if (!q || !q.chunks) return null;
     const existing = q.chunks[idx];
     if (existing && existing.url) return existing;
+
+    // A request for this segment may already be on the wire.
+    const pending = q.inflight && q.inflight.get(idx);
+    if (pending) {
+      try { await pending; } catch (_) {}
+      const settled = q.chunks[idx];
+      if (settled && settled.url) return settled;
+    }
+
     const text = q.texts && q.texts[idx];
     if (!text) return null;
 
@@ -4075,6 +4210,17 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     item.skipped = false;
     item.evicted = false;
     q.chunks[idx] = item;
+    recomputeChunkOffsets();
+
+    // Segments fetched on demand (a jump, a resume, a download packing run) must
+    // still count towards completion, or the run never finalizes and the UI sits
+    // on "Streaming 7/8" forever with Generate disabled.
+    if (!item.counted) {
+      item.counted = true;
+      q.completedChunksCount = (q.completedChunksCount || 0) + 1;
+      updateGenProgress(q.completedChunksCount, q.totalExpected, 'Buffered');
+      if (q.completedChunksCount >= q.totalExpected && typeof q.finalize === 'function') q.finalize();
+    }
     return item;
   }
 
@@ -4290,6 +4436,9 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       currentChunkOffset: 0,
       isPlayingQueue: totalChunks > 1,
       waitingForChunk: -1,
+      finished: false,
+      finalized: false,
+      inflight: new Map(),
       pump: null,
 
       stop() {
@@ -4315,8 +4464,12 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         const windowEnd = state.playbackQueue.currentIndex + PREFETCH_WINDOW;
         while (inFlight < MAX_CONCURRENT && nextIndexToFetch < totalChunks && nextIndexToFetch < windowEnd) {
           const idx = nextIndexToFetch++;
+          const existing = state.playbackQueue.chunks[idx];
+          if (existing && (existing.url || existing.skipped)) continue; // already buffered
           inFlight++;
-          fetchAndProcessChunk(idx);
+          const task = fetchAndProcessChunk(idx);
+          state.playbackQueue.inflight.set(idx, task);
+          task.finally(() => state.playbackQueue.inflight.delete(idx));
         }
       }
 
@@ -4334,18 +4487,17 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           const { duration, buffer } = await decodeAudioBlob(chunkBlob);
           if (signal.aborted || state.playbackQueue.generationId !== currentGenId) return;
 
-          const chunkGlobalOffset = state.continuousDuration;
-          state.continuousDuration += duration;
           const chunkUrl = URL.createObjectURL(chunkBlob);
-
           const chunkItem = {
             blob: chunkBlob,
             url: chunkUrl,
             duration: duration,
-            offset: chunkGlobalOffset
+            offset: 0,
+            counted: true
           };
 
           state.playbackQueue.chunks[idx] = chunkItem;
+          recomputeChunkOffsets();
           state.playbackQueue.completedChunksCount++;
           updateGenProgress(state.playbackQueue.completedChunksCount, totalChunks,
             state.playbackQueue.completedChunksCount >= totalChunks ? 'Buffered' : 'Streaming speech');
@@ -4405,31 +4557,6 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
               el.dockBtnPlay.classList.add('playing');
               startSyncLoop();
             }
-          } else if (state.playbackQueue.waitingForChunk === idx) {
-            // Audio was waiting for this chunk!
-            state.playbackQueue.waitingForChunk = -1;
-            state.playbackQueue.currentIndex = idx;
-
-            // Safe offset accumulation
-            let offsetSum = 0;
-            for (let k = 0; k < idx; k++) {
-              const ch = state.playbackQueue.chunks[k];
-              offsetSum += (ch && ch.duration) || 0;
-            }
-            state.playbackQueue.currentChunkOffset = offsetSum;
-            if (state.playbackQueue.pump) state.playbackQueue.pump();
-
-            state.audioElement.src = chunkUrl;
-            state.audioElement.playbackRate = state.speed;
-            state.audioElement.preservesPitch = true;
-            state.audioElement.currentTime = 0;
-            playAudioSafe(state.audioElement, 'resume chunk');
-
-            state.isPlaying = true;
-            if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
-            const pi = document.getElementById('play-pause-icon');
-            if (pi) pi.textContent = 'pause';
-            startSyncLoop();
           }
 
           // Keep the next segment warm for a gapless hand-off
@@ -4440,7 +4567,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           }
 
           // Word-level alignment, queued so long scripts never flood the radio
-          enqueueAlignment(() => alignChunkWithWhisper(chunkBlob, chunks[idx], chunkGlobalOffset, idx, signal));
+          enqueueAlignment(() => alignChunkWithWhisper(chunkBlob, chunks[idx], chunkOffset(idx), idx, signal));
 
         } catch (err) {
           if (err.name === 'AbortError' || signal.aborted) {
@@ -4450,42 +4577,15 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           diag('CHUNK', '#' + idx + ' failed: ' + (err && err.message));
 
           // Non-blocking recovery: mark chunk as skipped so queue playback is NEVER stalled or hung
-          state.playbackQueue.chunks[idx] = { skipped: true, duration: 0.1, offset: state.continuousDuration };
+          state.playbackQueue.chunks[idx] = { skipped: true, duration: 0.1, offset: 0, counted: true };
+          recomputeChunkOffsets();
           state.playbackQueue.completedChunksCount++;
           updateGenProgress(state.playbackQueue.completedChunksCount, totalChunks, 'Skipped a failed segment');
 
-          // If playback was actively waiting for this failed chunk, advance immediately
+          // If playback was waiting on this segment, hop forward instead of hanging.
           if (state.playbackQueue.waitingForChunk === idx) {
             state.playbackQueue.waitingForChunk = -1;
-            // Advance to next available chunk
-            for (let nextIdx = idx + 1; nextIdx < totalChunks; nextIdx++) {
-              const nextChunk = state.playbackQueue.chunks[nextIdx];
-              if (nextChunk && !nextChunk.skipped && nextChunk.url) {
-                state.playbackQueue.currentIndex = nextIdx;
-                let offsetSum = 0;
-                for (let k = 0; k < nextIdx; k++) {
-                  const ch = state.playbackQueue.chunks[k];
-                  offsetSum += (ch && ch.duration) || 0;
-                }
-                state.playbackQueue.currentChunkOffset = offsetSum;
-                state.audioElement.src = nextChunk.url;
-                state.audioElement.playbackRate = state.speed;
-                state.audioElement.preservesPitch = true;
-                state.audioElement.currentTime = 0;
-                playAudioSafe(state.audioElement, 'next chunk');
-                state.isPlaying = true;
-                if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
-                const pi = document.getElementById('play-pause-icon');
-                if (pi) pi.textContent = 'pause';
-                startSyncLoop();
-                break;
-              } else if (!nextChunk) {
-                // Next chunk is in flight, wait for it
-                state.playbackQueue.waitingForChunk = nextIdx;
-                state.playbackQueue.currentIndex = nextIdx;
-                break;
-              }
-            }
+            if (idx + 1 < totalChunks) playQueueIndex(idx + 1, 'skipped segment', 0);
           }
 
           showToast(`Segment ${idx + 1} skipped — playback continues`, 'info', 2200);
@@ -4501,65 +4601,37 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       }
 
       async function onAllChunksCompleted() {
-        if (signal.aborted || state.playbackQueue.generationId !== currentGenId) return;
+        const q = state.playbackQueue;
+        if (!q || signal.aborted || q.generationId !== currentGenId) return;
+        if (q.finalized) return; // the finally block can fire this more than once
+        q.finalized = true;
 
-        const allBlobs = state.playbackQueue.chunks.map(c => c && c.blob).filter(Boolean);
-        const totalBytes = allBlobs.reduce((acc, b) => acc + (b.size || 0), 0);
-        const isWavMaster = allBlobs.length > 0 && /wav|pcm/i.test(allBlobs[0].type || '');
+        recomputeChunkOffsets();
 
-        // Merging WAV in the browser means holding every PCM chunk in JS memory
-        // at once (~2 MB per spoken minute). Above this budget we keep the
-        // per-segment playback queue and only merge if a download is requested.
-        const deferredMaster = isWavMaster && totalBytes > 48 * 1024 * 1024;
-        const masterBlob = deferredMaster ? null : await combineAudioBlobs(allBlobs);
-        state.masterDeferred = deferredMaster;
-        if (signal.aborted || state.playbackQueue.generationId !== currentGenId) return;
-
-        if (deferredMaster) {
-          hideGenProgress();
-          showToast('Long script buffered — segments play continuously; the download button packs them on demand', 'info', 4200);
-          if (el.ribbonSegmentsBadge) {
-            el.ribbonSegmentsBadge.textContent = state.playbackQueue.completedChunksCount + ' of ' + totalChunks + ' Buffered (' + state.continuousDuration.toFixed(1) + 's)';
-          }
-          if (el.interactiveStatusLabel) {
-            el.interactiveStatusLabel.textContent = 'Speech Complete · Tap a word to jump';
-          }
-          el.btnMainGenerate.disabled = false;
-          el.btnMainGenerate.classList.remove('loading');
-          el.btnMainGenerate.removeAttribute('aria-busy');
-          el.labelGenerate.textContent = 'Generate Speech';
-          if (el.btnCancelGenerate) el.btnCancelGenerate.classList.add('hidden');
-          if (el.btnStageCancel) el.btnStageCancel.classList.add('hidden');
-          state.currentAbortController = null;
-          return;
+        // Played segments release their blobs so an hour-long script cannot eat
+        // the WebView. Merging "whatever is left" produced a short master which
+        // the player then treated as the whole recording, so a gap defers the
+        // merge instead of silently dropping audio.
+        const blobs = [];
+        let missing = 0;
+        for (let i = 0; i < q.totalExpected; i++) {
+          const c = q.chunks[i];
+          if (c && c.blob) blobs.push(c.blob);
+          else missing++;
         }
+        const totalBytes = blobs.reduce((acc, b) => acc + (b.size || 0), 0);
+        const isWavMaster = blobs.length > 0 && /wav|pcm/i.test(blobs[0].type || '');
+        const tooBig = isWavMaster && totalBytes > 48 * 1024 * 1024;
+
+        let masterBlob = null;
+        if (!missing && !tooBig) {
+          masterBlob = await combineAudioBlobs(blobs);
+        }
+        if (signal.aborted || state.playbackQueue !== q || q.generationId !== currentGenId) return;
 
         hideGenProgress();
+        state.masterDeferred = !masterBlob;
 
-        const masterUrl = URL.createObjectURL(masterBlob);
-        state.continuousMasterBlob = masterBlob;
-        state.continuousMasterUrl = masterUrl;
-        state.currentBlob = masterBlob;
-
-        // If audio finished playing or is paused, set master track
-        if (state.audioElement.paused && !state.isPlaying) {
-          state.currentUrl = masterUrl;
-          state.audioElement.src = masterUrl;
-          state.audioElement.currentTime = 0;
-          state.duration = state.continuousDuration;
-        }
-
-        // Unified full-speech waveform peaks
-        decodeAudioBlob(masterBlob).then(({ buffer }) => {
-          if (buffer) {
-            state.waveformPeaks = extractPeaksFromAudioBuffer(buffer);
-            drawDockWaveform();
-          }
-        });
-
-        if (el.interactiveStatusLabel) {
-          el.interactiveStatusLabel.textContent = 'Speech Complete · Click any word to jump audio';
-        }
         let modelDisplayName = 'Deepgram Flux';
         if (state.model.includes('fish')) modelDisplayName = 'Fish S2.1';
         else if (state.model.includes('mistral') || state.model.includes('voxtral')) modelDisplayName = 'Mistral Voxtral';
@@ -4569,10 +4641,53 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         else if (state.model.includes('groq/orpheus-english')) modelDisplayName = 'Groq Orpheus EN';
         else if (state.model.includes('groq/orpheus-arabic')) modelDisplayName = 'Groq Orpheus AR';
         else if (state.model.includes('cloudflare') || state.model.includes('melotts')) modelDisplayName = 'Cloudflare Melo';
-        el.playerLabelModel.textContent = modelDisplayName;
+
+        if (el.interactiveStatusLabel) {
+          el.interactiveStatusLabel.textContent = masterBlob
+            ? 'Speech Complete · Click any word to jump audio'
+            : 'Speech Complete · Click any word to jump';
+        }
+        if (el.playerLabelModel) {
+          el.playerLabelModel.textContent = modelDisplayName + (masterBlob ? '' : ' · Streaming');
+        }
+        if (el.ribbonSegmentsBadge) {
+          el.ribbonSegmentsBadge.textContent = q.totalExpected + ' of ' + q.totalExpected +
+            ' Buffered (' + state.continuousDuration.toFixed(1) + 's)';
+        }
 
         const totalElapsed = ((performance.now() - t0) / 1000).toFixed(2);
-        showToast(`Complete speech buffered (${totalElapsed}s)`, 'success', 2500);
+
+        if (!masterBlob) {
+          // Keep the segment queue authoritative: it still covers every second of
+          // audio (or can rebuild it), and Download packs a single file on demand.
+          state.continuousMasterBlob = null;
+          state.continuousMasterUrl = null;
+          state.currentBlob = null;
+          state.duration = state.continuousDuration;
+          showToast('Speech ready — ' + fmtTime(state.continuousDuration) + ' buffered. Download packs it into one file.', 'success', 3200);
+        } else {
+          const masterUrl = URL.createObjectURL(masterBlob);
+          state.continuousMasterBlob = masterBlob;
+          state.continuousMasterUrl = masterUrl;
+          state.currentBlob = masterBlob;
+
+          // Only take over the element when it is not mid-playback.
+          if (state.audioElement.paused && !state.isPlaying) {
+            state.currentUrl = masterUrl;
+            state.audioElement.src = masterUrl;
+            state.audioElement.currentTime = 0;
+            state.duration = state.continuousDuration;
+          }
+
+          decodeAudioBlob(masterBlob).then(({ buffer }) => {
+            if (buffer) {
+              state.waveformPeaks = extractPeaksFromAudioBuffer(buffer);
+              drawDockWaveform();
+            }
+          });
+
+          showToast(`Complete speech buffered (${totalElapsed}s)`, 'success', 2500);
+        }
 
         const v = state.voicesCatalog.find(item => item.id === state.voice)
                || DEFAULT_ELEVENLABS_VOICES.find(item => item.id === state.voice)
@@ -4587,7 +4702,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           text: text,
           timestamp: new Date().toISOString()
         });
-        if (typeof captureGeneratedAudio === 'function') {
+        if (masterBlob && typeof captureGeneratedAudio === 'function') {
           captureGeneratedAudio(masterBlob, text).catch((err) => {
             console.error('vault write failed', err);
             showToast('Could not save to vault', true);
@@ -4605,6 +4720,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
       // Kick off pipeline
       state.playbackQueue.pump = pumpQueue;
+      state.playbackQueue.finalize = onAllChunksCompleted;
       pumpQueue();
 
     } catch (err) {
@@ -4721,78 +4837,31 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     });
 
     audio.addEventListener('ended', () => {
-      // If progressive streaming queue is active, advance to next chunk
-      if (state.playbackQueue && state.playbackQueue.isPlayingQueue) {
-        let nextIdx = state.playbackQueue.currentIndex + 1;
+      const q = state.playbackQueue;
 
-        // Skip any slots marked as skipped/failed
-        while (nextIdx < state.playbackQueue.totalExpected) {
-          const slot = state.playbackQueue.chunks[nextIdx];
-          if (slot && slot.skipped) {
-            nextIdx++;
-          } else {
-            break;
-          }
+      // Advancing must survive evicted or late segments: rebuild them instead of
+      // wedging on a slot nothing will ever fill.
+      if (q && q.isPlayingQueue && q.totalExpected > 1) {
+        let nextIdx = (q.currentIndex || 0) + 1;
+        while (nextIdx < q.totalExpected && q.chunks[nextIdx] && q.chunks[nextIdx].skipped) nextIdx++;
+
+        if (nextIdx < q.totalExpected) {
+          playQueueIndex(nextIdx, 'queue advance', 0);
+          return;
         }
 
-        if (nextIdx < state.playbackQueue.totalExpected) {
-          const nextChunk = state.playbackQueue.chunks[nextIdx];
-
-          if (nextChunk && nextChunk.url) {
-            // Next chunk is already buffered and ready!
-            state.playbackQueue.currentIndex = nextIdx;
-            state.playbackQueue.waitingForChunk = -1;
-
-            // Safe offset accumulation
-            let offsetSum = 0;
-            for (let k = 0; k < nextIdx; k++) {
-              const ch = state.playbackQueue.chunks[k];
-              offsetSum += (ch && ch.duration) || 0;
-            }
-            state.playbackQueue.currentChunkOffset = offsetSum;
-            releasePlayedChunks(nextIdx);
-            if (state.playbackQueue.pump) state.playbackQueue.pump();
-
-            audio.src = nextChunk.url;
-            audio.playbackRate = state.speed;
-            audio.preservesPitch = true;
-            audio.currentTime = 0;
-            playAudioSafe(audio, 'queue advance');
-
-            state.isPlaying = true;
-            if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
-            const pi = document.getElementById('play-pause-icon');
-            if (pi) pi.textContent = 'pause';
-            startSyncLoop();
-            return;
-          } else {
-            // Next chunk is still buffering / in flight!
-            state.playbackQueue.waitingForChunk = nextIdx;
-            state.playbackQueue.currentIndex = nextIdx;
-            releasePlayedChunks(nextIdx);
-            if (state.playbackQueue.pump) state.playbackQueue.pump();
-
-            if (el.ribbonSegmentsBadge) {
-              el.ribbonSegmentsBadge.textContent = `Buffering section ${nextIdx + 1} of ${state.playbackQueue.totalExpected}...`;
-            }
-
-            state.isPlaying = true;
-            if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
-            const pi = document.getElementById('play-pause-icon');
-            if (pi) pi.textContent = 'pause';
-            return;
-          }
-        } else {
-          // Finished playing all chunks!
-          state.playbackQueue.isPlayingQueue = false;
-          state.playbackQueue.waitingForChunk = -1;
-          if (state.continuousMasterUrl) {
-            state.currentUrl = state.continuousMasterUrl;
-            audio.src = state.continuousMasterUrl;
-            audio.currentTime = 0;
-            state.duration = state.continuousDuration || audio.duration;
-          }
+        // Last segment played.
+        q.isPlayingQueue = false;
+        q.waitingForChunk = -1;
+        q.finished = true;
+        if (state.continuousMasterUrl) {
+          state.currentUrl = state.continuousMasterUrl;
+          audio.src = state.continuousMasterUrl;
+          audio.currentTime = 0;
+          state.duration = state.continuousDuration || audio.duration;
         }
+      } else if (q) {
+        q.finished = true;
       }
 
       state.isPlaying = false;
@@ -4808,16 +4877,27 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
     // Play/Pause
     el.dockBtnPlay.addEventListener('click', () => {
-      if (!state.currentUrl && !state.continuousMasterUrl) {
+      const q = state.playbackQueue;
+      if (!state.currentUrl && !state.continuousMasterUrl && !queueHasPlayableAudio()) {
         if (el.textInput && el.textInput.value.trim()) {
-          generateSpeech();
+          synthesizeSpeech();
         }
         return;
       }
       if (audio.paused) {
-        if (state.continuousMasterUrl && audio.src !== state.continuousMasterUrl) {
+        // A finished long script has no merged master, so "play" has to restart
+        // the segment queue rather than replay the last segment.
+        if (q && q.finished && !state.continuousMasterUrl) {
+          restartQueueFromStart('player restart');
+          return;
+        }
+        const switching = state.continuousMasterUrl && audio.src !== state.continuousMasterUrl;
+        if (switching) {
           audio.src = state.continuousMasterUrl;
           state.currentUrl = state.continuousMasterUrl;
+        } else if (audio.ended || audio.currentTime >= (audio.duration || 0) - 0.05) {
+          // A fresh src has no metadata yet; seeking then throws and kills play().
+          try { audio.currentTime = 0; } catch (_) {}
         }
         state.userPaused = false;
         state.wantsPlayback = true;
@@ -4890,11 +4970,36 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
   async function ensureMasterBlob() {
     if (state.continuousMasterBlob) return state.continuousMasterBlob;
-    const chunks = (state.playbackQueue && state.playbackQueue.chunks) || [];
-    const blobs = chunks.map(c => c && c.blob).filter(Boolean);
-    if (blobs.length === 0) return state.currentBlob || null;
+    const q = state.playbackQueue;
+    if (!q || !Array.isArray(q.chunks)) return state.currentBlob || null;
+
+    // Long scripts evict played audio on purpose, so re-synthesize the gaps
+    // before packing a download instead of shipping a truncated file.
+    const missing = [];
+    for (let i = 0; i < q.totalExpected; i++) {
+      const c = q.chunks[i];
+      if (!c || !c.blob) missing.push(i);
+    }
+    if (missing.length) {
+      showToast('Packing ' + missing.length + ' segment(s) into one file…', 'info', 3000);
+      for (const idx of missing) {
+        if (!q.texts || !q.texts[idx]) continue;
+        try { await ensurePlayableChunk(idx); } catch (err) { diag('DOWNLOAD', '#' + idx + ' rebuild failed'); }
+      }
+    }
+
+    const blobs = [];
+    for (let i = 0; i < q.totalExpected; i++) {
+      const c = q.chunks[i];
+      if (c && c.blob) blobs.push(c.blob);
+    }
+    if (blobs.length !== q.totalExpected || !blobs.length) {
+      showToast('This script is too long for a single file on this device — generate it in two parts', 'error', 5200);
+      return null;
+    }
     const totalBytes = blobs.reduce((acc, b) => acc + (b.size || 0), 0);
     if (totalBytes > 140 * 1024 * 1024) return null;
+
     const master = await combineAudioBlobs(blobs);
     if (master) {
       state.continuousMasterBlob = master;
