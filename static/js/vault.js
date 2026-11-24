@@ -117,6 +117,9 @@ export async function renderVault(container) {
 export async function replay(id) {
   const blob = await getAudio(id);
   if (!blob) return;
+  if (typeof window !== 'undefined' && window.__VOX_BRIDGE && typeof window.__VOX_BRIDGE.pauseMainPlayer === 'function') {
+    window.__VOX_BRIDGE.pauseMainPlayer();
+  }
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   currentObjectUrl = URL.createObjectURL(blob);
   if (!currentAudio) {
@@ -124,6 +127,17 @@ export async function replay(id) {
   }
   currentAudio.src = currentObjectUrl;
   await currentAudio.play();
+  notify();
+}
+
+export function stopVaultPlayback() {
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause();
+  }
+  if (currentObjectUrl) {
+    URL.revokeObjectURL(currentObjectUrl);
+    currentObjectUrl = null;
+  }
   notify();
 }
 

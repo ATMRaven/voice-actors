@@ -3,7 +3,7 @@ import { openPalette, closePalette, isPaletteOpen } from './palette.js';
 function isTextEntry(el) {
   if (!el) return false;
   const tag = el.tagName;
-  if (tag === 'TEXTAREA') return true;
+  if (tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return true;
   if (tag === 'INPUT') {
     const type = (el.getAttribute('type') || 'text').toLowerCase();
     return ['text', 'search', 'email', 'url', 'tel', 'password', 'number'].includes(type);

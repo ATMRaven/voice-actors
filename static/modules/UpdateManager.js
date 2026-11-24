@@ -124,8 +124,10 @@ class UpdateManager {
       padding: 20px;
     `;
 
-    const vName = manifest.versionName || manifest.version || 'Latest';
+    const esc = (s) => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const vName = esc(manifest.versionName || manifest.version || 'Latest');
     const sizeMb = manifest.sizeBytes ? (manifest.sizeBytes / (1024 * 1024)).toFixed(1) : '';
+    const notesText = esc(manifest.releaseNotes || manifest.notes || 'A new update is available with performance improvements and features.');
 
     dialog.innerHTML = `
       <div style="background: #1f2021; border: 1px solid rgba(244, 245, 247, 0.12); border-radius: 20px; max-width: 400px; width: 100%; padding: 24px; color: #f4f5f7; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
@@ -139,7 +141,7 @@ class UpdateManager {
           </div>
         </div>
         <p style="font-size: 14px; color: #b4b7bd; line-height: 1.5; margin-bottom: 20px;">
-          ${manifest.releaseNotes || manifest.notes || 'A new update is available with performance improvements and features.'}
+          ${notesText}
         </p>
         <div id="update-progress-container" style="display: none; margin-bottom: 18px;">
           <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-bottom: 6px;">
@@ -239,6 +241,23 @@ class UpdateManager {
             progress: true
           });
           apkFilePath = downloadRes?.path || fileName;
+
+          if (manifest.sha256 && typeof Filesystem.readFile === 'function') {
+            progressText.textContent = 'Verifying cryptographic checksum...';
+            const readRes = await Filesystem.readFile({ path: fileName, directory: 'CACHE' });
+            const rawB64 = readRes && typeof readRes.data === 'string' ? readRes.data : '';
+            if (rawB64) {
+              const binStr = atob(rawB64);
+              const bytes = new Uint8Array(binStr.length);
+              for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+              const hashBuf = await crypto.subtle.digest('SHA-256', bytes);
+              const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+              if (hashHex.toLowerCase() !== manifest.sha256.toLowerCase()) {
+                try { await Filesystem.deleteFile({ path: fileName, directory: 'CACHE' }); } catch {}
+                throw new Error(`APK checksum mismatch. Expected ${manifest.sha256}, got ${hashHex}`);
+              }
+            }
+          }
         } finally {
           if (progressHandle && typeof progressHandle.remove === 'function') {
             progressHandle.remove();

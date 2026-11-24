@@ -57,7 +57,8 @@ await page.click('#btn-main-generate');
 const t0 = Date.now();
 await page.waitForFunction(() => {
   const q = window.__VOX_STATE.playbackQueue;
-  return q && q.completedChunksCount >= q.totalExpected;
+  const btn = document.getElementById('btn-main-generate');
+  return q && q.completedChunksCount >= q.totalExpected && !q.finalizing && (!btn || !btn.disabled);
 }, null, { timeout: 180000 });
 const genSt = await snap();
 check('40k-char script fully synthesized', genSt.done === genSt.total, `${genSt.done}/${genSt.total} in ${((Date.now() - t0) / 1000).toFixed(1)}s, cont=${genSt.cont}s`);

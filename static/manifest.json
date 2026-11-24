@@ -1,11 +1,11 @@
 {
-  "name": "VoxFlow — Modern Voice Studio",
-  "short_name": "VoxFlow",
-  "description": "Ultra-fast neural text-to-speech studio and high-precision speech transcription.",
+  "name": "Voice Actors — Neural Audio Studio",
+  "short_name": "Voice Actors",
+  "description": "High-fidelity neural voice synthesis studio and Whisper speech transcription.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#09090b",
+  "background_color": "#121315",
+  "theme_color": "#121315",
   "orientation": "portrait-primary",
   "icons": [
     {

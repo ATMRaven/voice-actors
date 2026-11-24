@@ -538,6 +538,8 @@ def generate_tts(req: TTSRequest, request: Request):
     if client_key:
         if client_key.startswith("sk-or-v1-"):
             openrouter_key = client_key
+        elif client_key.startswith("sk_car_"):
+            cartesia_key = client_key
         elif client_key.startswith("sk_"):
             elevenlabs_key = client_key
         elif client_key.startswith("dg_") or (len(client_key) == 40 and not client_key.startswith("vox_")):
@@ -1082,7 +1084,7 @@ async def speech_to_text(
     model: Optional[str] = Form("whisper-large-v3-turbo")
 ):
     client_key = extract_api_key_from_req(request, api_key)
-    groq_key = DEFAULT_GROQ_KEY
+    groq_key = request.headers.get("X-Groq-Key") or DEFAULT_GROQ_KEY
 
     if client_key:
         if client_key.startswith("gsk_"):
@@ -1091,7 +1093,6 @@ async def speech_to_text(
             check = verify_vox_api_key(client_key)
             if not check["valid"]:
                 raise HTTPException(status_code=401, detail=f"Authentication failed: {check.get('reason')}")
-            groq_key = DEFAULT_GROQ_KEY
 
     if not groq_key:
         raise HTTPException(
@@ -1158,7 +1159,7 @@ async def align_speech_words(
     api_key: Optional[str] = Form(None)
 ):
     client_key = extract_api_key_from_req(request, api_key)
-    groq_key = DEFAULT_GROQ_KEY
+    groq_key = request.headers.get("X-Groq-Key") or DEFAULT_GROQ_KEY
 
     if client_key:
         if client_key.startswith("gsk_"):
@@ -1167,7 +1168,6 @@ async def align_speech_words(
             check = verify_vox_api_key(client_key)
             if not check["valid"]:
                 raise HTTPException(status_code=401, detail=f"Authentication failed: {check.get('reason')}")
-            groq_key = DEFAULT_GROQ_KEY
 
     if not groq_key:
         raise HTTPException(

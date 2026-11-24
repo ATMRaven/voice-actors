@@ -465,7 +465,7 @@ export default {
       const deepgramReady = !!(env.DEEPGRAM_API_KEY);
       const openrouterReady = !!(env.OPENROUTER_API_KEY);
       const groqReady = !!(env.GROQ_API_KEY);
-      const mistralReady = !!(env.MISTRAL_API_KEY || "mstrl_cqKTyDmtqC78qQ8jDigvc6MF50wItkSX_0MScVF");
+      const mistralReady = !!(env.MISTRAL_API_KEY);
       const geminiReady = !!(env.GEMINI_API_KEY || env.GEMINI_API_KEY_1);
       const cartesiaReady = !!(env.CARTESIA_API_KEY);
       const cloudflareReady = !!(env.AI || (env.CLOUDFLARE_API_TOKEN && env.CLOUDFLARE_ACCOUNT_ID));
@@ -793,7 +793,7 @@ export default {
         const clientKey = extractApiKey(request, body);
         let deepgramKey = env.DEEPGRAM_API_KEY;
         let openrouterKey = env.OPENROUTER_API_KEY;
-        let mistralKey = env.MISTRAL_API_KEY || "mstrl_cqKTyDmtqC78qQ8jDigvc6MF50wItkSX_0MScVF";
+        let mistralKey = env.MISTRAL_API_KEY || "";
 
         const customDgHeader = request.headers.get("X-Deepgram-Key");
         if (customDgHeader) {
@@ -810,19 +810,19 @@ export default {
         }
 
         const customGroqHeader = request.headers.get("X-Groq-Key");
-        let groqKey = env.GROQ_API_KEY || (customGroqHeader ? customGroqHeader.trim() : (body.groq_key ? body.groq_key.trim() : ""));
+        let groqKey = (customGroqHeader ? customGroqHeader.trim() : (body.groq_key ? body.groq_key.trim() : "")) || env.GROQ_API_KEY || "";
 
         const customCartesiaHeader = request.headers.get("X-Cartesia-Key");
-        let cartesiaKey = env.CARTESIA_API_KEY || (customCartesiaHeader ? customCartesiaHeader.trim() : (body.cartesia_key ? body.cartesia_key.trim() : ""));
+        let cartesiaKey = (customCartesiaHeader ? customCartesiaHeader.trim() : (body.cartesia_key ? body.cartesia_key.trim() : "")) || env.CARTESIA_API_KEY || "";
 
         const customGeminiHeader = request.headers.get("X-Gemini-Key");
-        let geminiKey = env.GEMINI_API_KEY || env.GEMINI_API_KEY_1 || (customGeminiHeader ? customGeminiHeader.trim() : (body.gemini_key ? body.gemini_key.trim() : ""));
+        let geminiKey = (customGeminiHeader ? customGeminiHeader.trim() : (body.gemini_key ? body.gemini_key.trim() : "")) || env.GEMINI_API_KEY || env.GEMINI_API_KEY_1 || "";
 
         const customCfToken = request.headers.get("X-Cloudflare-Token");
-        let cfToken = env.CLOUDFLARE_API_TOKEN || (customCfToken ? customCfToken.trim() : (body.cloudflare_token ? body.cloudflare_token.trim() : ""));
+        let cfToken = (customCfToken ? customCfToken.trim() : (body.cloudflare_token ? body.cloudflare_token.trim() : "")) || env.CLOUDFLARE_API_TOKEN || "";
 
         const customCfAccount = request.headers.get("X-Cloudflare-Account");
-        let cfAccountId = env.CLOUDFLARE_ACCOUNT_ID || (customCfAccount ? customCfAccount.trim() : (body.cloudflare_account_id ? body.cloudflare_account_id.trim() : ""));
+        let cfAccountId = (customCfAccount ? customCfAccount.trim() : (body.cloudflare_account_id ? body.cloudflare_account_id.trim() : "")) || env.CLOUDFLARE_ACCOUNT_ID || "";
 
         const customElHeader = request.headers.get("X-ElevenLabs-Key");
         let elevenlabsKey = (customElHeader ? customElHeader.trim() : (body.elevenlabs_key ? body.elevenlabs_key.trim() : "")) || env.ELEVENLABS_API_KEY || "";
@@ -1300,8 +1300,8 @@ export default {
           headers: {
             "Authorization": `Bearer ${openrouterKey}`,
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://voxflow.pages.dev",
-            "X-Title": "VoxFlow Studio"
+            "HTTP-Referer": "https://voxflow-809.pages.dev",
+            "X-Title": "Voice Actors Studio"
           },
           body: JSON.stringify(openRouterPayload)
         });
@@ -1356,7 +1356,8 @@ export default {
         const prompt = formData.get("prompt") || formData.get("text");
 
         const clientKey = extractApiKey(request) || formData.get("api_key");
-        let groqKey = env.GROQ_API_KEY;
+        const customGroqHeader = request.headers.get("X-Groq-Key");
+        let groqKey = (customGroqHeader ? customGroqHeader.trim() : (formData.get("groq_key") ? String(formData.get("groq_key")).trim() : "")) || env.GROQ_API_KEY;
 
         if (clientKey) {
           if (clientKey.startsWith("gsk_")) {
@@ -1366,7 +1367,6 @@ export default {
             if (!check.valid) {
               return jsonResponse({ detail: `Authentication failed: ${check.reason}` }, 401);
             }
-            groqKey = env.GROQ_API_KEY;
           }
         }
 
@@ -1419,7 +1419,8 @@ export default {
         const file = formData.get("file");
 
         const clientKey = extractApiKey(request) || formData.get("api_key");
-        let groqKey = env.GROQ_API_KEY;
+        const customGroqHeader = request.headers.get("X-Groq-Key");
+        let groqKey = (customGroqHeader ? customGroqHeader.trim() : (formData.get("groq_key") ? String(formData.get("groq_key")).trim() : "")) || env.GROQ_API_KEY;
 
         if (clientKey) {
           if (clientKey.startsWith("gsk_")) {
@@ -1429,7 +1430,6 @@ export default {
             if (!check.valid) {
               return jsonResponse({ detail: `Authentication failed: ${check.reason}` }, 401);
             }
-            groqKey = env.GROQ_API_KEY;
           }
         }
 

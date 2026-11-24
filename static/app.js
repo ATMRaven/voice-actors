@@ -1,9 +1,9 @@
-import { putAudio, listAudio } from './js/db.js';
+import { putAudio, listAudio, clearAll as clearVaultDB } from './js/db.js';
 import { buildFilename, extFromMime } from './js/filename.js';
 import { readFavorites, toggleFavorite, renderFavorites, isFavorite } from './js/favorites.js';
 import { initPalette, openPalette, closePalette, isPaletteOpen } from './js/palette.js';
 import { initKeys } from './js/keys.js';
-import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
+import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } from './js/vault.js';
 
 /* =====================================================================
    VOXFLOW — ELEVENLABS / APPLE CREATIVE STUDIO CONTROLLER
@@ -494,6 +494,64 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     restoreScriptDraft();
     renderLibraryItems();
     window.__VOXFLOW_STATE__ = state;
+    window.__VOX_BRIDGE = {
+      getVoices: getAllUnifiedVoices,
+      getActiveVoiceId: () => state.voice,
+      selectVoice: (voiceId) => {
+        const all = getAllUnifiedVoices();
+        const match = all.find(v => v.id === voiceId);
+        if (match && match.model && state.model !== match.model) {
+          setModel(match.model);
+        }
+        state.voice = voiceId;
+        syncVoicePill();
+        renderDrawerVoices();
+      },
+      togglePlayback: () => {
+        if (state.currentUrl || (state.playbackQueue && state.playbackQueue.totalExpected > 0)) {
+          if (el.dockBtnPlay) el.dockBtnPlay.click();
+          return true;
+        }
+        return false;
+      },
+      pauseMainPlayer: () => {
+        if (state.audioElement && !state.audioElement.paused) {
+          state.userPaused = true;
+          state.wantsPlayback = false;
+          state.audioElement.pause();
+          state.isPlaying = false;
+          if (el.dockBtnPlay) el.dockBtnPlay.classList.remove('playing');
+          stopSyncLoop();
+        }
+      },
+      hasDownloadableAudio: () => !!(state.currentBlob || state.continuousMasterBlob || (state.playbackQueue && state.playbackQueue.totalExpected > 0)),
+      downloadCurrent: () => downloadCurrentAudio(),
+      showToast: (msg, type = 'info', ms = 3200) => showToast(msg, type, ms),
+      closeTopOverlay: () => {
+        if (el.voiceDrawerBackdrop && !el.voiceDrawerBackdrop.classList.contains('hidden')) {
+          closeVoiceDrawer();
+          return true;
+        }
+        if (el.settingsModalBackdrop && !el.settingsModalBackdrop.classList.contains('hidden')) {
+          el.settingsModalBackdrop.classList.add('hidden');
+          return true;
+        }
+        if (el.apiModalBackdrop && !el.apiModalBackdrop.classList.contains('hidden')) {
+          el.apiModalBackdrop.classList.add('hidden');
+          return true;
+        }
+        if (el.modalScreenshotScan && !el.modalScreenshotScan.classList.contains('hidden')) {
+          el.modalScreenshotScan.classList.add('hidden');
+          return true;
+        }
+        if (el.getAppPanel && el.getAppPanel.dataset.open === 'true') {
+          el.getAppPanel.dataset.open = 'false';
+          el.btnGetApp?.setAttribute('aria-expanded', 'false');
+          return true;
+        }
+        return false;
+      }
+    };
     console.log('%c VoxFlow Neural Audio %c Built by A.T.M.R %c', 'background:#18181b;color:#f59e0b;font-weight:700;padding:4px 8px;border-radius:4px 0 0 4px;font-family:sans-serif;', 'background:#f59e0b;color:#0e0f11;font-weight:800;padding:4px 8px;border-radius:0 4px 4px 0;font-family:sans-serif;', '');
   }
 
@@ -515,13 +573,15 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
   // --- Theme Toggle ---
   function setupTheme() {
     const saved = localStorage.getItem('voxflow_theme') || 'dark';
-    document.body.className = `theme-${saved}`;
+    document.body.classList.remove('theme-dark', 'theme-light');
+    document.body.classList.add(`theme-${saved}`);
 
     if (el.btnTheme) {
       el.btnTheme.addEventListener('click', () => {
         const isDark = document.body.classList.contains('theme-dark');
         const next = isDark ? 'light' : 'dark';
-        document.body.className = `theme-${next}`;
+        document.body.classList.remove('theme-dark', 'theme-light');
+        document.body.classList.add(`theme-${next}`);
         localStorage.setItem('voxflow_theme', next);
         drawDockWaveform();
       });
@@ -687,6 +747,10 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         const rLink = document.getElementById('download-release-link');
         if (rLink && vName) {
           rLink.href = `https://github.com/ATMRaven/voice-actors/releases/tag/v${vName}`;
+        }
+        const shaEl = document.getElementById('download-sha256-text');
+        if (shaEl && d.sha256) {
+          shaEl.textContent = `SHA-256: ${d.sha256}`;
         }
       })
       .catch(() => { /* keep the static fallback */ });
@@ -1861,7 +1925,40 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     return persona.emotions.find(e => e.id === persona.defaultEmotion) || persona.emotions[0];
   }
 
+  function getAllUnifiedVoices() {
+    const mistralVoices = MISTRAL_PERSONAS.flatMap(p =>
+      p.emotions.map(e => ({
+        id: e.id,
+        name: `${p.name} (${e.label})`,
+        gender: p.gender,
+        accent: p.accent,
+        language: p.accent,
+        tone: p.tone,
+        provider: 'Mistral AI',
+        model: 'mistral/voxtral-mini-tts'
+      }))
+    );
+    return [
+      ...DEFAULT_DEEPGRAM_VOICES.map(v => ({ ...v, language: v.accent, provider: 'Deepgram', model: 'deepgram/flux-tts:free' })),
+      ...DEFAULT_ELEVENLABS_VOICES.map(v => ({ ...v, language: v.accent, provider: 'ElevenLabs', model: 'elevenlabs/multilingual-v2' })),
+      ...mistralVoices,
+      ...DEFAULT_CARTESIA_VOICES.map(v => ({ ...v, language: v.accent, provider: 'Cartesia', model: 'cartesia/sonic-3.6' })),
+      ...DEFAULT_GEMINI_VOICES.map(v => ({ ...v, language: v.accent, provider: 'Google Gemini', model: 'google/gemini-2.5-flash-tts' })),
+      ...DEFAULT_GROQ_ORPHEUS_VOICES.map(v => ({
+        ...v,
+        language: v.accent,
+        provider: 'Groq Orpheus',
+        model: v.model && v.model.includes('arabic') ? 'groq/orpheus-arabic' : 'groq/orpheus-english'
+      })),
+      ...DEFAULT_CLOUDFLARE_VOICES.map(v => ({ ...v, language: v.accent, provider: 'Cloudflare MeloTTS', model: 'cloudflare/melotts' })),
+      { id: 'alloy', name: 'S2.1 Multi-Voice', gender: 'Adaptive', accent: 'Multilingual', language: 'Multilingual', tone: 'Expressive Neural', provider: 'Fish Audio', model: 'fish-audio/s2.1-pro-free:free' }
+    ];
+  }
+
   function syncVoicePill() {
+    if (typeof window.__VOX_BRIDGE_ON_VOICE === 'function') {
+      window.__VOX_BRIDGE_ON_VOICE(state.voice);
+    }
     const provider = getActiveProvider();
     if (provider === 'mistral') {
       const persona = getPersonaForVoice(state.voice) || MISTRAL_PERSONAS[0];
@@ -4605,6 +4702,8 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         if (!q || signal.aborted || q.generationId !== currentGenId) return;
         if (q.finalized) return; // the finally block can fire this more than once
         q.finalized = true;
+        q.finalizing = true;
+        if (el.labelGenerate) el.labelGenerate.textContent = 'Finalizing...';
 
         recomputeChunkOffsets();
 
@@ -4705,7 +4804,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         if (masterBlob && typeof captureGeneratedAudio === 'function') {
           captureGeneratedAudio(masterBlob, text).catch((err) => {
             console.error('vault write failed', err);
-            showToast('Could not save to vault', true);
+            showToast('Could not save to vault', 'error');
           });
         }
 
@@ -4716,6 +4815,8 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         if (el.btnCancelGenerate) el.btnCancelGenerate.classList.add('hidden');
         if (el.btnStageCancel) el.btnStageCancel.classList.add('hidden');
         state.currentAbortController = null;
+        q.finalizing = false;
+        q.finalizeComplete = true;
       }
 
       // Kick off pipeline
@@ -5013,7 +5114,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
       showToast('Packing segments into one file…', 'info', 2600);
       const packed = await ensureMasterBlob();
       if (!packed) {
-        showToast('This script is too long for a single file on this device — generate it in two parts', true, 5200);
+        showToast('This script is too long for a single file on this device — generate it in two parts', 'error', 5200);
         return;
       }
     }
@@ -5021,7 +5122,7 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
     const url = URL.createObjectURL(state.currentBlob);
     const a = document.createElement('a');
     a.href = url;
-    const safeModel = state.model.split('/')[1].replace(':', '_');
+    const safeModel = (state.model.split('/')[1] || state.model).replace(/[:/]/g, '_');
     const stamp = new Date().toISOString().slice(0, 10);
     const isWav = state.currentBlob.type && state.currentBlob.type.includes('wav');
     const ext = isWav ? 'wav' : 'mp3';
@@ -5400,6 +5501,8 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
         state.library = [];
         localStorage.setItem('voxflow_library', JSON.stringify([]));
         renderLibraryItems();
+        stopVaultPlayback();
+        clearVaultDB().then(() => renderVault(document.getElementById('vault-list'))).catch(() => {});
         showToast('Library cleared', 'info');
       }
     });
@@ -5805,13 +5908,6 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
           synthesizeSpeech();
         }
       }
-      if (e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
-        e.preventDefault();
-        if (state.currentUrl) {
-          if (state.audioElement.paused) state.audioElement.play();
-          else state.audioElement.pause();
-        }
-      }
     });
   }
 
@@ -5848,11 +5944,15 @@ import { renderVault, replay, download, togglePlayPause } from './js/vault.js';
 
 const studioState = {
   voices: [],
-  currentVoiceId: localStorage.getItem('nas.lastVoice') || null,
+  currentVoiceId: localStorage.getItem('nas.lastVoice') || 'flux-alexis-en',
   lastAudioId: null
 };
 
 function showToast(message, isError) {
+  if (window.__VOX_BRIDGE && typeof window.__VOX_BRIDGE.showToast === 'function') {
+    window.__VOX_BRIDGE.showToast(message, isError ? 'error' : 'info');
+    return;
+  }
   const stack = document.getElementById('toast-stack');
   if (!stack) return;
   const toast = document.createElement('div');
@@ -5865,6 +5965,13 @@ function showToast(message, isError) {
 }
 
 async function loadVoices() {
+  if (window.__VOX_BRIDGE && typeof window.__VOX_BRIDGE.getVoices === 'function') {
+    const unified = window.__VOX_BRIDGE.getVoices();
+    if (Array.isArray(unified) && unified.length) {
+      studioState.voices = unified;
+      return studioState.voices;
+    }
+  }
   try {
     const res = await fetch('/api/voices');
     if (!res.ok) throw new Error('voices');
@@ -5879,7 +5986,8 @@ async function loadVoices() {
 function updateFavoriteToggleBtn() {
   const btn = document.getElementById('favorite-toggle');
   if (!btn) return;
-  const isFav = isFavorite(studioState.currentVoiceId);
+  const activeId = (window.__VOX_BRIDGE && window.__VOX_BRIDGE.getActiveVoiceId()) || studioState.currentVoiceId;
+  const isFav = isFavorite(activeId);
   btn.classList.toggle('text-tertiary-fixed-dim', isFav);
   btn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
   btn.title = isFav ? 'Unpin from favorites' : 'Pin to favorites';
@@ -5891,13 +5999,15 @@ function wireFavoriteToggle() {
   const btn = document.getElementById('favorite-toggle');
   if (!btn) return;
   btn.addEventListener('click', () => {
-    if (!studioState.currentVoiceId) return;
-    toggleFavorite(studioState.currentVoiceId);
+    const activeId = (window.__VOX_BRIDGE && window.__VOX_BRIDGE.getActiveVoiceId()) || studioState.currentVoiceId;
+    if (!activeId) return;
+    studioState.currentVoiceId = activeId;
+    toggleFavorite(activeId);
     updateFavoriteToggleBtn();
     renderFavorites(
       document.getElementById('favorites-strip'),
       studioState.voices,
-      studioState.currentVoiceId,
+      activeId,
       selectVoice
     );
   });
@@ -5905,10 +6015,12 @@ function wireFavoriteToggle() {
 }
 
 function selectVoice(voiceId) {
+  if (!voiceId) return;
   studioState.currentVoiceId = voiceId;
   localStorage.setItem('nas.lastVoice', voiceId);
-  const select = document.getElementById('voice-select');
-  if (select) select.value = voiceId;
+  if (window.__VOX_BRIDGE && typeof window.__VOX_BRIDGE.selectVoice === 'function') {
+    window.__VOX_BRIDGE.selectVoice(voiceId);
+  }
   updateFavoriteToggleBtn();
   renderFavorites(document.getElementById('favorites-strip'), studioState.voices, voiceId, selectVoice);
 }
@@ -5936,8 +6048,9 @@ async function captureGeneratedAudio(blob, text) {
   if (!studioState.voices || !studioState.voices.length) {
     await loadVoices();
   }
-  const voice = studioState.voices.find((v) => v.id === studioState.currentVoiceId);
-  const voiceName = voice ? voice.name : (studioState.currentVoiceId || 'voice');
+  const activeId = (window.__VOX_BRIDGE && window.__VOX_BRIDGE.getActiveVoiceId()) || studioState.currentVoiceId;
+  const voice = studioState.voices.find((v) => v.id === activeId);
+  const voiceName = voice ? voice.name : (activeId || 'voice');
   const createdAt = Date.now();
   const ext = extFromMime(blob.type);
   const filename = buildFilename({ voice: voiceName, text, createdAt, ext });
@@ -5957,7 +6070,7 @@ async function captureGeneratedAudio(blob, text) {
     };
     audio.src = url;
   });
-  await putAudio({ id, filename, voiceId: studioState.currentVoiceId, voiceName, text, createdAt, duration, mime: blob.type }, blob);
+  await putAudio({ id, filename, voiceId: activeId, voiceName, text, createdAt, duration, mime: blob.type }, blob);
   studioState.lastAudioId = id;
   await renderVault(document.getElementById('vault-list'));
   return id;
@@ -5973,6 +6086,19 @@ window.__nas = {
 
 async function boot() {
   await loadVoices();
+  const savedVoice = localStorage.getItem('nas.lastVoice');
+  if (savedVoice && studioState.voices.some(v => v.id === savedVoice) && window.__VOX_BRIDGE) {
+    window.__VOX_BRIDGE.selectVoice(savedVoice);
+  }
+  studioState.currentVoiceId = (window.__VOX_BRIDGE && window.__VOX_BRIDGE.getActiveVoiceId()) || studioState.currentVoiceId;
+
+  window.__VOX_BRIDGE_ON_VOICE = (voiceId) => {
+    studioState.currentVoiceId = voiceId;
+    localStorage.setItem('nas.lastVoice', voiceId);
+    updateFavoriteToggleBtn();
+    renderFavorites(document.getElementById('favorites-strip'), studioState.voices, voiceId, selectVoice);
+  };
+
   renderFavorites(document.getElementById('favorites-strip'), studioState.voices, studioState.currentVoiceId, selectVoice);
   wireFavoriteToggle();
   await renderVault(document.getElementById('vault-list'));
@@ -5988,12 +6114,23 @@ async function boot() {
   });
 
   initKeys({
-    onPlayPause: () => togglePlayPause(),
-    onDownload: () => {
-      if (studioState.lastAudioId) download(studioState.lastAudioId);
-      else showToast('Nothing to download yet', true);
+    onPlayPause: () => {
+      if (!window.__VOX_BRIDGE || !window.__VOX_BRIDGE.togglePlayback()) {
+        togglePlayPause();
+      }
     },
-    onEscape: () => {}
+    onDownload: () => {
+      if (window.__VOX_BRIDGE && window.__VOX_BRIDGE.hasDownloadableAudio()) {
+        window.__VOX_BRIDGE.downloadCurrent();
+      } else if (studioState.lastAudioId) {
+        download(studioState.lastAudioId);
+      } else {
+        showToast('Nothing to download yet', true);
+      }
+    },
+    onEscape: () => {
+      if (window.__VOX_BRIDGE) window.__VOX_BRIDGE.closeTopOverlay();
+    }
   });
 }
 

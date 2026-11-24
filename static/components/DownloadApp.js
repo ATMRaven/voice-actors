@@ -88,7 +88,7 @@ class DownloadAppElement extends HTMLElement {
       return;
     }
 
-    const apkUrl = this.manifestData?.apkUrl || 'https://github.com/ATMRaven/voice-actors/releases/latest';
+    const apkUrl = this.manifestData?.apkUrl || 'https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk';
     const versionName = this.manifestData?.versionName ? `v${this.manifestData.versionName}` : '';
     const sizeMb = this.manifestData?.sizeBytes ? `${(this.manifestData.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : '';
     const badgeText = [versionName, sizeMb].filter(Boolean).join(' · ');
@@ -295,7 +295,7 @@ class DownloadAppElement extends HTMLElement {
       <div class="settings-row">
         <div class="app-info">
           Voice Actors Native Android
-          <span id="native-app-version">Version 1.0.2</span>
+          <span id="native-app-version">Checking version...</span>
         </div>
         <button id="btn-trigger-check" class="btn-check-update">Check for Updates</button>
       </div>

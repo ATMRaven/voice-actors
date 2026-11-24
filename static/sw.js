@@ -1,15 +1,26 @@
-const CACHE_NAME = 'voxflow-v3';
+const CACHE_NAME = 'voice-actors-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
+  '/styles-overhaul.css',
   '/mobile.css',
   '/app.js',
   '/manifest.json',
+  '/offline.html',
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
-  '/apple-touch-icon.png'
+  '/apple-touch-icon.png',
+  '/js/db.js',
+  '/js/favorites.js',
+  '/js/filename.js',
+  '/js/keys.js',
+  '/js/palette.js',
+  '/js/vault.js',
+  '/modules/back-navigation.js',
+  '/modules/UpdateManager.js',
+  '/components/DownloadApp.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -35,14 +46,15 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
 
-  // Bypass API requests to network directly
-  if (url.pathname.startsWith('/api/')) {
+  // Bypass API requests and release manifest to network directly
+  if (url.pathname.startsWith('/api/') || url.pathname === '/latest.json') {
     return;
   }
 
-  // Previews: Network first, cache fallback for fast local replay
+  // Previews: Cache first, network fallback for fast local replay
   if (url.pathname.startsWith('/previews/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
@@ -62,21 +74,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation requests: Network first, cache fallback for instant updates
-  if (event.request.mode === 'navigate') {
+  // Navigation & same-origin JS/CSS shell assets: Network first, cache fallback
+  // Ensures fresh HTML is never paired with stale cached app.js/styles.css.
+  const isCodeOrStyle = url.origin === self.location.origin && /\.(js|css|html)$/.test(url.pathname);
+  if (event.request.mode === 'navigate' || isCodeOrStyle) {
     event.respondWith(
       fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return networkResponse;
-      }).catch(() => caches.match(event.request))
+      }).catch(() => caches.match(event.request).then((hit) => hit || (event.request.mode === 'navigate' ? caches.match('/offline.html') : undefined)))
     );
     return;
   }
 
-  // Shell assets: Stale-while-revalidate
+  // Static media/icons: Stale-while-revalidate
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {

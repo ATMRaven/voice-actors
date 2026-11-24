@@ -71,28 +71,36 @@ class BackNavigationManager {
       }
     }
 
-    // 2. Built-in overlay check (Voice Modal / Settings Modal)
-    const voiceModal = document.getElementById('drawer-voices');
-    if (voiceModal && (voiceModal.classList.contains('open') || !voiceModal.classList.contains('hidden') && window.getComputedStyle(voiceModal).display !== 'none')) {
-      const closeBtn = document.getElementById('drawer-close-btn');
-      if (closeBtn) closeBtn.click();
-      else voiceModal.classList.add('hidden');
+    // 2. Built-in overlay check (Command Palette / Active Modals / Voice Drawer)
+    const palette = document.getElementById('command-palette');
+    if (palette && !palette.hidden) {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       return;
     }
 
-    const settingsModal = document.getElementById('modal-settings');
-    if (settingsModal && (!settingsModal.classList.contains('hidden') && window.getComputedStyle(settingsModal).display !== 'none')) {
-      const closeSettings = document.getElementById('btn-close-settings');
-      if (closeSettings) closeSettings.click();
-      else settingsModal.classList.add('hidden');
-      return;
+    if (window.__VOX_BRIDGE && typeof window.__VOX_BRIDGE.closeTopOverlay === 'function') {
+      if (window.__VOX_BRIDGE.closeTopOverlay()) return;
+    }
+
+    const overlayIds = [
+      'voice-drawer-backdrop',
+      'settings-modal-backdrop',
+      'api-modal-backdrop',
+      'modal-screenshot-scan'
+    ];
+    for (const overlayId of overlayIds) {
+      const overlay = document.getElementById(overlayId);
+      if (overlay && !overlay.classList.contains('hidden') && window.getComputedStyle(overlay).display !== 'none') {
+        overlay.classList.add('hidden');
+        return;
+      }
     }
 
     // 3. Tab navigation: if not on studio, switch back to studio
-    const activeTabBtn = document.querySelector('.dock-tab-btn.active, .nav-desktop-tab.active');
+    const activeTabBtn = document.querySelector('.dock-tab-btn.active, .vx-nav__item[aria-current="page"], .nav-desktop-tab.active');
     const currentTab = activeTabBtn ? activeTabBtn.getAttribute('data-tab') : 'studio';
     if (currentTab && currentTab !== 'studio') {
-      const studioTabBtn = document.querySelector(`.dock-tab-btn[data-tab="studio"], .nav-desktop-tab[data-tab="studio"]`);
+      const studioTabBtn = document.querySelector('.dock-tab-btn[data-tab="studio"], .vx-nav__item[data-tab="studio"], .nav-desktop-tab[data-tab="studio"]');
       if (studioTabBtn) {
         studioTabBtn.click();
         return;
