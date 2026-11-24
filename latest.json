@@ -2,11 +2,11 @@
   "versionName": "1.1.4",
   "versionCode": 10104,
   "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
-  "sha256": "7b3fe53e7cbb5cffcc71c66ea2447ada3f04e2255668e4fd0902820ff9273a5c",
-  "sizeBytes": 9768265,
+  "sha256": "48a4953cb1856e1fa3a4b4c2327bcde60d496957fc5991d780d9d27ce917282f",
+  "sizeBytes": 9770346,
   "minSupportedVersionCode": 1,
   "mandatory": false,
-  "releaseNotes": "v1.1.3 playback repair: long scripts now stay complete end to end. The merged audio is never built from only the segments still in memory, so the timeline, the playhead and the download all cover the whole script; merged WAVs stay valid whatever RIFF chunks the provider sends; word timings follow script order; jumping to a word ahead of the buffer fetches that part instead of falling back to the start; a pause during buffering stays paused; a dead segment is skipped; and pressing play after the end restarts the whole script. Same fixes are live on voxflow-809.pages.dev.",
-  "publishedAt": "2026-11-24T20:40:47.971Z",
+  "releaseNotes": "v1.1.4: Unified Studio voice palette/favorites/vault state, hardened worker/server API key routing, fixed Android back navigation & OTA SHA-256 verification, updated PWA service worker.",
+  "publishedAt": "2026-11-24T20:42:41Z",
   "version": "1.1.4"
 }
