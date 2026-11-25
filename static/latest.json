@@ -1,12 +1,12 @@
 {
-  "versionName": "1.1.4",
-  "versionCode": 10104,
+  "versionName": "1.1.5",
+  "versionCode": 10105,
   "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
   "sha256": "48a4953cb1856e1fa3a4b4c2327bcde60d496957fc5991d780d9d27ce917282f",
   "sizeBytes": 9770346,
   "minSupportedVersionCode": 1,
   "mandatory": false,
   "releaseNotes": "v1.1.4: Unified Studio voice palette/favorites/vault state, hardened worker/server API key routing, fixed Android back navigation & OTA SHA-256 verification, updated PWA service worker.",
-  "publishedAt": "2026-11-24T20:42:41Z",
-  "version": "1.1.4"
+  "publishedAt": "2026-11-25T12:01:04.536Z",
+  "version": "1.1.5"
 }
