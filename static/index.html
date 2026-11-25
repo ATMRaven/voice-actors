@@ -194,8 +194,8 @@
       <section id="favorites-strip" class="favorites-strip" aria-label="Pinned voices"></section>
       
       <!-- Studio Header & Model Pill -->
-      <div class="flex items-center justify-between pt-2 pb-4">
-        <div>
+      <div class="vx-studio-head flex items-center justify-between pt-2 pb-4">
+        <div class="vx-studio-head__title">
           <h1 class="font-display text-2xl sm:text-3xl text-primary tracking-tight font-normal">Speech Studio</h1>
           <p class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant mt-0.5">Multi-Provider Neural Synthesis</p>
         </div>
@@ -205,7 +205,7 @@
           <button class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface border border-white/[0.06] active:scale-95 duration-150" id="dock-model-pill" type="button">
             <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
             <span class="font-mono text-xs tracking-wider text-primary truncate max-w-[140px] sm:max-w-[200px]" id="dock-model-name">Deepgram Flux</span>
-            <span class="material-symbols-outlined text-[16px] text-on-surface-variant">expand_more</span>
+            <svg class="w-3.5 h-3.5 text-on-surface-variant shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
 
           <!-- Model Dropdown Popover Menu -->
@@ -280,7 +280,7 @@
           <div class="flex flex-col min-w-0">
             <div class="flex items-center gap-1.5">
               <span class="font-medium text-base text-primary tracking-tight truncate" id="dock-voice-name">Alexis</span>
-              <span class="material-symbols-outlined text-[15px] text-tertiary-fixed-dim shrink-0" title="Curated voice">verified</span>
+              <svg class="vx-verified-icon w-3.5 h-3.5 text-tertiary-fixed-dim shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 2.38 3.36-.34.34 3.36L20.48 9.8 19.2 12l1.28 2.2-2.39 2.4-.34 3.36-3.36-.34L12 22l-2.39-2.38-3.36.34-.34-3.36L3.52 14.2 4.8 12 3.52 9.8l2.39-2.4.34-3.36 3.36.34L12 2zm-1.1 13.2l5.3-5.3-1.4-1.4-3.9 3.9-1.7-1.7-1.4 1.4 3.1 3.1z"/></svg>
             </div>
             <span class="font-mono text-xs uppercase tracking-wider text-on-surface-variant truncate" id="dock-voice-accent">Female · US English</span>
           </div>
@@ -289,19 +289,22 @@
         <div class="flex items-center gap-2 shrink-0">
           <!-- Favorite Pin Toggle Button -->
           <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05] min-h-[36px]" id="favorite-toggle" type="button" title="Pin to favorites" aria-pressed="false">
-            <span class="material-symbols-outlined text-[16px]">star</span>
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             <span class="font-mono text-[11px] tracking-widest uppercase hidden sm:inline">Pin</span>
           </button>
           
           <!-- Quick Voice Sample Preview Button -->
           <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05] min-h-[36px]" id="btn-dock-voice-sample" type="button" title="Listen to Voice Sample">
-            <span class="material-symbols-outlined text-[16px]" id="sample-icon">play_arrow</span>
+            <span class="vx-play-icon" id="sample-icon" aria-hidden="true">
+              <svg class="vx-icon-play w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              <svg class="vx-icon-pause w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </span>
             <span class="font-mono text-[11px] tracking-widest uppercase" id="sample-label">Sample</span>
           </button>
           
-          <!-- Swap Voice Button — now labelled, not a bare ambiguous icon -->
+          <!-- Swap Voice Button -->
           <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05] min-h-[36px]" id="dock-voice-pill" type="button" title="Browse all 96 voices">
-            <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             <span class="font-mono text-[11px] tracking-widest uppercase hidden sm:inline">Change</span>
           </button>
         </div>
@@ -312,35 +315,35 @@
         
         <!-- Script Header -->
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 text-on-surface-variant border-b border-white/[0.06]">
-          <div class="flex items-center gap-2">
+          <div class="vx-script-title flex items-center gap-2">
             <span class="font-mono text-xs uppercase tracking-widest text-primary font-medium">Script Input</span>
             <span class="hidden sm:inline-block font-mono text-[10px] text-outline px-1.5 py-0.5 rounded bg-surface-container-highest/60 border border-white/[0.04]">Text &amp; Vision</span>
           </div>
           
-          <div class="flex items-center gap-2">
+          <div class="vx-script-actions flex items-center gap-2">
             <!-- Prominent Scan Image / Screenshot Button -->
             <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-highest hover:bg-white/[0.1] text-primary border border-white/[0.1] hover:border-amber-400/50 text-xs font-medium transition-all shadow-sm active:scale-95 cursor-pointer group" id="btn-scan-image" type="button" title="Scan screenshot or image to speech (or press Ctrl+V)">
-              <span class="material-symbols-outlined text-[16px] text-tertiary-fixed-dim group-hover:scale-110 transition-transform">document_scanner</span>
-              <span class="font-medium">Scan Image</span>
+              <svg class="w-4 h-4 text-tertiary-fixed-dim shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+              <span class="font-medium">Scan</span>
               <span class="hidden md:inline-block font-mono text-[9.5px] px-1.5 py-0.5 rounded bg-black/40 text-outline border border-white/[0.06]">Ctrl+V</span>
             </button>
 
             <!-- Paste & Replace Button -->
             <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary border border-white/[0.06] hover:border-white/[0.14] text-xs font-medium transition-all active:scale-95 cursor-pointer" id="btn-paste" type="button" title="Paste clipboard content and replace existing text">
-              <span class="material-symbols-outlined text-[15px]">content_paste</span>
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
               <span>Paste</span>
             </button>
 
             <!-- Load a long script from a text file (phone-friendly) -->
             <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary border border-white/[0.06] hover:border-white/[0.14] text-xs font-medium transition-all active:scale-95 cursor-pointer" id="btn-load-file" type="button" title="Load a .txt or .md script from this device">
-              <span class="material-symbols-outlined text-[15px]">upload_file</span>
-              <span>Load file</span>
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+              <span>File</span>
             </button>
             <input class="hidden" id="input-script-file" type="file" accept=".txt,.md,.markdown,.csv,.srt,.vtt,text/plain,text/markdown" />
 
             <!-- Clear Script Button -->
             <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-outline hover:text-error hover:bg-error/10 text-xs font-mono uppercase tracking-wider transition-all cursor-pointer" id="btn-clear" type="button" title="Clear script">
-              <span class="material-symbols-outlined text-[14px]">clear</span>
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               <span>Clear</span>
             </button>
           </div>
@@ -368,12 +371,12 @@
       </div>
 
       <!-- Fine Audio Controls (Speed Slider & Cadence) -->
-      <div class="p-4 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] space-y-3">
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
+      <div class="vx-speed-card p-4 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] space-y-3">
+        <div class="vx-speed-card__inner flex flex-col gap-2">
+          <div class="vx-speed-card__header flex items-center justify-between">
             <div class="flex items-center gap-1.5">
-              <span class="text-sm font-medium text-primary">Speech Rate</span>
-              <span class="text-xs text-on-surface-variant">Playback cadence</span>
+              <span class="text-sm font-medium text-primary">Speed</span>
+              <span class="vx-speed-sub text-xs text-on-surface-variant">Playback cadence</span>
             </div>
             <span class="font-mono text-xs text-primary font-medium tracking-widest" id="dock-speed-label">1.0x</span>
           </div>
@@ -405,19 +408,19 @@
 
         <button class="vx-generate w-full h-12 rounded-full bg-primary text-on-primary flex items-center justify-center gap-2 shadow-[0_12px_28px_-6px_rgba(255,255,255,0.18)] hover:bg-primary-container active:scale-[0.98] transition-all duration-150 font-medium text-base tracking-tight cursor-pointer" id="btn-main-generate" type="button">
           <span class="vx-generate__spinner" id="generate-spinner" aria-hidden="true"></span>
-          <span class="material-symbols-outlined text-[20px]" id="generate-icon">graphic_eq</span>
+          <svg class="w-5 h-5 shrink-0" id="generate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12v2M7.5 8v8M12 4v16M16.5 8v8M21 12v2"/></svg>
           <span id="label-generate">Generate Speech</span>
           <kbd class="vx-generate__kbd" id="generate-kbd" title="Keyboard shortcut">Ctrl ↵</kbd>
         </button>
 
         <!-- Prominent Stop Generation Button (Revealed during synthesis) -->
         <button class="hidden w-full h-12 rounded-full bg-red-950/40 border border-red-500/40 text-red-400 hover:bg-red-950/60 flex items-center justify-center gap-2 font-mono text-xs uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer shadow-sm" id="btn-cancel-generate" type="button">
-          <span class="material-symbols-outlined text-[20px]">stop_circle</span>
+          <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>
           <span>Stop Audio Generation</span>
         </button>
 
-        <div class="flex items-center justify-center gap-1.5 text-on-surface-variant opacity-75">
-          <span class="material-symbols-outlined text-[13px] text-tertiary-fixed-dim">bolt</span>
+        <div class="vx-cta-latency flex items-center justify-center gap-1.5 text-on-surface-variant opacity-75">
+          <svg class="w-3.5 h-3.5 text-tertiary-fixed-dim shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           <span class="font-mono text-[10px] uppercase tracking-widest">Est. Latency ~180ms • Uncompressed Audio</span>
         </div>
       </div>
@@ -443,17 +446,20 @@
           <div class="flex items-center gap-2.5">
             <!-- Play/Pause Button with dynamic icon -->
             <button class="w-10 h-10 rounded-full bg-primary text-on-primary hover:bg-primary-container flex items-center justify-center active:scale-95 transition-all shadow-md cursor-pointer" id="dock-btn-play" type="button" title="Play/Pause Synthesis">
-              <span class="material-symbols-outlined text-[22px]" id="play-pause-icon">play_arrow</span>
+              <span class="vx-play-icon" id="play-pause-icon" aria-hidden="true">
+                <svg class="vx-icon-play w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                <svg class="vx-icon-pause w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              </span>
             </button>
             
             <!-- Download MP3 Button -->
             <button class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center active:scale-95 transition-colors border border-white/[0.04] cursor-pointer" id="btn-dock-download" type="button" title="Download Audio File">
-              <span class="material-symbols-outlined text-[18px]">download</span>
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
 
             <!-- Toggle Live Sync Stage -->
             <button class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center active:scale-95 transition-colors border border-white/[0.04] cursor-pointer" id="btn-toggle-reader" type="button" title="Toggle Word-by-Word Reading Stage">
-              <span class="material-symbols-outlined text-[18px]">subtitles</span>
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="11" x2="12" y2="11"/><line x1="6" y1="15" x2="16" y2="15"/></svg>
             </button>
           </div>
 
@@ -477,7 +483,7 @@
           </div>
           <div class="flex items-center gap-2">
             <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/15 hover:bg-red-500/25 text-red-400 font-mono text-[11px] uppercase tracking-wider transition-colors cursor-pointer" id="btn-stage-cancel" type="button" title="Stop Audio Playback">
-              <span class="material-symbols-outlined text-[14px]">stop</span>
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
               <span>Stop Audio</span>
             </button>
             <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer px-2 py-1.5" id="btn-back-to-editor" type="button">Back to Editor</button>
@@ -583,7 +589,7 @@
       <!-- File Dropzone Option -->
       <div class="p-3.5 rounded-xl bg-surface-container-low mb-4 border border-dashed border-white/[0.08] flex items-center justify-between" id="stt-dropzone">
         <div class="flex items-center gap-2.5 min-w-0">
-          <span class="material-symbols-outlined text-outline text-[20px]">upload_file</span>
+          <svg class="w-5 h-5 text-outline shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
           <div class="flex flex-col min-w-0">
             <span class="text-xs font-medium text-primary truncate" id="picked-file-name">Or select an audio file (WAV, MP3, M4A, WEBM)</span>
             <span class="font-mono text-[10px] text-outline truncate" id="stt-hint-display">Upload file for direct neural transcription</span>
@@ -624,14 +630,15 @@
          VIEW 3: MODELS & ENGINES (Architecture & Connected Providers)
          =================================================================== -->
     <section class="hidden flex flex-col w-full" id="view-models">
-      <div class="flex flex-col pt-2 pb-5">
-        <span class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Architecture</span>
+      <!-- View Header -->
+      <div class="vx-models-head flex flex-col pt-2 pb-5">
+        <span class="vx-models-eyebrow font-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Architecture</span>
         <h1 class="font-display text-3xl sm:text-4xl text-primary tracking-tight font-normal mt-0.5">Providers &amp; Engines</h1>
-        <p class="font-mono text-xs text-on-surface-variant mt-1">High-fidelity acoustic speech models</p>
+        <p class="vx-models-sub font-mono text-xs text-on-surface-variant mt-1">High-fidelity acoustic speech models</p>
       </div>
 
       <!-- Telemetry Stats Row -->
-      <div class="flex items-baseline justify-between py-3 mb-5 border-y border-white/[0.04]">
+      <div class="vx-models-stats flex items-baseline justify-between py-3 mb-5 border-y border-white/[0.04]">
         <div class="flex flex-col">
           <div class="flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
@@ -801,8 +808,8 @@
 
       <!-- Engine Configuration Button -->
       <div class="mt-6 flex justify-center">
-        <button class="px-5 py-2.5 rounded-full bg-surface-container hover:bg-surface-container-high text-xs font-mono uppercase tracking-wider text-primary border border-white/[0.06] transition-all flex items-center gap-2" onclick="document.getElementById('btn-open-settings').click()" type="button">
-          <span class="material-symbols-outlined text-[16px]">key</span>
+        <button class="px-5 py-2.5 rounded-full bg-surface-container hover:bg-surface-container-high text-xs font-mono uppercase tracking-wider text-primary border border-white/[0.06] transition-all flex items-center gap-2" id="btn-open-settings-from-models" type="button">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
           <span>Configure API Credentials</span>
         </button>
       </div>
@@ -812,32 +819,31 @@
          VIEW 4: AUDIO ARCHIVE (Vault & Generated History)
          =================================================================== -->
     <section class="hidden flex flex-col w-full" id="view-archive">
-      <section id="vault-list" class="vault-list" aria-label="Audio vault"></section>
       
       <!-- View Header -->
-      <div class="flex flex-col pt-2 pb-5">
-        <span class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Releases &amp; Storage</span>
-        <h1 class="font-display text-3xl sm:text-4xl text-primary tracking-tight font-normal mt-0.5">Project Archive</h1>
-        <p class="font-mono text-xs text-on-surface-variant mt-1">Official Android client distributions and saved session recordings</p>
+      <div class="vx-archive-head flex flex-col pt-2 pb-5">
+        <span class="vx-archive-eyebrow font-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Releases &amp; Storage</span>
+        <h1 class="font-display text-3xl sm:text-4xl text-primary tracking-tight font-normal mt-0.5">Archive</h1>
+        <p class="vx-archive-sub font-mono text-xs text-on-surface-variant mt-1">Saved audio recordings and session history</p>
       </div>
 
-      <!-- Official Android Application Release & Download Card -->
-      <div class="mb-8 p-5 sm:p-6 rounded-2xl bg-surface-container border border-white/[0.06] hover:border-tertiary-fixed-dim/30 transition-all shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
+      <!-- Official Android Application Release & Download Card (hidden inside native APK) -->
+      <div id="apk-release-card" class="mb-6 p-5 sm:p-6 rounded-2xl bg-surface-container border border-white/[0.06] hover:border-tertiary-fixed-dim/30 transition-all shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
           
           <!-- Left: App Identity & Description -->
           <div class="flex items-start gap-4 min-w-0">
             <div class="w-12 h-12 rounded-xl bg-tertiary-fixed-dim/15 text-tertiary-fixed-dim border border-tertiary-fixed-dim/30 flex items-center justify-center shrink-0 shadow-inner">
-              <span class="material-symbols-outlined text-[26px]">android</span>
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
             </div>
             <div class="flex flex-col min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <h3 class="font-display text-xl text-primary font-medium tracking-tight">Voice Actors for Android</h3>
-                <span class="font-mono text-[10px] uppercase tracking-wider text-tertiary-fixed-dim bg-tertiary-fixed-dim/10 border border-tertiary-fixed-dim/20 px-2 py-0.5 rounded-full font-semibold" id="download-version-badge">v1.1.3 Release</span>
+                <span class="font-mono text-[10px] uppercase tracking-wider text-tertiary-fixed-dim bg-tertiary-fixed-dim/10 border border-tertiary-fixed-dim/20 px-2 py-0.5 rounded-full font-semibold" id="download-version-badge">v1.1.4 Release</span>
                 <span class="font-mono text-[10px] text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded-full" id="download-size-badge">9.3 MB</span>
               </div>
               <p class="text-xs text-on-surface-variant mt-1.5 leading-relaxed max-w-xl">
-                Official native Android standalone package. Features zero-latency neural streaming, touch-optimized studio canvas, hardware back navigation stack, and seamless in-app over-the-air (OTA) updates.
+                Official native Android standalone package with neural streaming, hardware back navigation, and automatic OTA updates.
               </p>
               
               <!-- Key Technical Invariants / Specs -->
@@ -863,16 +869,16 @@
                download="voice-actors-latest.apk"
                target="_blank" 
                rel="noopener">
-              <span class="material-symbols-outlined text-[18px]">download</span>
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               <span>Download APK</span>
             </a>
 
             <!-- GitHub Release Note Link -->
-            <a href="https://github.com/ATMRaven/voice-actors/releases/tag/v1.1.3" id="download-release-link" 
+            <a href="https://github.com/ATMRaven/voice-actors/releases/tag/v1.1.4" id="download-release-link" 
                class="px-4 py-3 rounded-full bg-surface-container-highest hover:bg-surface-container-high text-primary font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 border border-white/[0.06] transition-all" 
                target="_blank" 
                rel="noopener">
-              <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               <span>Release Notes</span>
             </a>
 
@@ -894,38 +900,41 @@
 
         <!-- Checksum Verification Badge -->
         <div class="mt-4 pt-3 border-t border-white/[0.04] flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-outline">
-          <div class="flex items-center gap-1.5 truncate max-w-md">
-            <span class="material-symbols-outlined text-[14px] text-tertiary-fixed-dim">verified</span>
-            <span class="truncate" id="download-sha256-text">SHA-256: 7b3fe53e7cbb5cffcc71c66ea2447ada3f04e2255668e4fd0902820ff9273a5c</span>
+          <div class="flex items-center gap-1.5 min-w-0 max-w-full">
+            <svg class="w-3.5 h-3.5 text-tertiary-fixed-dim shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 2.38 3.36-.34.34 3.36L20.48 9.8 19.2 12l1.28 2.2-2.39 2.4-.34 3.36-3.36-.34L12 22l-2.39-2.38-3.36.34-.34-3.36L3.52 14.2 4.8 12 3.52 9.8l2.39-2.4.34-3.36 3.36.34L12 2zm-1.1 13.2l5.3-5.3-1.4-1.4-3.9 3.9-1.7-1.7-1.4 1.4 3.1 3.1z"/></svg>
+            <span class="truncate" id="download-sha256-text">SHA-256: 48a4953cb1856e1fa3a4b4c2327bcde60d496957fc5991d780d9d27ce917282f</span>
           </div>
-          <span class="text-tertiary-fixed-dim/90">Cryptographically Signed &amp; Verified</span>
+          <span class="text-tertiary-fixed-dim/90">Signed &amp; Verified</span>
         </div>
 
       </div>
 
-      <!-- Divider to Audio Vault -->
-      <div class="flex items-center gap-3 mb-4">
-        <h2 class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant whitespace-nowrap">Saved Audio Recordings</h2>
-        <div class="h-px bg-white/[0.06] w-full"></div>
-      </div>
-      
       <!-- Minimal Search Bar -->
       <div class="relative w-full mb-4">
         <div class="relative flex items-center w-full h-11 rounded-full bg-surface-container-low px-4 border border-white/[0.06] focus-within:border-white/[0.15] transition-all">
-          <span class="material-symbols-outlined text-outline text-[18px] mr-2.5">search</span>
+          <svg class="w-4 h-4 text-outline mr-2.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input class="w-full bg-transparent text-sm text-primary placeholder:text-outline/50 focus:outline-none" id="archiveSearchInput" placeholder="Search saved audio by script or voice..." type="text"/>
         </div>
       </div>
 
       <!-- Vault Telemetry Progress -->
-      <div class="w-full mb-6 flex flex-col gap-1.5">
+      <div class="w-full mb-4 flex flex-col gap-1.5">
         <div class="flex items-center justify-between font-mono text-[10px] text-outline tracking-wider uppercase">
-          <span>Vault Capacity</span>
+          <span>Audio Vault</span>
           <span id="archive-count-label">0 Clips Saved</span>
         </div>
         <div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
           <div class="h-full bg-tertiary-fixed-dim rounded-full transition-all duration-500" id="archive-progress-bar" style="width: 15%;"></div>
         </div>
+      </div>
+
+      <!-- Playable IndexedDB Audio Vault -->
+      <section id="vault-list" class="vault-list mb-4" aria-label="Audio vault"></section>
+
+      <!-- Divider to Session Script History -->
+      <div class="flex items-center gap-3 mb-3">
+        <h2 class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant whitespace-nowrap">Recent Scripts</h2>
+        <div class="h-px bg-white/[0.06] w-full"></div>
       </div>
 
       <!-- Saved Clips List -->
@@ -982,14 +991,14 @@
     <div class="w-full max-w-5xl h-[88vh] sm:h-[84vh] bg-surface-container-low border border-white/[0.08] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden" id="voice-drawer">
       
       <!-- Modal Header -->
-      <div class="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-3">
-          <h3 class="font-display text-xl text-primary font-normal" id="drawer-title-text">Select Voice Actor</h3>
-          <span class="font-mono text-[10px] uppercase text-outline px-2 py-0.5 rounded-full bg-surface-container" id="drawer-voice-count">96 Available</span>
-          <span class="font-mono text-[10px] text-tertiary-fixed-dim bg-tertiary-fixed-dim/10 px-2.5 py-0.5 rounded-full border border-tertiary-fixed-dim/20" id="drawer-provider-badge">Deepgram</span>
+      <div class="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <h3 class="font-display text-xl text-primary font-normal truncate" id="drawer-title-text">Select Voice</h3>
+          <span class="font-mono text-[10px] uppercase text-outline px-2 py-0.5 rounded-full bg-surface-container shrink-0" id="drawer-voice-count">96</span>
+          <span class="font-mono text-[10px] text-tertiary-fixed-dim bg-tertiary-fixed-dim/10 px-2.5 py-0.5 rounded-full border border-tertiary-fixed-dim/20 shrink-0 hidden sm:inline-flex" id="drawer-provider-badge">Deepgram</span>
         </div>
-        <button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors bg-surface-container hover:bg-surface-container-high cursor-pointer" id="btn-close-voice-drawer" aria-label="Close voice selection" type="button">
-          <span class="material-symbols-outlined text-[18px]">close</span>
+        <button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors bg-surface-container hover:bg-surface-container-high cursor-pointer shrink-0" id="btn-close-voice-drawer" aria-label="Close voice selection" type="button">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
@@ -1007,7 +1016,7 @@
       <!-- Search & Filters -->
       <div class="px-5 py-3 border-b border-white/[0.04] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
         <div class="relative flex-1 max-w-md">
-          <span class="material-symbols-outlined text-outline text-[16px] absolute left-3 top-1/2 -translate-y-1/2">search</span>
+          <svg class="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input class="w-full h-9 pl-9 pr-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/50 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="voice-search-field" placeholder="Search voice actors, accents, tones..." type="text"/>
         </div>
         
@@ -1032,30 +1041,49 @@
        5. ENGINE SETTINGS & API KEYS MODAL
        ===================================================================== -->
   <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 transition-opacity duration-300" id="settings-modal-backdrop">
-    <div class="w-full max-w-lg rounded-2xl bg-surface-container-low border border-white/[0.08] shadow-2xl p-5 sm:p-6 flex flex-col max-h-[90vh] overflow-y-auto" id="settings-modal">
+    <div class="w-full max-w-lg rounded-2xl bg-surface-container-low border border-white/[0.08] shadow-2xl flex flex-col max-h-[88vh] overflow-hidden" id="settings-modal">
       
-      <div class="flex items-center justify-between pb-4 border-b border-white/[0.06] mb-4">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] shrink-0">
         <div>
-          <h3 class="font-display text-xl text-primary font-normal">Engine Settings</h3>
-          <p class="font-mono text-xs text-outline mt-0.5">Server Keys &amp; Personal Credentials</p>
+          <h3 class="font-display text-xl text-primary font-normal">Settings</h3>
+          <p class="font-mono text-xs text-outline mt-0.5">Keys &amp; Playback</p>
         </div>
-        <button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary bg-surface-container" id="btn-close-settings-modal" type="button">
-          <span class="material-symbols-outlined text-[18px]">close</span>
+        <button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary bg-surface-container" id="btn-close-settings-modal" aria-label="Close settings" type="button">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <p class="text-xs text-on-surface-variant mb-4 leading-relaxed">
-        Server credentials are pre-configured server-side. You can optionally supply your own keys below to override defaults.
-      </p>
+      <div class="settings-modal__body flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3.5">
+        <!-- Autoplay Toggle -->
+        <label class="flex items-center justify-between p-3.5 rounded-xl bg-surface-container border border-white/[0.06] cursor-pointer">
+          <div>
+            <span class="text-xs font-medium text-primary block">Auto-Play Audio</span>
+            <span class="text-[11px] text-on-surface-variant">Start playback automatically after synthesis</span>
+          </div>
+          <input class="accent-white cursor-pointer w-4 h-4" id="toggle-autoplay" type="checkbox" checked/>
+        </label>
 
-      <div class="space-y-3.5">
+        <!-- Android In-App Updates & Version Info -->
+        <download-app variant="settings" manifest-url="/latest.json"></download-app>
+
+        <!-- Collapsible Personal API Key Overrides -->
+        <details class="rounded-xl bg-surface-container border border-white/[0.06] p-3.5 group" id="settings-keys-accordion">
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none">
+            <div>
+              <span class="text-xs font-medium text-primary block">Custom API Keys</span>
+              <span class="text-[11px] text-on-surface-variant">Server credentials active · Optional overrides</span>
+            </div>
+            <svg class="w-4 h-4 text-on-surface-variant transition-transform group-open:rotate-180 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+
+          <div class="space-y-3.5 pt-3.5 mt-3.5 border-t border-white/[0.06]">
         <!-- ElevenLabs -->
         <div class="flex flex-col gap-1">
           <div class="flex items-center justify-between text-xs">
             <span class="font-medium text-primary">ElevenLabs API Key</span>
             <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-elevenlabs">Server Active</span>
           </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-elevenlabs" placeholder="sk_... (Optional custom key)" type="password"/>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-elevenlabs" placeholder="sk_... (Optional custom key)" type="password"/>
         </div>
 
         <!-- Cartesia -->
@@ -1064,7 +1092,7 @@
             <span class="font-medium text-primary">Cartesia API Key</span>
             <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-cartesia">Server Active</span>
           </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-cartesia" placeholder="sk_car_... (Optional custom key)" type="password"/>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-cartesia" placeholder="sk_car_... (Optional custom key)" type="password"/>
         </div>
 
         <!-- Google Gemini -->
@@ -1073,7 +1101,7 @@
             <span class="font-medium text-primary">Google Gemini API Key</span>
             <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-gemini">Server Active</span>
           </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-gemini" placeholder="AIzaSy... (Optional custom key)" type="password"/>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-gemini" placeholder="AIzaSy... (Optional custom key)" type="password"/>
         </div>
 
         <!-- Groq -->
@@ -1082,7 +1110,7 @@
             <span class="font-medium text-primary">Groq API Key (Orpheus &amp; Whisper)</span>
             <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-groq">Server Active</span>
           </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-groq" placeholder="gsk_... (Optional custom key)" type="password"/>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-groq" placeholder="gsk_... (Optional custom key)" type="password"/>
         </div>
 
         <!-- Deepgram -->
@@ -1091,7 +1119,7 @@
             <span class="font-medium text-primary">Deepgram API Key</span>
             <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-deepgram">Server Active</span>
           </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-deepgram" placeholder="Optional custom key" type="password"/>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-deepgram" placeholder="Optional custom key" type="password"/>
         </div>
 
         <!-- Mistral -->
@@ -1100,18 +1128,18 @@
             <span class="font-medium text-primary">Mistral AI Key</span>
             <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-mistral">Server Active</span>
           </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-mistral" placeholder="Optional custom key" type="password"/>
+          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-mistral" placeholder="Optional custom key" type="password"/>
         </div>
 
         <!-- Cloudflare -->
         <div class="grid grid-cols-2 gap-2">
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium text-primary">Cloudflare Token</span>
-            <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-key-cf-token" placeholder="Optional" type="password"/>
+            <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-key-cf-token" placeholder="Optional" type="password"/>
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium text-primary">Account ID</span>
-            <input class="w-full h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-key-cf-account" placeholder="Optional" type="text"/>
+            <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-key-cf-account" placeholder="Optional" type="text"/>
           </div>
         </div>
 
@@ -1121,22 +1149,15 @@
           <span id="pill-status-openrouter"></span>
           <span id="pill-status-cloudflare"></span>
         </div>
-
-        <!-- Autoplay Toggle -->
-        <div class="pt-2 flex items-center justify-between border-t border-white/[0.04]">
-          <span class="text-xs text-primary">Auto-Play audio after synthesis</span>
-          <input class="accent-white cursor-pointer" id="toggle-autoplay" type="checkbox" checked/>
-        </div>
-
-        <!-- Android In-App Updates & Version Info -->
-        <download-app variant="settings" manifest-url="/latest.json"></download-app>
+          </div>
+        </details>
       </div>
 
-      <div class="flex items-center justify-between gap-2.5 pt-5 mt-4 border-t border-white/[0.06]">
-        <button class="px-3 py-2 rounded-lg text-[11px] font-mono uppercase tracking-wider text-outline hover:text-primary transition-colors" id="btn-copy-diag" type="button" title="Copy a diagnostic log to share if playback misbehaves">Copy diagnostics</button>
-        <div class="flex items-center gap-2.5">
-          <button class="px-4 py-2 rounded-lg text-xs font-mono uppercase text-outline hover:text-primary transition-colors" id="btn-reset-default-keys" type="button">Reset</button>
-          <button class="px-5 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium hover:bg-primary-container transition-colors shadow-sm" id="btn-save-custom-keys" type="button">Save Settings</button>
+      <div class="settings-modal__footer flex items-center justify-between gap-2 px-5 py-3.5 border-t border-white/[0.06] bg-surface-container-low shrink-0">
+        <button class="px-3 py-2 rounded-lg text-[11px] font-mono uppercase tracking-wider text-outline hover:text-primary transition-colors" id="btn-copy-diag" type="button" title="Copy a diagnostic log to share if playback misbehaves">Diagnostics</button>
+        <div class="flex items-center gap-2">
+          <button class="px-3.5 py-2 rounded-lg text-xs font-mono uppercase text-outline hover:text-primary transition-colors" id="btn-reset-default-keys" type="button">Reset</button>
+          <button class="px-5 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium hover:bg-primary-container transition-colors shadow-sm" id="btn-save-custom-keys" type="button">Save</button>
         </div>
       </div>
     </div>
@@ -1152,8 +1173,8 @@
           <h3 class="font-display text-xl text-primary font-normal">Developer API</h3>
           <p class="font-mono text-xs text-outline mt-0.5">Agent Keys &amp; REST Endpoints</p>
         </div>
-        <button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary bg-surface-container" id="btn-close-api-modal" type="button">
-          <span class="material-symbols-outlined text-[18px]">close</span>
+        <button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary bg-surface-container" id="btn-close-api-modal" aria-label="Close API modal" type="button">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       
@@ -1195,11 +1216,11 @@
     <div class="bg-surface-container-high border border-white/[0.08] rounded-2xl w-full max-w-lg p-5 shadow-2xl flex flex-col gap-4 animate-scale-up">
       <div class="flex items-center justify-between pb-3 border-b border-white/[0.06]">
         <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-[20px]">document_scanner</span>
+          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
           <h2 class="font-sans font-semibold text-sm text-primary">Screenshot to Speech</h2>
         </div>
-        <button class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-highest flex items-center justify-center text-outline hover:text-primary transition-colors cursor-pointer" id="btn-close-screenshot-modal" type="button" aria-label="Close modal">
-          <span class="material-symbols-outlined text-[18px]">close</span>
+        <button class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-highest flex items-center justify-center text-outline hover:text-primary transition-colors cursor-pointer" id="btn-close-screenshot-modal" type="button" aria-label="Close modal">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
@@ -1210,7 +1231,7 @@
         <!-- Empty State View -->
         <div class="flex flex-col items-center gap-2" id="screenshot-drop-prompt">
           <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-outline group-hover:text-primary transition-colors">
-            <span class="material-symbols-outlined text-[24px]">add_photo_alternate</span>
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </div>
           <p class="font-sans text-xs text-primary font-medium">Drop screenshot here, tap to upload, or paste with <kbd class="px-1.5 py-0.5 rounded bg-surface-container-highest text-[10px] font-mono">Ctrl+V</kbd></p>
           <p class="font-sans text-[11px] text-on-surface-variant">Filters out notch, clock, battery, and ads automatically</p>
@@ -1229,21 +1250,21 @@
         <div class="grid grid-cols-3 gap-2" id="screenshot-mode-selector">
           <label class="flex flex-col items-center justify-center p-2.5 rounded-lg border border-primary/40 bg-primary/10 text-primary cursor-pointer transition-all text-center mode-chip cursor-pointer" data-mode="clean">
             <input type="radio" name="extract-mode" value="clean" class="hidden" checked />
-            <span class="material-symbols-outlined text-[18px] mb-1">article</span>
+            <svg class="w-4 h-4 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             <span class="font-sans text-xs font-medium leading-tight">Clean Text</span>
             <span class="text-[9px] text-on-surface-variant mt-0.5">Verbatim</span>
           </label>
 
           <label class="flex flex-col items-center justify-center p-2.5 rounded-lg border border-white/[0.06] bg-surface-container text-on-surface hover:text-primary cursor-pointer transition-all text-center mode-chip cursor-pointer" data-mode="summary">
             <input type="radio" name="extract-mode" value="summary" class="hidden" />
-            <span class="material-symbols-outlined text-[18px] mb-1">summarize</span>
+            <svg class="w-4 h-4 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             <span class="font-sans text-xs font-medium leading-tight">Summary</span>
             <span class="text-[9px] text-on-surface-variant mt-0.5">Spoken Audio</span>
           </label>
 
           <label class="flex flex-col items-center justify-center p-2.5 rounded-lg border border-white/[0.06] bg-surface-container text-on-surface hover:text-primary cursor-pointer transition-all text-center mode-chip cursor-pointer" data-mode="devlog">
             <input type="radio" name="extract-mode" value="devlog" class="hidden" />
-            <span class="material-symbols-outlined text-[18px] mb-1">terminal</span>
+            <svg class="w-4 h-4 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
             <span class="font-sans text-xs font-medium leading-tight">Dev Log</span>
             <span class="text-[9px] text-on-surface-variant mt-0.5">Error Digest</span>
           </label>
@@ -1254,8 +1275,8 @@
       <div class="flex items-center justify-between pt-2 border-t border-white/[0.06]">
         <button class="px-3 py-1.5 rounded-lg text-xs font-mono uppercase text-outline hover:text-primary transition-colors cursor-pointer" id="btn-cancel-screenshot" type="button">Cancel</button>
         <button class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-medium shadow-md hover:bg-primary-container active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" id="btn-extract-screenshot" type="button" disabled>
-          <span class="material-symbols-outlined text-[16px]" id="extract-spinner-icon">auto_awesome</span>
-          <span id="label-extract-btn">Extract & Insert</span>
+          <svg class="w-4 h-4 shrink-0" id="extract-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+          <span id="label-extract-btn">Extract &amp; Insert</span>
         </button>
       </div>
     </div>

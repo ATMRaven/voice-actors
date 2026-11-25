@@ -34,7 +34,8 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
   // Hide splash screen & init back navigation / update manager once runtime is ready
   function initNativeBridge() {
-    if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+    if (isCapacitorNative || (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())) {
+      document.body?.classList.add('is-native-app');
       try {
         window.Capacitor.Plugins?.SplashScreen?.hide();
       } catch (e) {}
@@ -557,6 +558,10 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
   // --- Toast Deck ---
   function showToast(text, type = 'info', ms = 3200) {
+    if (!el.toastDeck) return;
+    while (el.toastDeck.children.length >= 1) {
+      el.toastDeck.firstElementChild.remove();
+    }
     const item = document.createElement('div');
     item.className = `toast-item ${type}`;
     item.textContent = text;
@@ -564,7 +569,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
     setTimeout(() => {
       item.style.opacity = '0';
-      item.style.transform = 'translateY(-8px)';
+      item.style.transform = 'translateY(-6px)';
       item.style.transition = 'all 160ms ease';
       setTimeout(() => item.remove(), 160);
     }, ms);
@@ -1328,9 +1333,17 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
   // --- Floating Dock & Studio Interactions ---
   function setupDockControls() {
-    // Open Voice Drawer
+    // Open Voice Drawer (Change button or tapping the voice identity area)
     if (el.dockVoicePill) {
-      el.dockVoicePill.addEventListener('click', () => {
+      el.dockVoicePill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openVoiceDrawer();
+      });
+    }
+    const activePersonaCard = document.getElementById('active-persona-card');
+    if (activePersonaCard) {
+      activePersonaCard.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
         openVoiceDrawer();
       });
     }
@@ -1455,11 +1468,17 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       });
     }
 
-    // Archive Search Filtering
+    // Archive Search Filtering (filters both IndexedDB audio vault & saved history)
     const archiveSearch = document.getElementById('archiveSearchInput');
     if (archiveSearch) {
       archiveSearch.addEventListener('input', (e) => {
-        renderLibraryItems(e.target.value.trim().toLowerCase());
+        const q = e.target.value.trim().toLowerCase();
+        renderLibraryItems(q);
+        const vaultItems = document.querySelectorAll('#vault-list .archive-item');
+        vaultItems.forEach((item) => {
+          const hay = item.dataset.search || item.textContent.toLowerCase();
+          item.classList.toggle('hidden', !!q && !hay.includes(q));
+        });
       });
     }
 
@@ -1581,6 +1600,16 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       }
     ];
 
+    const providerIcons = {
+      cartesia: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+      elevenlabs: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>',
+      gemini: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
+      groq: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>',
+      deepgram: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 9v6M22 12h-2"/></svg>',
+      mistral: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>',
+      cloudflare: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'
+    };
+
     list.innerHTML = '';
 
     providersData.forEach(prov => {
@@ -1592,7 +1621,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       header.innerHTML = `
         <div class="flex items-center gap-3.5 min-w-0">
           <div class="w-10 h-10 rounded-full ${prov.iconColor} flex items-center justify-center shrink-0 font-medium">
-            <span class="material-symbols-outlined text-[20px]">${prov.icon}</span>
+            ${providerIcons[prov.id] || ''}
           </div>
           <div class="flex flex-col min-w-0">
             <div class="flex items-center gap-2">
@@ -1605,7 +1634,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
         <div class="flex items-center gap-2 shrink-0">
           <button class="btn-toggle-voices px-3 py-1 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-primary font-mono text-[11px] uppercase tracking-wider flex items-center gap-1 transition-colors border border-white/[0.04] cursor-pointer" type="button">
             <span>${prov.voices.length} Voices</span>
-            <span class="material-symbols-outlined text-[16px] transition-transform duration-200">expand_more</span>
+            <svg class="chevron-svg w-4 h-4 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
       `;
@@ -1661,7 +1690,8 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
         useBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           state.voice = v.id;
-          if (prov.model) setModel(prov.model);
+          const targetModel = (v.model && v.model.includes('arabic')) ? 'groq/orpheus-arabic' : prov.model;
+          if (targetModel) setModel(targetModel);
           syncVoicePill();
           switchTab('studio');
         });
@@ -1673,7 +1703,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       const toggleFn = () => {
         const isHidden = accordion.classList.contains('hidden');
         accordion.classList.toggle('hidden');
-        const icon = header.querySelector('.material-symbols-outlined');
+        const icon = header.querySelector('.chevron-svg');
         if (icon) icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
       };
 
@@ -2182,10 +2212,6 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       const aId = btn.getAttribute('data-audition-id');
       const isCurrent = aId === state.previewVoiceId && state.isPreviewPlaying;
       btn.classList.toggle('playing', isCurrent);
-      const icon = btn.querySelector('.material-symbols-outlined');
-      if (icon) {
-        icon.textContent = isCurrent ? 'pause' : 'play_arrow';
-      }
     });
 
     // 3. Active Persona Quick Sample in Studio
@@ -2194,9 +2220,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       const activePId = getActiveVoicePreviewId();
       const isCurrent = activePId === state.previewVoiceId && state.isPreviewPlaying;
       dockSampleBtn.classList.toggle('playing', isCurrent);
-      const icon = dockSampleBtn.querySelector('#sample-icon') || dockSampleBtn.querySelector('.material-symbols-outlined');
-      if (icon) icon.textContent = isCurrent ? 'pause' : 'play_arrow';
-      const label = dockSampleBtn.querySelector('span:not(.material-symbols-outlined)');
+      const label = document.getElementById('sample-label');
       if (label) label.textContent = isCurrent ? 'Playing' : 'Sample';
     }
   }
@@ -3507,7 +3531,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       pill.id = 'reading-scroll-resume';
       pill.type = 'button';
       pill.className = 'reading-scroll-resume-pill';
-      pill.innerHTML = '<span class="material-symbols-outlined text-[14px]">sync</span><span>Auto-scroll paused · Tap to sync</span>';
+      pill.innerHTML = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg><span>Auto-scroll paused · Tap to sync</span>';
       pill.addEventListener('click', (e) => {
         e.stopPropagation();
         state.userScrollIntent = false;
@@ -4012,6 +4036,11 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     return chunks.filter(c => c && c.trim().length > 0);
   }
 
+  function setPlayPauseIcon(isPlaying) {
+    const pi = document.getElementById('play-pause-icon');
+    if (pi) pi.classList.toggle('is-playing', !!isPlaying);
+  }
+
   // A blocked autoplay used to leave the UI claiming "playing" while the audio
   // sat paused. Start playback through this so the state always matches reality.
   async function resumePlayback(reason) {
@@ -4070,8 +4099,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
     state.isPlaying = true;
     if (el.dockBtnPlay) el.dockBtnPlay.classList.add('playing');
-    const pi = document.getElementById('play-pause-icon');
-    if (pi) pi.textContent = 'pause';
+    setPlayPauseIcon(true);
     startSyncLoop();
     if (q.pump) q.pump();
     diag('RESUME', (reason || 'manual') + ' -> #' + idx + ' t=' + (audio.currentTime || 0).toFixed(1));
@@ -4132,8 +4160,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
           el.dockBtnPlay.classList.remove('playing');
           el.dockBtnPlay.classList.add('needs-tap');
         }
-        const pi = document.getElementById('play-pause-icon');
-        if (pi) pi.textContent = 'play_arrow';
+        setPlayPauseIcon(false);
         stopSyncLoop();
         showToast('Tap play to start the audio — this browser blocks autoplay', 'info', 3600);
       } else {
@@ -4238,8 +4265,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       el.dockBtnPlay.classList.add('playing');
       el.dockBtnPlay.classList.remove('needs-tap');
     }
-    const pi = document.getElementById('play-pause-icon');
-    if (pi) pi.textContent = 'pause';
+    setPlayPauseIcon(true);
     startSyncLoop();
     return true;
   }
@@ -4909,8 +4935,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       state.frozenTicks = 0;
       el.dockBtnPlay.classList.remove('needs-tap');
       el.dockBtnPlay.classList.add('playing');
-      const pi = document.getElementById('play-pause-icon');
-      if (pi) pi.textContent = 'pause';
+      setPlayPauseIcon(true);
       drawDockWaveform();
       startSyncLoop();
     });
@@ -4918,8 +4943,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     audio.addEventListener('pause', () => {
       state.isPlaying = false;
       el.dockBtnPlay.classList.remove('playing');
-      const pi = document.getElementById('play-pause-icon');
-      if (pi) pi.textContent = 'play_arrow';
+      setPlayPauseIcon(false);
       drawDockWaveform();
       stopSyncLoop();
 
@@ -4967,8 +4991,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
       state.isPlaying = false;
       el.dockBtnPlay.classList.remove('playing');
-      const pi = document.getElementById('play-pause-icon');
-      if (pi) pi.textContent = 'play_arrow';
+      setPlayPauseIcon(false);
       el.dockPlayhead.style.left = '0%';
       updateTimeDisplay(0, state.continuousDuration || state.duration);
       updateRibbonPlayhead(0);
@@ -5279,6 +5302,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       state.pickedFile = null;
       el.inputAudioFile.value = '';
       el.chipPickedFile.classList.add('hidden');
+      if (el.sttDropzone) el.sttDropzone.classList.remove('has-file');
       updateTranscribeBtnState();
     });
 
@@ -5323,6 +5347,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     state.pickedFile = file;
     el.pickedFileName.textContent = `${file.name} (${fmtBytes(file.size)})`;
     el.chipPickedFile.classList.remove('hidden');
+    if (el.sttDropzone) el.sttDropzone.classList.add('has-file');
     updateTranscribeBtnState();
   }
 
@@ -5575,8 +5600,8 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
         <p class="text-sm text-on-surface leading-relaxed line-clamp-2 select-text">${escapeHtml(item.text)}</p>
         <div class="flex items-center justify-between pt-2 border-t border-white/[0.04]">
           <button class="lib-btn-reuse px-3 py-1 rounded-full bg-surface-container-high text-xs text-primary hover:bg-surface-container-highest transition-colors font-mono uppercase tracking-wider" data-reuse-id="${item.id}">Load Script</button>
-          <button class="lib-btn-del w-7 h-7 rounded-full flex items-center justify-center text-outline hover:text-error hover:bg-surface-container-high transition-colors" data-del-id="${item.id}" title="Delete clip">
-            <span class="material-symbols-outlined text-[16px]">delete</span>
+          <button class="lib-btn-del w-7 h-7 rounded-full flex items-center justify-center text-outline hover:text-error hover:bg-surface-container-high transition-colors" data-del-id="${item.id}" title="Delete clip" aria-label="Delete clip">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
         </div>
       `;

@@ -67,11 +67,13 @@ export async function renderVault(container) {
     const card = document.createElement('article');
     card.className = 'archive-item';
     card.dataset.audioId = meta.id;
+    card.dataset.search = `${meta.text || ''} ${meta.voiceName || ''} ${meta.filename || ''}`.toLowerCase();
 
     const title = document.createElement('h3');
     title.className = 'archive-item-title';
     title.title = meta.filename;
-    title.textContent = meta.filename;
+    const snippet = (meta.text || '').trim();
+    title.textContent = snippet ? snippet : meta.filename;
 
     const metaLine = document.createElement('p');
     metaLine.className = 'archive-item-meta';
@@ -83,20 +85,20 @@ export async function renderVault(container) {
     const playBtn = document.createElement('button');
     playBtn.type = 'button';
     playBtn.className = 'btn-secondary archive-play';
-    playBtn.textContent = 'Play';
+    playBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg><span>Play</span>';
     playBtn.addEventListener('click', () => replay(meta.id));
 
     const dlBtn = document.createElement('button');
     dlBtn.type = 'button';
     dlBtn.className = 'btn-secondary archive-download';
-    dlBtn.textContent = 'Download';
+    dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Save</span>';
     dlBtn.addEventListener('click', () => download(meta.id));
 
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'icon-button archive-delete';
     delBtn.setAttribute('aria-label', `Delete ${meta.filename}`);
-    delBtn.textContent = '×';
+    delBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     delBtn.addEventListener('click', async () => {
       await deleteAudio(meta.id);
       await renderVault(container);
