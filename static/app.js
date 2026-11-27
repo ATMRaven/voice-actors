@@ -559,11 +559,12 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
   // --- Toast Deck ---
   function showToast(text, type = 'info', ms = 3200) {
     if (!el.toastDeck) return;
+    const normalizedType = type === true ? 'error' : (type === false || !type ? 'info' : type);
     while (el.toastDeck.children.length >= 1) {
       el.toastDeck.firstElementChild.remove();
     }
     const item = document.createElement('div');
-    item.className = `toast-item ${type}`;
+    item.className = `toast-item ${normalizedType}`;
     item.textContent = text;
     el.toastDeck.appendChild(item);
 
@@ -575,32 +576,64 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     }, ms);
   }
 
-  // --- Theme Toggle ---
-  function setupTheme() {
-    const saved = localStorage.getItem('voxflow_theme') || 'dark';
+  // --- Theme Toggle & Native StatusBar Sync ---
+  function applyTheme(theme) {
+    const normalized = theme === 'dark' ? 'dark' : 'light';
+    const isDark = normalized === 'dark';
+
+    document.documentElement.setAttribute('data-theme', normalized);
     document.body.classList.remove('theme-dark', 'theme-light');
-    document.body.classList.add(`theme-${saved}`);
+    document.body.classList.add(`theme-${normalized}`);
+    localStorage.setItem('voxflow_theme', normalized);
+
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', isDark ? '#131416' : '#F3F1EC');
+
+    const themeDesc = document.getElementById('settings-theme-desc');
+    if (themeDesc) themeDesc.textContent = isDark ? 'Studio Graphite Dark' : 'Warm Paper Light';
+    const themeBtn = document.getElementById('btn-settings-theme');
+    if (themeBtn) themeBtn.textContent = isDark ? 'Switch to Light' : 'Switch to Dark';
+
+    try {
+      const StatusBar = window.Capacitor?.Plugins?.StatusBar;
+      if (StatusBar) {
+        StatusBar.setStyle({ style: isDark ? 'DARK' : 'LIGHT' }).catch(() => {});
+        StatusBar.setBackgroundColor({ color: isDark ? '#131416' : '#F3F1EC' }).catch(() => {});
+      }
+    } catch (_) {}
+
+    if (typeof drawDockWaveform === 'function') {
+      drawDockWaveform();
+    }
+  }
+
+  function setupTheme() {
+    const saved = localStorage.getItem('voxflow_theme');
+    applyTheme(saved === 'dark' ? 'dark' : 'light');
+
+    const toggleHandler = () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      applyTheme(isDark ? 'light' : 'dark');
+    };
 
     if (el.btnTheme) {
-      el.btnTheme.addEventListener('click', () => {
-        const isDark = document.body.classList.contains('theme-dark');
-        const next = isDark ? 'light' : 'dark';
-        document.body.classList.remove('theme-dark', 'theme-light');
-        document.body.classList.add(`theme-${next}`);
-        localStorage.setItem('voxflow_theme', next);
-        drawDockWaveform();
-      });
+      el.btnTheme.addEventListener('click', toggleHandler);
+    }
+    const settingsThemeBtn = document.getElementById('btn-settings-theme');
+    if (settingsThemeBtn) {
+      settingsThemeBtn.addEventListener('click', toggleHandler);
     }
   }
 
   // --- Primary Generate button: spinner, platform-correct shortcut hint ---
   function setupGenerateButton() {
-    // Show ⌘ on Apple platforms instead of a hardcoded "Ctrl"
     const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
     if (isMac) {
       document.body.classList.add('vx-mac');
       const kbd = document.getElementById('generate-kbd');
       if (kbd) kbd.textContent = '⌘ ↵';
+      const pKbd = document.getElementById('palette-kbd');
+      if (pKbd) pKbd.textContent = '⌘ K';
     }
   }
 
@@ -640,13 +673,6 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     document.querySelectorAll('.nav-desktop-tab').forEach(btn => {
       const match = btn.getAttribute('data-tab') === tabId;
       btn.classList.toggle('active', match);
-      if (match) {
-        btn.classList.add('text-primary', 'bg-surface-container-highest', 'shadow-sm');
-        btn.classList.remove('text-on-surface-variant');
-      } else {
-        btn.classList.remove('text-primary', 'bg-surface-container-highest', 'shadow-sm');
-        btn.classList.add('text-on-surface-variant');
-      }
     });
 
     // Update bottom dock tab buttons
@@ -655,24 +681,15 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       btn.classList.toggle('active', match);
       if (match) {
         btn.setAttribute('aria-current', 'page');
-        btn.classList.add('text-primary');
-        btn.classList.remove('text-on-surface-variant');
       } else {
         btn.removeAttribute('aria-current');
-        btn.classList.remove('text-primary');
-        btn.classList.add('text-on-surface-variant');
       }
     });
 
     // Update desktop header buttons if present
     if (el.btnModeTts && el.btnModeStt) {
-      el.btnModeTts.classList.toggle('bg-surface-container-highest', tabId === 'studio');
-      el.btnModeTts.classList.toggle('text-primary', tabId === 'studio');
-      el.btnModeTts.classList.toggle('text-on-surface-variant', tabId !== 'studio');
-
-      el.btnModeStt.classList.toggle('bg-surface-container-highest', tabId === 'transcribe');
-      el.btnModeStt.classList.toggle('text-primary', tabId === 'transcribe');
-      el.btnModeStt.classList.toggle('text-on-surface-variant', tabId !== 'transcribe');
+      el.btnModeTts.classList.toggle('active', tabId === 'studio');
+      el.btnModeStt.classList.toggle('active', tabId === 'transcribe');
     }
 
     if (tabId === 'archive') {
@@ -830,11 +847,17 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     const cfActive = (state.customCfToken && state.customCfAccount) || state.serverConfig.cloudflare_ready;
 
     const anyVoiceReady = dgActive || orActive || mistralActive || elevenActive || geminiActive || cartesiaActive || cfActive;
-    el.globalStatusDot.style.background = (anyVoiceReady && groqActive) ? 'var(--accent-teal)' : 'var(--accent-amber)';
+    if (el.globalStatusDot) {
+      el.globalStatusDot.style.background = '';
+    }
 
-    // The header status chip now says what is actually wrong, instead of a
-    // bare dot the user has to decode.
-    if (el.globalStatusText) {
+    const connectedEl = document.getElementById('models-stat-connected');
+    if (connectedEl) {
+      const readyCount = [dgActive, mistralActive, elevenActive, geminiActive, cartesiaActive, cfActive, groqActive, orActive].filter(Boolean).length;
+      connectedEl.textContent = String(Math.max(1, readyCount));
+    }
+
+    if (el.globalStatusText && el.globalStatusDot) {
       if (!anyVoiceReady) {
         el.globalStatusText.textContent = 'No Voice Engine';
         el.globalStatusDot.classList.add('vx-status__dot--degraded');
@@ -873,10 +896,11 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     }
     if (el.pillStatusOpenRouter) {
       el.pillStatusOpenRouter.textContent = state.customOpenRouterKey ? 'Custom Key Active' : (state.serverConfig.openrouter_ready ? 'Server Key Active' : 'Key Optional');
+      el.pillStatusOpenRouter.className = `status-pill ${orActive ? 'active' : ''}`;
     }
     if (el.pillStatusGroq) {
-      el.pillStatusGroq.textContent = state.customGroqKey ? 'Custom Key Active' : 'Server Key Active';
-      el.pillStatusGroq.className = "font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20";
+      el.pillStatusGroq.textContent = state.customGroqKey ? 'Custom Key Active' : (state.serverConfig.groq_ready ? 'Server Key Active' : 'Key Optional');
+      el.pillStatusGroq.className = `status-pill ${groqActive ? 'active' : ''}`;
     }
   }
 
@@ -909,7 +933,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       el.btnExtractScreenshot.removeAttribute('aria-busy');
     }
     if (el.labelExtractBtn) el.labelExtractBtn.textContent = 'Extract & Insert';
-    if (el.extractSpinnerIcon) el.extractSpinnerIcon.textContent = 'auto_awesome';
+    if (el.extractSpinnerIcon) el.extractSpinnerIcon.classList.remove('is-spinning');
   }
 
   function handleImageSelection(file) {
@@ -940,7 +964,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       el.btnExtractScreenshot.setAttribute('aria-busy', 'true');
     }
     if (el.labelExtractBtn) el.labelExtractBtn.textContent = 'Extracting text...';
-    if (el.extractSpinnerIcon) el.extractSpinnerIcon.textContent = 'progress_activity';
+    if (el.extractSpinnerIcon) el.extractSpinnerIcon.classList.add('is-spinning');
 
     try {
       const formData = new FormData();
@@ -990,7 +1014,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
         el.btnExtractScreenshot.removeAttribute('aria-busy');
       }
       if (el.labelExtractBtn) el.labelExtractBtn.textContent = 'Extract & Insert';
-      if (el.extractSpinnerIcon) el.extractSpinnerIcon.textContent = 'auto_awesome';
+      if (el.extractSpinnerIcon) el.extractSpinnerIcon.classList.remove('is-spinning');
     }
   }
 
@@ -1049,12 +1073,8 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     // Mode chips selection
     document.querySelectorAll('#screenshot-mode-selector .mode-chip').forEach(chip => {
       chip.addEventListener('click', () => {
-        document.querySelectorAll('#screenshot-mode-selector .mode-chip').forEach(c => {
-          c.classList.remove('border-primary/40', 'bg-primary/10', 'text-primary');
-          c.classList.add('border-white/[0.06]', 'bg-surface-container', 'text-on-surface');
-        });
-        chip.classList.remove('border-white/[0.06]', 'bg-surface-container', 'text-on-surface');
-        chip.classList.add('border-primary/40', 'bg-primary/10', 'text-primary');
+        document.querySelectorAll('#screenshot-mode-selector .mode-chip').forEach(c => c.classList.remove('is-selected'));
+        chip.classList.add('is-selected');
         const radio = chip.querySelector('input[type="radio"]');
         if (radio) radio.checked = true;
       });
@@ -1358,11 +1378,19 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       });
     }
 
+    // Quick Switch Voice Palette button
+    const btnOpenPalette = document.getElementById('btn-open-palette');
+    if (btnOpenPalette) {
+      btnOpenPalette.addEventListener('click', () => openPalette());
+    }
+
     // Model Selector Dropdown Popover
     if (el.dockModelPill && el.menuModelSelect) {
       el.dockModelPill.addEventListener('click', (e) => {
         e.stopPropagation();
+        const willOpen = el.menuModelSelect.classList.contains('hidden');
         el.menuModelSelect.classList.toggle('hidden');
+        el.dockModelPill.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         if (el.menuSpeedSelect) el.menuSpeedSelect.classList.add('hidden');
       });
 
@@ -1372,11 +1400,12 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
           const model = item.getAttribute('data-model');
           setModel(model);
           el.menuModelSelect.classList.add('hidden');
+          el.dockModelPill.setAttribute('aria-expanded', 'false');
         });
       });
     }
 
-    // Tactile Speech Rate Slider
+    // Tactile Speech Rate Slider & Quick Snap Presets
     const sliderSpeed = document.getElementById('slider-speed');
     if (sliderSpeed) {
       sliderSpeed.addEventListener('input', (e) => {
@@ -1384,6 +1413,13 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
         setSpeed(spd);
       });
     }
+
+    document.querySelectorAll('#speed-snap-group .vx-speed-snap').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const spd = parseFloat(btn.getAttribute('data-speed-snap'));
+        if (!isNaN(spd)) setSpeed(spd);
+      });
+    });
 
     // Speed Selector Dropdown (legacy compatibility)
     if (el.dockSpeedPill && el.menuSpeedSelect) {
@@ -1424,22 +1460,13 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       tab.addEventListener('click', () => {
         const cat = tab.getAttribute('data-cat');
         document.querySelectorAll('.models-filter-tab').forEach(t => {
-          const match = t === tab;
-          t.classList.toggle('bg-surface-container-highest', match);
-          t.classList.toggle('text-primary', match);
-          t.classList.toggle('text-on-surface-variant', !match);
+          t.classList.toggle('is-active', t === tab);
         });
 
         document.querySelectorAll('.engine-card, .engine-row').forEach(row => {
-          if (cat === 'all') {
-            row.style.display = 'flex';
-          } else if (cat === 'tts') {
-            const isStt = row.textContent.includes('Whisper') || row.textContent.includes('Speech-to-Text');
-            row.style.display = isStt ? 'none' : 'flex';
-          } else if (cat === 'stt') {
-            const isStt = row.textContent.includes('Whisper') || row.textContent.includes('Speech-to-Text') || row.textContent.includes('Deepgram Nova');
-            row.style.display = isStt ? 'flex' : 'none';
-          }
+          const cats = (row.dataset.category || 'tts').split(/\s+/);
+          const visible = cat === 'all' || cats.includes(cat);
+          row.classList.toggle('hidden', !visible);
         });
       });
     });
@@ -1452,19 +1479,19 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       });
     }
 
-    // STT Engine Toggle in Transcribe Tab (Silent & Fast)
+    // STT Engine Toggle in Transcribe Tab
     const btnEngWhisper = document.getElementById('btn-engine-whisper');
     const btnEngDeepgram = document.getElementById('btn-engine-deepgram');
     if (btnEngWhisper && btnEngDeepgram) {
       btnEngWhisper.addEventListener('click', () => {
         state.sttEngine = 'whisper';
-        btnEngWhisper.className = 'flex-1 py-1.5 text-center font-mono text-xs tracking-widest uppercase transition-all duration-200 bg-surface-container-highest text-primary rounded-full shadow-sm cursor-pointer';
-        btnEngDeepgram.className = 'flex-1 py-1.5 text-center font-mono text-xs tracking-widest uppercase transition-all duration-200 text-on-surface-variant hover:text-primary rounded-full cursor-pointer';
+        btnEngWhisper.classList.add('active');
+        btnEngDeepgram.classList.remove('active');
       });
       btnEngDeepgram.addEventListener('click', () => {
         state.sttEngine = 'deepgram';
-        btnEngDeepgram.className = 'flex-1 py-1.5 text-center font-mono text-xs tracking-widest uppercase transition-all duration-200 bg-surface-container-highest text-primary rounded-full shadow-sm cursor-pointer';
-        btnEngWhisper.className = 'flex-1 py-1.5 text-center font-mono text-xs tracking-widest uppercase transition-all duration-200 text-on-surface-variant hover:text-primary rounded-full cursor-pointer';
+        btnEngDeepgram.classList.add('active');
+        btnEngWhisper.classList.remove('active');
       });
     }
 
@@ -1516,68 +1543,56 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     const providersData = [
       {
         id: 'cartesia',
+        category: 'tts',
         name: 'Cartesia Sonic 3.6',
         model: 'cartesia/sonic-3.6',
         badge: '90ms',
-        badgeColor: 'text-pink-400 bg-pink-950/60',
-        desc: 'Ultra low-latency neural synthesis • 8 Voices',
-        icon: 'bolt',
-        iconColor: 'bg-pink-500/15 text-pink-400',
+        desc: 'Ultra low-latency neural synthesis · 8 Voices',
         voices: DEFAULT_CARTESIA_VOICES
       },
       {
         id: 'elevenlabs',
+        category: 'tts',
         name: 'ElevenLabs Turbo v2.5',
         model: 'elevenlabs/multilingual-v2',
         badge: 'Studio',
-        badgeColor: 'text-purple-400 bg-purple-950/60',
-        desc: 'Studio realism & expressive timbre • 21 Voices',
-        icon: 'auto_fix_high',
-        iconColor: 'bg-purple-500/15 text-purple-400',
+        desc: 'Studio realism & expressive timbre · 21 Voices',
         voices: DEFAULT_ELEVENLABS_VOICES
       },
       {
         id: 'gemini',
+        category: 'tts',
         name: 'Google Gemini 2.5 Audio',
         model: 'google/gemini-2.5-flash-tts',
         badge: 'Multimodal',
-        badgeColor: 'text-blue-400 bg-blue-950/60',
-        desc: 'Expressive prosody & AI Studio • 5 Voices',
-        icon: 'cognition',
-        iconColor: 'bg-blue-500/15 text-blue-400',
+        desc: 'Expressive prosody & AI Studio · 5 Voices',
         voices: DEFAULT_GEMINI_VOICES
       },
       {
         id: 'groq',
+        category: 'tts',
         name: 'Groq Orpheus LPU',
         model: 'groq/orpheus-english',
         badge: '85ms',
-        badgeColor: 'text-emerald-400 bg-emerald-950/60',
-        desc: 'English & Saudi Arabic Speech • 12 Voices',
-        icon: 'speed',
-        iconColor: 'bg-amber-500/15 text-amber-400',
+        desc: 'English & Saudi Arabic Speech · 12 Voices',
         voices: DEFAULT_GROQ_ORPHEUS_VOICES
       },
       {
         id: 'deepgram',
+        category: 'tts stt',
         name: 'Deepgram Flux & Nova-2',
         model: 'deepgram/flux-tts:free',
         badge: 'Live Edge',
-        badgeColor: 'text-emerald-400 bg-emerald-950/60',
-        desc: '36 Broadcast TTS Voices • Live Whisper STT',
-        icon: 'waves',
-        iconColor: 'bg-emerald-500/15 text-emerald-400',
+        desc: '36 Broadcast TTS Voices · Nova-2 Speech Recognition',
         voices: DEFAULT_DEEPGRAM_VOICES
       },
       {
         id: 'mistral',
+        category: 'tts',
         name: 'Mistral Voxtral Mini',
         model: 'mistral/voxtral-mini-tts',
         badge: 'Emotions',
-        badgeColor: 'text-orange-400 bg-orange-950/60',
-        desc: '4 Personas • 30 Emotional Shades',
-        icon: 'theater_comedy',
-        iconColor: 'bg-orange-500/15 text-orange-400',
+        desc: '4 Personas · 30 Emotional Vocal Shades',
         voices: MISTRAL_PERSONAS.map(p => ({
           id: p.previewId,
           name: p.name,
@@ -1589,105 +1604,112 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       },
       {
         id: 'cloudflare',
+        category: 'tts',
         name: 'Cloudflare MeloTTS',
         model: 'cloudflare/melotts',
         badge: 'Edge AI',
-        badgeColor: 'text-rose-400 bg-rose-950/60',
-        desc: 'Global Multi-lingual Accents • 9 Accents',
-        icon: 'public',
-        iconColor: 'bg-rose-500/15 text-rose-400',
+        desc: 'Global Multi-lingual Accents · 9 Accents',
         voices: DEFAULT_CLOUDFLARE_VOICES
+      },
+      {
+        id: 'whisper',
+        category: 'stt',
+        name: 'Groq Whisper Large v3 Turbo',
+        model: null,
+        badge: 'STT · Align',
+        desc: 'High-speed audio transcription & word-level karaoke timestamps',
+        voices: []
       }
     ];
 
     const providerIcons = {
-      cartesia: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
-      elevenlabs: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>',
-      gemini: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
-      groq: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>',
-      deepgram: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 9v6M22 12h-2"/></svg>',
-      mistral: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>',
-      cloudflare: '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'
+      cartesia: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+      elevenlabs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>',
+      gemini: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
+      groq: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>',
+      deepgram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 9v6M22 12h-2"/></svg>',
+      mistral: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>',
+      cloudflare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+      whisper: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 13h2l2-4 2 7 2-5 1.5 2H21"/></svg>'
     };
 
     list.innerHTML = '';
 
     providersData.forEach(prov => {
       const card = document.createElement('div');
-      card.className = 'engine-card flex flex-col p-4 rounded-xl bg-surface-container border border-white/[0.04] transition-all hover:border-white/[0.08]';
-      
+      card.className = 'engine-card';
+      card.dataset.category = prov.category;
+
       const header = document.createElement('div');
-      header.className = 'flex items-center justify-between cursor-pointer';
+      header.className = 'vx-engine-row-head';
+      const rightAction = prov.voices.length > 0
+        ? `<button class="btn-toggle-voices" type="button">
+             <span>${prov.voices.length} Voices</span>
+             <svg class="chevron-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+           </button>`
+        : `<button class="btn-toggle-voices btn-open-stt-tab" type="button"><span>Open Transcribe</span></button>`;
+
       header.innerHTML = `
-        <div class="flex items-center gap-3.5 min-w-0">
-          <div class="w-10 h-10 rounded-full ${prov.iconColor} flex items-center justify-center shrink-0 font-medium">
-            ${providerIcons[prov.id] || ''}
-          </div>
-          <div class="flex flex-col min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-sm text-primary">${prov.name}</span>
-              <span class="font-mono text-[10px] ${prov.badgeColor} px-1.5 py-0.5 rounded-full font-medium">${prov.badge}</span>
+        <div class="vx-engine-row-left">
+          <div class="vx-engine-icon" aria-hidden="true">${providerIcons[prov.id] || ''}</div>
+          <div style="min-width:0">
+            <div class="vx-engine-title-line">
+              <span class="vx-engine-name">${prov.name}</span>
+              <span class="vx-badge-tag">${prov.badge}</span>
             </div>
-            <span class="text-xs text-on-surface-variant engine-desc">${prov.desc}</span>
+            <div class="vx-engine-desc">${prov.desc}</div>
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button class="btn-toggle-voices px-3 py-1 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-primary font-mono text-[11px] uppercase tracking-wider flex items-center gap-1 transition-colors border border-white/[0.04] cursor-pointer" type="button">
-            <span>${prov.voices.length} Voices</span>
-            <svg class="chevron-svg w-4 h-4 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-        </div>
+        ${rightAction}
       `;
 
-      // Accordion voice list container
+      if (prov.voices.length === 0) {
+        header.addEventListener('click', () => switchTab('transcribe'));
+        card.appendChild(header);
+        list.appendChild(card);
+        return;
+      }
+
       const accordion = document.createElement('div');
-      accordion.className = 'hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-4 mt-3 border-t border-white/[0.04]';
+      accordion.className = 'vx-accordion-grid hidden';
 
       prov.voices.forEach(v => {
         const isFav = state.favoriteVoices.has(v.id);
         const isCurrentPreview = state.previewVoiceId === v.id && state.isPreviewPlaying;
 
         const voiceItem = document.createElement('div');
-        voiceItem.className = 'flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-highest/60 border border-white/[0.03] transition-colors';
+        voiceItem.className = 'vx-voice-mini';
         voiceItem.innerHTML = `
-          <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-7 h-7 rounded-full bg-surface-container-high text-primary flex items-center justify-center font-medium text-xs shrink-0">
-              ${v.name[0]}
-            </div>
-            <div class="flex flex-col min-w-0">
-              <span class="text-xs font-medium text-primary truncate">${v.name}</span>
-              <span class="text-[10px] text-on-surface-variant truncate font-mono">${v.gender || ''} • ${v.accent || ''}</span>
+          <div class="vx-voice-mini__info">
+            <div class="vx-voice-mini__av">${v.name[0]}</div>
+            <div style="min-width:0">
+              <div class="vx-voice-mini__name">${v.name}</div>
+              <div class="vx-voice-mini__sub">${v.gender || ''} · ${v.accent || ''}</div>
             </div>
           </div>
-          <div class="flex items-center gap-1 shrink-0">
-            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''} w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container-high text-primary transition-colors cursor-pointer" data-voice-id="${v.id}" title="Audition Voice">
-              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''} w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'} w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <div class="vx-voice-mini__acts">
+            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${v.id}" type="button" title="Audition Voice">
+              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
             </button>
-            <button class="voice-fav-btn ${isFav ? 'favorited' : ''} w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container-high text-primary transition-colors cursor-pointer" data-voice-id="${v.id}" title="Favorite">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="${isFav ? '#f59e0b' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${v.id}" type="button" title="Favorite">
+              <svg viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             </button>
-            <button class="btn-use-voice px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface-variant transition-colors cursor-pointer ml-1" title="Use in Studio">Use</button>
+            <button class="btn-use-voice" type="button" title="Use in Studio">Use</button>
           </div>
         `;
 
-        // Audition
-        const pBtn = voiceItem.querySelector('.voice-preview-btn');
-        pBtn.addEventListener('click', (e) => {
+        voiceItem.querySelector('.voice-preview-btn').addEventListener('click', (e) => {
           e.stopPropagation();
           playVoicePreview(v.id, e);
         });
 
-        // Favorite
-        const fBtn = voiceItem.querySelector('.voice-fav-btn');
-        fBtn.addEventListener('click', (e) => {
+        voiceItem.querySelector('.voice-fav-btn').addEventListener('click', (e) => {
           e.stopPropagation();
           toggleVoiceFavorite(v.id, e);
         });
 
-        // Use in Studio
-        const useBtn = voiceItem.querySelector('.btn-use-voice');
-        useBtn.addEventListener('click', (e) => {
+        voiceItem.querySelector('.btn-use-voice').addEventListener('click', (e) => {
           e.stopPropagation();
           state.voice = v.id;
           const targetModel = (v.model && v.model.includes('arabic')) ? 'groq/orpheus-arabic' : prov.model;
@@ -1699,15 +1721,12 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
         accordion.appendChild(voiceItem);
       });
 
-      // Toggle accordion on header or button click
-      const toggleFn = () => {
+      header.addEventListener('click', () => {
         const isHidden = accordion.classList.contains('hidden');
         accordion.classList.toggle('hidden');
         const icon = header.querySelector('.chevron-svg');
         if (icon) icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-      };
-
-      header.addEventListener('click', toggleFn);
+      });
 
       card.appendChild(header);
       card.appendChild(accordion);
@@ -1834,6 +1853,11 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     if (sliderSpeed && Math.abs(parseFloat(sliderSpeed.value) - speedVal) > 0.01) {
       sliderSpeed.value = speedVal;
     }
+
+    document.querySelectorAll('#speed-snap-group .vx-speed-snap').forEach(btn => {
+      const snapVal = parseFloat(btn.getAttribute('data-speed-snap'));
+      btn.classList.toggle('active', Math.abs(snapVal - speedVal) < 0.02);
+    });
 
     if (el.menuSpeedSelect) {
       el.menuSpeedSelect.querySelectorAll('.speed-opt').forEach(opt => {
@@ -1985,6 +2009,36 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     ];
   }
 
+  function renderInlineEmotionRack(persona) {
+    const rack = document.getElementById('inline-emotion-rack');
+    const chipsEl = document.getElementById('inline-emotion-chips');
+    const countEl = document.getElementById('inline-emotion-count');
+    if (!rack || !chipsEl) return;
+
+    if (!persona) {
+      rack.classList.add('hidden');
+      chipsEl.innerHTML = '';
+      return;
+    }
+
+    rack.classList.remove('hidden');
+    if (countEl) countEl.textContent = `${persona.emotions.length} shades`;
+    chipsEl.innerHTML = '';
+
+    persona.emotions.forEach((emo) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `vx-emo-pill ${state.voice === emo.id ? 'active' : ''}`;
+      btn.textContent = emo.label;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.voice = emo.id;
+        syncVoicePill();
+      });
+      chipsEl.appendChild(btn);
+    });
+  }
+
   function syncVoicePill() {
     if (typeof window.__VOX_BRIDGE_ON_VOICE === 'function') {
       window.__VOX_BRIDGE_ON_VOICE(state.voice);
@@ -1996,8 +2050,11 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       el.dockVoiceName.textContent = persona.name;
       el.dockVoiceAccent.textContent = `${persona.accent.split(' ')[0]} · ${emotion ? emotion.label : 'Expressive'}`;
       el.dockVoiceAvatar.textContent = persona.name[0];
+      renderInlineEmotionRack(persona);
       return;
     }
+
+    renderInlineEmotionRack(null);
 
     if (provider === 'fish') {
       el.dockVoiceName.textContent = 'S2.1 Multi';
@@ -2009,7 +2066,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     if (provider === 'elevenlabs') {
       const v = DEFAULT_ELEVENLABS_VOICES.find(item => item.id === state.voice) || DEFAULT_ELEVENLABS_VOICES[0];
       el.dockVoiceName.textContent = v.name;
-      el.dockVoiceAccent.textContent = `${v.accent.split(' ')[0]} · ${v.gender}`;
+      el.dockVoiceAccent.textContent = `${(v.accent || 'Studio').split(' ')[0]} · ${v.gender || 'Voice'}`;
       el.dockVoiceAvatar.textContent = v.name[0];
       return;
     }
@@ -2017,7 +2074,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     if (provider === 'cartesia') {
       const v = DEFAULT_CARTESIA_VOICES.find(item => item.id === state.voice) || DEFAULT_CARTESIA_VOICES[0];
       el.dockVoiceName.textContent = v.name;
-      el.dockVoiceAccent.textContent = `${v.accent.split(' ')[0]} · ${v.gender}`;
+      el.dockVoiceAccent.textContent = `${(v.accent || 'Sonic').split(' ')[0]} · ${v.gender || 'Voice'}`;
       el.dockVoiceAvatar.textContent = v.name[0];
       return;
     }
@@ -2025,7 +2082,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     if (provider === 'gemini') {
       const v = DEFAULT_GEMINI_VOICES.find(item => item.id === state.voice) || DEFAULT_GEMINI_VOICES[0];
       el.dockVoiceName.textContent = v.name;
-      el.dockVoiceAccent.textContent = `${v.accent.split(' ')[0]} · ${v.gender}`;
+      el.dockVoiceAccent.textContent = `${(v.accent || 'Gemini').split(' ')[0]} · ${v.gender || 'Voice'}`;
       el.dockVoiceAvatar.textContent = v.name[0];
       return;
     }
@@ -2033,7 +2090,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     if (provider === 'groq') {
       const v = DEFAULT_GROQ_ORPHEUS_VOICES.find(item => item.id === state.voice) || DEFAULT_GROQ_ORPHEUS_VOICES[0];
       el.dockVoiceName.textContent = v.name.split(' ')[0];
-      el.dockVoiceAccent.textContent = `${v.accent.split(' ')[0]} · ${v.gender}`;
+      el.dockVoiceAccent.textContent = `${(v.accent || 'Groq').split(' ')[0]} · ${v.gender || 'Voice'}`;
       el.dockVoiceAvatar.textContent = v.name[0];
       return;
     }
@@ -2041,7 +2098,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     if (provider === 'cloudflare') {
       const v = DEFAULT_CLOUDFLARE_VOICES.find(item => item.id === state.voice) || DEFAULT_CLOUDFLARE_VOICES[0];
       el.dockVoiceName.textContent = v.name;
-      el.dockVoiceAccent.textContent = `${v.accent.split(' ')[0]} · Edge`;
+      el.dockVoiceAccent.textContent = `${(v.accent || 'Global').split(' ')[0]} · Edge`;
       el.dockVoiceAvatar.textContent = 'M';
       return;
     }
@@ -2050,7 +2107,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     const v = state.voicesCatalog.find(item => item.id === state.voice);
     if (v) {
       el.dockVoiceName.textContent = v.name;
-      const subtitle = `${v.accent.split(' ')[0]} · ${v.gender}`;
+      const subtitle = `${(v.accent || v.lang || 'US').split(' ')[0]} · ${v.gender || 'Voice'}`;
       el.dockVoiceAccent.textContent = subtitle;
       el.dockVoiceAvatar.textContent = v.name[0];
     } else {
@@ -2225,110 +2282,76 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     }
   }
 
+  const STAR_SVG_SM = '<svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+
   // Render filter pills specific to the active provider
   function renderProviderFilterPills(provider) {
     if (!el.drawerFilters) return;
     const current = state.voiceFilter || 'all';
+    const favPill = `
+      <button class="filter-pill filter-pill-fav ${current === 'favorites' ? 'active' : ''}" data-filter="favorites" id="filter-pill-fav" type="button">
+        ${STAR_SVG_SM}
+        <span>Favorites</span>
+        <span class="pill-count-badge" id="fav-count-badge">${state.favoriteVoices.size}</span>
+      </button>`;
 
-    if (provider === 'mistral') {
-      el.drawerFilters.innerHTML = `
-        <button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all">All Personas (4)</button>
-        <button class="filter-pill filter-pill-fav ${current === 'favorites' ? 'active' : ''}" data-filter="favorites" id="filter-pill-fav">
-          <svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span>Favorites</span>
-          <span class="pill-count-badge" id="fav-count-badge">${state.favoriteVoices.size}</span>
-        </button>
-        <button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female">Female</button>
-        <button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male">Male</button>
+    const configs = {
+      mistral: `<button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all" type="button">All Personas (4)</button>${favPill}<button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female" type="button">Female</button><button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male" type="button">Male</button>`,
+      elevenlabs: `<button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all" type="button">All Voices (21)</button>${favPill}<button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female" type="button">Female</button><button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male" type="button">Male</button><button class="filter-pill ${current === 'recommended' ? 'active' : ''}" data-filter="recommended" type="button">Curated Picks</button>`,
+      cartesia: `<button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all" type="button">All Voices (8)</button>${favPill}<button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female" type="button">Female</button><button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male" type="button">Male</button>`,
+      gemini: `<button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all" type="button">All Voices (5)</button>${favPill}<button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female" type="button">Female</button><button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male" type="button">Male</button>`,
+      groq: `<button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all" type="button">All Voices (12)</button>${favPill}<button class="filter-pill ${current === 'English' ? 'active' : ''}" data-filter="English" type="button">English (6)</button><button class="filter-pill ${current === 'Arabic' ? 'active' : ''}" data-filter="Arabic" type="button">Saudi Arabic (6)</button><button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female" type="button">Female</button><button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male" type="button">Male</button>`,
+      cloudflare: `<button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all" type="button">All Accents (9)</button>${favPill}`,
+      fish: `<button class="filter-pill active" data-filter="all" type="button">All Voices (1)</button>`,
+      deepgram: `<button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all" type="button">All Voices (36)</button>${favPill}<button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female" type="button">Female</button><button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male" type="button">Male</button><button class="filter-pill ${current === 'recommended' ? 'active' : ''}" data-filter="recommended" type="button">Curated Picks</button>`
+    };
+
+    el.drawerFilters.innerHTML = configs[provider] || configs.deepgram;
+  }
+
+  function appendVoiceCardList(grid, voices, { badgeForVoice, avatarForVoice, onSelect }) {
+    voices.forEach(v => {
+      const isFav = state.favoriteVoices.has(v.id);
+      const isCurrentPreview = state.previewVoiceId === v.id && state.isPreviewPlaying;
+      const badgeText = typeof badgeForVoice === 'function' ? badgeForVoice(v) : (v.recommended ? 'Pick' : '');
+      const avatarChar = typeof avatarForVoice === 'function' ? avatarForVoice(v) : v.name[0];
+
+      const card = document.createElement('div');
+      card.className = `voice-select-card ${state.voice === v.id ? 'active' : ''}`;
+      card.innerHTML = `
+        <div class="card-left">
+          <div class="card-avatar">${avatarChar}</div>
+          <div class="card-details">
+            <div class="card-name-row">
+              <span class="card-name">${v.name}</span>
+              ${badgeText ? `<span class="card-pick">${badgeText}</span>` : ''}
+            </div>
+            <span class="card-accent">${v.gender ? `${v.gender} · ` : ''}${v.accent || v.lang || 'Studio'}</span>
+            ${v.tone ? `<span class="card-tone">${v.tone}</span>` : ''}
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${v.id}" type="button" title="Listen to Voice Sample">
+            <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${v.id}" type="button" title="Toggle Favorite">
+            <svg viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </button>
+        </div>
       `;
-    } else if (provider === 'elevenlabs') {
-      el.drawerFilters.innerHTML = `
-        <button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all">All Voices (21)</button>
-        <button class="filter-pill filter-pill-fav ${current === 'favorites' ? 'active' : ''}" data-filter="favorites" id="filter-pill-fav">
-          <svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span>Favorites</span>
-          <span class="pill-count-badge" id="fav-count-badge">${state.favoriteVoices.size}</span>
-        </button>
-        <button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female">Female</button>
-        <button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male">Male</button>
-        <button class="filter-pill ${current === 'recommended' ? 'active' : ''}" data-filter="recommended">Curated Picks</button>
-      `;
-    } else if (provider === 'cartesia') {
-      el.drawerFilters.innerHTML = `
-        <button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all">All Voices (8)</button>
-        <button class="filter-pill filter-pill-fav ${current === 'favorites' ? 'active' : ''}" data-filter="favorites" id="filter-pill-fav">
-          <svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span>Favorites</span>
-          <span class="pill-count-badge" id="fav-count-badge">${state.favoriteVoices.size}</span>
-        </button>
-        <button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female">Female</button>
-        <button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male">Male</button>
-      `;
-    } else if (provider === 'gemini') {
-      el.drawerFilters.innerHTML = `
-        <button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all">All Voices (5)</button>
-        <button class="filter-pill filter-pill-fav ${current === 'favorites' ? 'active' : ''}" data-filter="favorites" id="filter-pill-fav">
-          <svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span>Favorites</span>
-          <span class="pill-count-badge" id="fav-count-badge">${state.favoriteVoices.size}</span>
-        </button>
-        <button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female">Female</button>
-        <button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male">Male</button>
-      `;
-    } else if (provider === 'groq') {
-      el.drawerFilters.innerHTML = `
-        <button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all">All Voices (12)</button>
-        <button class="filter-pill filter-pill-fav ${current === 'favorites' ? 'active' : ''}" data-filter="favorites" id="filter-pill-fav">
-          <svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span>Favorites</span>
-          <span class="pill-count-badge" id="fav-count-badge">${state.favoriteVoices.size}</span>
-        </button>
-        <button class="filter-pill ${current === 'English' ? 'active' : ''}" data-filter="English">English (6)</button>
-        <button class="filter-pill ${current === 'Arabic' ? 'active' : ''}" data-filter="Arabic">Saudi Arabic (6)</button>
-        <button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female">Female</button>
-        <button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male">Male</button>
-      `;
-    } else if (provider === 'cloudflare') {
-      el.drawerFilters.innerHTML = `
-        <button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all">All Accents (9)</button>
-        <button class="filter-pill filter-pill-fav ${current === 'favorites' ? 'active' : ''}" data-filter="favorites" id="filter-pill-fav">
-          <svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span>Favorites</span>
-          <span class="pill-count-badge" id="fav-count-badge">${state.favoriteVoices.size}</span>
-        </button>
-      `;
-    } else if (provider === 'fish') {
-      el.drawerFilters.innerHTML = `
-        <button class="filter-pill active" data-filter="all">All Voices (1)</button>
-      `;
-    } else {
-      // Deepgram
-      el.drawerFilters.innerHTML = `
-        <button class="filter-pill ${current === 'all' ? 'active' : ''}" data-filter="all">All Voices (36)</button>
-        <button class="filter-pill filter-pill-fav ${current === 'favorites' ? 'active' : ''}" data-filter="favorites" id="filter-pill-fav">
-          <svg class="star-pill-icon" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span>Favorites</span>
-          <span class="pill-count-badge" id="fav-count-badge">${state.favoriteVoices.size}</span>
-        </button>
-        <button class="filter-pill ${current === 'Female' ? 'active' : ''}" data-filter="Female">Female</button>
-        <button class="filter-pill ${current === 'Male' ? 'active' : ''}" data-filter="Male">Male</button>
-        <button class="filter-pill ${current === 'recommended' ? 'active' : ''}" data-filter="recommended">Curated Picks</button>
-      `;
-    }
+
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.card-actions')) return;
+        onSelect(v);
+        syncVoicePill();
+        closeVoiceDrawer();
+      });
+
+      card.querySelector('.voice-preview-btn').addEventListener('click', (e) => playVoicePreview(v.id, e));
+      card.querySelector('.voice-fav-btn').addEventListener('click', (e) => toggleVoiceFavorite(v.id, e));
+      grid.appendChild(card);
+    });
   }
 
   // --- Strict Provider-Locked Voice Drawer Renderer ---
@@ -2341,50 +2364,35 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
     updateFavBadge();
 
-    // 1. Sync Provider Switcher Tabs in Drawer
     if (el.drawerProviderTabs) {
       el.drawerProviderTabs.querySelectorAll('.provider-tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-provider') === provider);
       });
     }
 
-    // 2. Sync Provider Header Badge & Title
-    if (el.drawerProviderBadge) {
-      if (provider === 'mistral') el.drawerProviderBadge.textContent = 'Mistral Voxtral';
-      else if (provider === 'elevenlabs') el.drawerProviderBadge.textContent = 'ElevenLabs Studio';
-      else if (provider === 'fish') el.drawerProviderBadge.textContent = 'Fish Audio';
-      else if (provider === 'cartesia') el.drawerProviderBadge.textContent = 'Cartesia Sonic';
-      else if (provider === 'gemini') el.drawerProviderBadge.textContent = 'Google Gemini';
-      else if (provider === 'groq') el.drawerProviderBadge.textContent = 'Groq Orpheus';
-      else if (provider === 'cloudflare') el.drawerProviderBadge.textContent = 'Cloudflare MeloTTS';
-      else el.drawerProviderBadge.textContent = 'Deepgram Flux';
-    }
+    const providerMeta = {
+      mistral: { badge: 'Mistral Voxtral', title: 'Select Persona & Emotion' },
+      elevenlabs: { badge: 'ElevenLabs Studio', title: 'Select Studio Voice' },
+      fish: { badge: 'Fish Audio', title: 'Select Fish Audio Voice' },
+      cartesia: { badge: 'Cartesia Sonic', title: 'Select Sonic Voice' },
+      gemini: { badge: 'Google Gemini', title: 'Select Gemini Voice Actor' },
+      groq: { badge: 'Groq Orpheus', title: 'Select Orpheus Voice' },
+      cloudflare: { badge: 'Cloudflare MeloTTS', title: 'Select MeloTTS Accent' },
+      deepgram: { badge: 'Deepgram Flux', title: 'Select Voice Actor' }
+    };
+    const meta = providerMeta[provider] || providerMeta.deepgram;
+    if (el.drawerProviderBadge) el.drawerProviderBadge.textContent = meta.badge;
+    if (el.drawerTitleText) el.drawerTitleText.textContent = meta.title;
 
-    if (el.drawerTitleText) {
-      if (provider === 'mistral') el.drawerTitleText.textContent = 'Select Persona & Emotion';
-      else if (provider === 'elevenlabs') el.drawerTitleText.textContent = 'Select Studio Voice';
-      else if (provider === 'fish') el.drawerTitleText.textContent = 'Select Fish Audio Voice';
-      else if (provider === 'cartesia') el.drawerTitleText.textContent = 'Select Sonic Voice';
-      else if (provider === 'gemini') el.drawerTitleText.textContent = 'Select Gemini Voice Actor';
-      else if (provider === 'groq') el.drawerTitleText.textContent = 'Select Orpheus Voice';
-      else if (provider === 'cloudflare') el.drawerTitleText.textContent = 'Select MeloTTS Accent';
-      else el.drawerTitleText.textContent = 'Select Voice Actor';
-    }
-
-    // 3. Render Provider-Specific Filters
     renderProviderFilterPills(provider);
-
     grid.innerHTML = '';
 
-    // =====================================================================
-    // PROVIDER 1: MISTRAL VOXTRAL (Condensed 4-Persona Hierarchy)
-    // =====================================================================
+    // MISTRAL VOXTRAL (4-Persona Hierarchy + Emotion Chips)
     if (provider === 'mistral') {
       const personas = MISTRAL_PERSONAS.filter(p => {
         if (filter === 'favorites' && !state.favoriteVoices.has(p.id) && !p.emotions.some(e => state.favoriteVoices.has(e.id))) return false;
         if (filter === 'Female' && p.gender !== 'Female') return false;
         if (filter === 'Male' && p.gender !== 'Male') return false;
-
         if (query) {
           const text = `${p.name} ${p.accent} ${p.gender} ${p.tone} ${p.emotions.map(e => e.label).join(' ')}`.toLowerCase();
           if (!text.includes(query)) return false;
@@ -2392,12 +2400,8 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
         return true;
       });
 
-      el.drawerVoiceCount.textContent = `${personas.length} Personas • 30 Emotions Available`;
-
-      if (personas.length === 0) {
-        renderEmptyState(grid, filter);
-        return;
-      }
+      el.drawerVoiceCount.textContent = `${personas.length} Personas · 30 Emotions`;
+      if (personas.length === 0) { renderEmptyState(grid, filter); return; }
 
       personas.forEach(p => {
         const isFav = state.favoriteVoices.has(p.id);
@@ -2408,7 +2412,6 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
         const card = document.createElement('div');
         card.className = `persona-card ${isPersonaActive ? 'active' : ''}`;
 
-        // Header Row: Avatar, Persona details, Preview Button & Favorite Star
         const headerRow = document.createElement('div');
         headerRow.className = 'persona-header-row';
         headerRow.innerHTML = `
@@ -2418,37 +2421,28 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
               <div class="persona-name-line">
                 <span class="persona-name">${p.name}</span>
                 <span class="persona-selected-emotion-tag">${currentActiveEmotion ? currentActiveEmotion.label : 'Default'}</span>
-                ${p.recommended ? '<span class="card-pick">★ Pick</span>' : ''}
+                ${p.recommended ? '<span class="card-pick">Pick</span>' : ''}
               </div>
               <span class="persona-meta">${p.gender} · ${p.accent}</span>
               <span class="persona-tone">${p.tone}</span>
             </div>
           </div>
           <div class="persona-actions">
-            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${p.previewId}" title="Listen to ${p.name}'s voice sample">
-              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="6 4 20 12 6 20 6 4"/>
-              </svg>
-              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"/>
-                <rect x="14" y="4" width="4" height="16"/>
-              </svg>
+            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${p.previewId}" type="button" title="Listen to ${p.name}'s voice sample">
+              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
             </button>
-            <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${p.id}" title="Toggle Favorite">
-              <svg viewBox="0 0 24 24" fill="${isFav ? '#f59e0b' : 'none'}" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
+            <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${p.id}" type="button" title="Toggle Favorite">
+              <svg viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             </button>
           </div>
         `;
 
-        // Secondary Emotion Selector Layer
         const emotionsDrawer = document.createElement('div');
         emotionsDrawer.className = 'persona-emotions-drawer';
-        
         const emotionsLabel = document.createElement('div');
         emotionsLabel.className = 'emotions-header-label';
-        emotionsLabel.innerHTML = `<span>Select Emotion / Tone</span><span style="font-size:0.62rem;color:var(--text-ghost)">${p.emotions.length} expressions</span>`;
+        emotionsLabel.innerHTML = `<span>Select Emotion / Tone</span><span>${p.emotions.length} expressions</span>`;
         emotionsDrawer.appendChild(emotionsLabel);
 
         const chipsWrap = document.createElement('div');
@@ -2456,55 +2450,35 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
         p.emotions.forEach(emo => {
           const chip = document.createElement('button');
-          const isSelected = state.voice === emo.id;
-          chip.className = `emotion-chip ${isSelected ? 'active' : ''}`;
+          chip.type = 'button';
+          chip.className = `emotion-chip ${state.voice === emo.id ? 'active' : ''}`;
           chip.textContent = emo.label;
           chip.setAttribute('data-voice-id', emo.id);
-
           chip.addEventListener('click', (e) => {
             e.stopPropagation();
             state.voice = emo.id;
             syncVoicePill();
-
-            // Update all emotion chips active states in this card
             chipsWrap.querySelectorAll('.emotion-chip').forEach(c => c.classList.remove('active'));
             chip.classList.add('active');
-
-            // Update persona tag
             const tag = headerRow.querySelector('.persona-selected-emotion-tag');
             if (tag) tag.textContent = emo.label;
-
-            // Mark persona card active
             document.querySelectorAll('.persona-card').forEach(pc => pc.classList.remove('active'));
             card.classList.add('active');
-
-            // toast silenced for calm UX
           });
-
           chipsWrap.appendChild(chip);
         });
 
         emotionsDrawer.appendChild(chipsWrap);
 
-        // Header click selects the persona with active emotion & closes drawer
         headerRow.addEventListener('click', (e) => {
           if (e.target.closest('.persona-actions')) return;
-          const targetVoice = currentActiveEmotion ? currentActiveEmotion.id : p.defaultEmotion;
-          state.voice = targetVoice;
+          state.voice = currentActiveEmotion ? currentActiveEmotion.id : p.defaultEmotion;
           syncVoicePill();
           closeVoiceDrawer();
-          // toast silenced for calm UX
         });
 
-        const previewBtn = headerRow.querySelector('.voice-preview-btn');
-        previewBtn.addEventListener('click', (e) => {
-          playVoicePreview(p.previewId, e);
-        });
-
-        const favBtn = headerRow.querySelector('.voice-fav-btn');
-        favBtn.addEventListener('click', (e) => {
-          toggleVoiceFavorite(p.id, e);
-        });
+        headerRow.querySelector('.voice-preview-btn').addEventListener('click', (e) => playVoicePreview(p.previewId, e));
+        headerRow.querySelector('.voice-fav-btn').addEventListener('click', (e) => toggleVoiceFavorite(p.id, e));
 
         card.appendChild(headerRow);
         card.appendChild(emotionsDrawer);
@@ -2513,569 +2487,119 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       return;
     }
 
-    // =====================================================================
-    // PROVIDER 2: FISH AUDIO (S2.1 Multi-Voice)
-    // =====================================================================
-    if (provider === 'fish') {
-      el.drawerVoiceCount.textContent = '1 Voice Available';
-      const card = document.createElement('div');
-      const isCurrentPreview = state.previewVoiceId === 'alloy' && state.isPreviewPlaying;
-      card.className = `voice-select-card ${state.voice === 'alloy' ? 'active' : ''}`;
-      card.innerHTML = `
-        <div class="card-left">
-          <div class="card-avatar" style="background:rgba(56,189,248,0.15);color:#38bdf8;">F</div>
-          <div class="card-details">
-            <div class="card-name-row">
-              <span class="card-name">Fish Audio S2.1 Pro</span>
-              <span class="card-pick" style="background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.3)">Expressive</span>
-            </div>
-            <span class="card-accent">Multilingual · Adaptive Neural</span>
-            <span class="card-tone">Dynamic storytelling and high acoustic fidelity</span>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="alloy" title="Listen to Voice Sample">
-            <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="6 4 20 12 6 20 6 4"/>
-            </svg>
-            <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16"/>
-              <rect x="14" y="4" width="4" height="16"/>
-            </svg>
-          </button>
-        </div>
-      `;
-
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.card-actions')) return;
-        state.voice = 'alloy';
-        syncVoicePill();
-        closeVoiceDrawer();
-        // toast silenced for calm UX
-      });
-
-      const previewBtn = card.querySelector('.voice-preview-btn');
-      previewBtn.addEventListener('click', (e) => {
-        playVoicePreview('alloy', e);
-      });
-
-      grid.appendChild(card);
-      return;
-    }
-
-    // =====================================================================
-    // PROVIDER: CARTESIA SONIC (Ultra-Realistic Low Latency)
-    // =====================================================================
-    if (provider === 'cartesia') {
-      const cartesiaVoices = DEFAULT_CARTESIA_VOICES.filter(v => {
-        if (filter === 'favorites' && !state.favoriteVoices.has(v.id)) return false;
-        if (filter === 'Female' && v.gender !== 'Female') return false;
-        if (filter === 'Male' && v.gender !== 'Male') return false;
-        if (query) {
-          const text = `${v.name} ${v.accent} ${v.gender} ${v.tone}`.toLowerCase();
-          if (!text.includes(query)) return false;
-        }
-        return true;
-      });
-
-      el.drawerVoiceCount.textContent = `${cartesiaVoices.length} Sonic Voices Available`;
-
-      if (cartesiaVoices.length === 0) {
-        renderEmptyState(grid, filter);
-        return;
-      }
-
-      cartesiaVoices.forEach(v => {
-        const isFav = state.favoriteVoices.has(v.id);
-        const isCurrentPreview = state.previewVoiceId === v.id && state.isPreviewPlaying;
-        const card = document.createElement('div');
-        card.className = `voice-select-card ${state.voice === v.id ? 'active' : ''}`;
-        card.innerHTML = `
-          <div class="card-left">
-            <div class="card-avatar" style="background:rgba(236,72,153,0.15);color:#ec4899;">${v.name[0]}</div>
-            <div class="card-details">
-              <div class="card-name-row">
-                <span class="card-name">${v.name}</span>
-                ${v.recommended ? '<span class="card-pick" style="background:rgba(236,72,153,0.18);color:#ec4899;border:1px solid rgba(236,72,153,0.3)">★ Sonic</span>' : ''}
-              </div>
-              <span class="card-accent">${v.gender} · ${v.accent}</span>
-              ${v.tone ? `<span class="card-tone">${v.tone}</span>` : ''}
-            </div>
-          </div>
-          <div class="card-actions">
-            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${v.id}" title="Listen to Voice Sample">
-              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="6 4 20 12 6 20 6 4"/>
-              </svg>
-              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"/>
-                <rect x="14" y="4" width="4" height="16"/>
-              </svg>
-            </button>
-            <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${v.id}" title="Toggle Favorite">
-              <svg viewBox="0 0 24 24" fill="${isFav ? '#f59e0b' : 'none'}" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </button>
-          </div>
-        `;
-
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('.card-actions')) return;
-          state.voice = v.id;
-          if (!state.model || !state.model.includes('cartesia')) {
-            setModel('cartesia/sonic-3.6');
-          }
-          syncVoicePill();
-          closeVoiceDrawer();
-          // toast silenced for calm UX
-        });
-
-        const previewBtn = card.querySelector('.voice-preview-btn');
-        previewBtn.addEventListener('click', (e) => {
-          playVoicePreview(v.id, e);
-        });
-
-        const favBtn = card.querySelector('.voice-fav-btn');
-        favBtn.addEventListener('click', (e) => {
-          toggleVoiceFavorite(v.id, e);
-        });
-
-        grid.appendChild(card);
-      });
-      return;
-    }
-
-    // =====================================================================
-    // PROVIDER: GOOGLE GEMINI (Multimodal Neural TTS)
-    // =====================================================================
-    if (provider === 'gemini') {
-      const geminiVoices = DEFAULT_GEMINI_VOICES.filter(v => {
-        if (filter === 'favorites' && !state.favoriteVoices.has(v.id)) return false;
-        if (filter === 'Female' && v.gender !== 'Female') return false;
-        if (filter === 'Male' && v.gender !== 'Male') return false;
-        if (query) {
-          const text = `${v.name} ${v.accent} ${v.gender} ${v.tone}`.toLowerCase();
-          if (!text.includes(query)) return false;
-        }
-        return true;
-      });
-
-      el.drawerVoiceCount.textContent = `${geminiVoices.length} Gemini Voices Available`;
-
-      if (geminiVoices.length === 0) {
-        renderEmptyState(grid, filter);
-        return;
-      }
-
-      geminiVoices.forEach(v => {
-        const isFav = state.favoriteVoices.has(v.id);
-        const isCurrentPreview = state.previewVoiceId === v.id && state.isPreviewPlaying;
-        const card = document.createElement('div');
-        card.className = `voice-select-card ${state.voice === v.id ? 'active' : ''}`;
-        card.innerHTML = `
-          <div class="card-left">
-            <div class="card-avatar" style="background:rgba(59,130,246,0.15);color:#3b82f6;">${v.name[0]}</div>
-            <div class="card-details">
-              <div class="card-name-row">
-                <span class="card-name">${v.name}</span>
-                ${v.recommended ? '<span class="card-pick" style="background:rgba(59,130,246,0.18);color:#3b82f6;border:1px solid rgba(59,130,246,0.3)">★ Gemini</span>' : ''}
-              </div>
-              <span class="card-accent">${v.gender} · ${v.accent}</span>
-              ${v.tone ? `<span class="card-tone">${v.tone}</span>` : ''}
-            </div>
-          </div>
-          <div class="card-actions">
-            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${v.id}" title="Listen to Voice Sample">
-              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="6 4 20 12 6 20 6 4"/>
-              </svg>
-              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"/>
-                <rect x="14" y="4" width="4" height="16"/>
-              </svg>
-            </button>
-            <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${v.id}" title="Toggle Favorite">
-              <svg viewBox="0 0 24 24" fill="${isFav ? '#f59e0b' : 'none'}" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </button>
-          </div>
-        `;
-
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('.card-actions')) return;
-          state.voice = v.id;
-          if (!state.model || !state.model.includes('gemini')) {
-            setModel('google/gemini-2.5-flash-tts');
-          }
-          syncVoicePill();
-          closeVoiceDrawer();
-          // toast silenced for calm UX
-        });
-
-        const previewBtn = card.querySelector('.voice-preview-btn');
-        previewBtn.addEventListener('click', (e) => {
-          playVoicePreview(v.id, e);
-        });
-
-        const favBtn = card.querySelector('.voice-fav-btn');
-        favBtn.addEventListener('click', (e) => {
-          toggleVoiceFavorite(v.id, e);
-        });
-
-        grid.appendChild(card);
-      });
-      return;
-    }
-
-    // =====================================================================
-    // PROVIDER: GROQ ORPHEUS (English & Saudi Arabic)
-    // =====================================================================
-    if (provider === 'groq') {
-      const groqVoices = DEFAULT_GROQ_ORPHEUS_VOICES.filter(v => {
-        if (filter === 'favorites' && !state.favoriteVoices.has(v.id)) return false;
-        if (filter === 'Female' && v.gender !== 'Female') return false;
-        if (filter === 'Male' && v.gender !== 'Male') return false;
-        if (filter === 'English' && !v.model.includes('english')) return false;
-        if (filter === 'Arabic' && !v.model.includes('arabic')) return false;
-        if (query) {
-          const text = `${v.name} ${v.accent} ${v.gender} ${v.tone}`.toLowerCase();
-          if (!text.includes(query)) return false;
-        }
-        return true;
-      });
-
-      el.drawerVoiceCount.textContent = `${groqVoices.length} Orpheus Voices Available`;
-
-      if (groqVoices.length === 0) {
-        renderEmptyState(grid, filter);
-        return;
-      }
-
-      groqVoices.forEach(v => {
-        const isFav = state.favoriteVoices.has(v.id);
-        const isCurrentPreview = state.previewVoiceId === v.id && state.isPreviewPlaying;
-        const isArabic = v.model.includes('arabic');
-        const card = document.createElement('div');
-        card.className = `voice-select-card ${state.voice === v.id ? 'active' : ''}`;
-        card.innerHTML = `
-          <div class="card-left">
-            <div class="card-avatar" style="background:rgba(249,115,22,0.15);color:#f97316;">${v.name[0]}</div>
-            <div class="card-details">
-              <div class="card-name-row">
-                <span class="card-name">${v.name}</span>
-                ${isArabic ? '<span class="card-pick" style="background:rgba(16,185,129,0.18);color:#10b981;border:1px solid rgba(16,185,129,0.3)">🇸🇦 Saudi</span>' : '<span class="card-pick" style="background:rgba(249,115,22,0.18);color:#f97316;border:1px solid rgba(249,115,22,0.3)">Groq LPU</span>'}
-              </div>
-              <span class="card-accent">${v.gender} · ${v.accent}</span>
-              ${v.tone ? `<span class="card-tone">${v.tone}</span>` : ''}
-            </div>
-          </div>
-          <div class="card-actions">
-            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${v.id}" title="Listen to Voice Sample">
-              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="6 4 20 12 6 20 6 4"/>
-              </svg>
-              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"/>
-                <rect x="14" y="4" width="4" height="16"/>
-              </svg>
-            </button>
-            <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${v.id}" title="Toggle Favorite">
-              <svg viewBox="0 0 24 24" fill="${isFav ? '#f59e0b' : 'none'}" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </button>
-          </div>
-        `;
-
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('.card-actions')) return;
-          state.voice = v.id;
-          if (v.model.includes('arabic')) {
-            setModel('groq/orpheus-arabic');
-          } else {
-            setModel('groq/orpheus-english');
-          }
-          syncVoicePill();
-          closeVoiceDrawer();
-          // toast silenced for calm UX
-        });
-
-        const previewBtn = card.querySelector('.voice-preview-btn');
-        previewBtn.addEventListener('click', (e) => {
-          playVoicePreview(v.id, e);
-        });
-
-        const favBtn = card.querySelector('.voice-fav-btn');
-        favBtn.addEventListener('click', (e) => {
-          toggleVoiceFavorite(v.id, e);
-        });
-
-        grid.appendChild(card);
-      });
-      return;
-    }
-
-    // =====================================================================
-    // PROVIDER: CLOUDFLARE MELOTTS (Global Edge Fast Speech)
-    // =====================================================================
-    if (provider === 'cloudflare') {
-      const cfVoices = DEFAULT_CLOUDFLARE_VOICES.filter(v => {
-        if (filter === 'favorites' && !state.favoriteVoices.has(v.id)) return false;
-        if (query) {
-          const text = `${v.name} ${v.accent} ${v.tone}`.toLowerCase();
-          if (!text.includes(query)) return false;
-        }
-        return true;
-      });
-
-      el.drawerVoiceCount.textContent = `${cfVoices.length} MeloTTS Accents Available`;
-
-      if (cfVoices.length === 0) {
-        renderEmptyState(grid, filter);
-        return;
-      }
-
-      cfVoices.forEach(v => {
-        const isFav = state.favoriteVoices.has(v.id);
-        const isCurrentPreview = state.previewVoiceId === v.id && state.isPreviewPlaying;
-        const card = document.createElement('div');
-        card.className = `voice-select-card ${state.voice === v.id ? 'active' : ''}`;
-        card.innerHTML = `
-          <div class="card-left">
-            <div class="card-avatar" style="background:rgba(245,158,11,0.15);color:#f59e0b;">M</div>
-            <div class="card-details">
-              <div class="card-name-row">
-                <span class="card-name">${v.name}</span>
-                <span class="card-pick" style="background:rgba(245,158,11,0.18);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">Edge Cloudflare</span>
-              </div>
-              <span class="card-accent">${v.accent}</span>
-              ${v.tone ? `<span class="card-tone">${v.tone}</span>` : ''}
-            </div>
-          </div>
-          <div class="card-actions">
-            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${v.id}" title="Listen to Voice Sample">
-              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="6 4 20 12 6 20 6 4"/>
-              </svg>
-              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"/>
-                <rect x="14" y="4" width="4" height="16"/>
-              </svg>
-            </button>
-            <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${v.id}" title="Toggle Favorite">
-              <svg viewBox="0 0 24 24" fill="${isFav ? '#f59e0b' : 'none'}" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </button>
-          </div>
-        `;
-
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('.card-actions')) return;
-          state.voice = v.id;
-          if (!state.model || !state.model.includes('cloudflare') && !state.model.includes('melotts')) {
-            setModel('cloudflare/melotts');
-          }
-          syncVoicePill();
-          closeVoiceDrawer();
-          // toast silenced for calm UX
-        });
-
-        const previewBtn = card.querySelector('.voice-preview-btn');
-        previewBtn.addEventListener('click', (e) => {
-          playVoicePreview(v.id, e);
-        });
-
-        const favBtn = card.querySelector('.voice-fav-btn');
-        favBtn.addEventListener('click', (e) => {
-          toggleVoiceFavorite(v.id, e);
-        });
-
-        grid.appendChild(card);
-      });
-      return;
-    }
-
-    // =====================================================================
-    // PROVIDER: ELEVENLABS (21 Official Studio Voices)
-    // =====================================================================
-    if (provider === 'elevenlabs') {
-      const elevenVoices = DEFAULT_ELEVENLABS_VOICES.filter(v => {
-        if (filter === 'favorites' && !state.favoriteVoices.has(v.id)) return false;
-        if (filter === 'Female' && v.gender !== 'Female') return false;
-        if (filter === 'Male' && v.gender !== 'Male') return false;
-        if (filter === 'recommended' && !v.recommended) return false;
-        if (query) {
-          const text = `${v.name} ${v.accent} ${v.gender} ${v.tone}`.toLowerCase();
-          if (!text.includes(query)) return false;
-        }
-        return true;
-      });
-
-      el.drawerVoiceCount.textContent = `${elevenVoices.length} Studio Voices Available`;
-
-      if (elevenVoices.length === 0) {
-        renderEmptyState(grid, filter);
-        return;
-      }
-
-      elevenVoices.forEach(v => {
-        const isFav = state.favoriteVoices.has(v.id);
-        const isCurrentPreview = state.previewVoiceId === v.id && state.isPreviewPlaying;
-        const card = document.createElement('div');
-        card.className = `voice-select-card ${state.voice === v.id ? 'active' : ''}`;
-        card.innerHTML = `
-          <div class="card-left">
-            <div class="card-avatar" style="background:rgba(168,85,247,0.15);color:#a855f7;">${v.name[0]}</div>
-            <div class="card-details">
-              <div class="card-name-row">
-                <span class="card-name">${v.name}</span>
-                ${v.recommended ? '<span class="card-pick" style="background:rgba(168,85,247,0.18);color:#a855f7;border:1px solid rgba(168,85,247,0.3)">★ Studio</span>' : ''}
-              </div>
-              <span class="card-accent">${v.gender} · ${v.accent}</span>
-              ${v.tone ? `<span class="card-tone">${v.tone}</span>` : ''}
-            </div>
-          </div>
-          <div class="card-actions">
-            <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${v.id}" title="Listen to Voice Sample">
-              <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="6 4 20 12 6 20 6 4"/>
-              </svg>
-              <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"/>
-                <rect x="14" y="4" width="4" height="16"/>
-              </svg>
-            </button>
-            <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${v.id}" title="Toggle Favorite">
-              <svg viewBox="0 0 24 24" fill="${isFav ? '#f59e0b' : 'none'}" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </button>
-          </div>
-        `;
-
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('.card-actions')) return;
-          state.voice = v.id;
-          if (!state.model || !state.model.includes('elevenlabs')) {
-            setModel('elevenlabs/multilingual-v2');
-          }
-          syncVoicePill();
-          closeVoiceDrawer();
-          // toast silenced for calm UX
-        });
-
-        const previewBtn = card.querySelector('.voice-preview-btn');
-        previewBtn.addEventListener('click', (e) => {
-          playVoicePreview(v.id, e);
-        });
-
-        const favBtn = card.querySelector('.voice-fav-btn');
-        favBtn.addEventListener('click', (e) => {
-          toggleVoiceFavorite(v.id, e);
-        });
-
-        grid.appendChild(card);
-      });
-      return;
-    }
-
-    // =====================================================================
-    // PROVIDER 3: DEEPGRAM FLUX (36 Broadcast Voices)
-    // =====================================================================
-    const deepgramVoices = state.voicesCatalog.filter(v => {
-      // STRICT FILTER: Only Deepgram voices starting with flux-
-      if (!v.id.startsWith('flux-')) return false;
-
+    const baseFilter = (list, extraFilter = null) => list.filter(v => {
       if (filter === 'favorites' && !state.favoriteVoices.has(v.id)) return false;
       if (filter === 'Female' && v.gender !== 'Female') return false;
       if (filter === 'Male' && v.gender !== 'Male') return false;
       if (filter === 'recommended' && !v.recommended) return false;
-
+      if (extraFilter && !extraFilter(v)) return false;
       if (query) {
-        const text = `${v.name} ${v.accent} ${v.gender} ${v.tone}`.toLowerCase();
+        const text = `${v.name} ${v.accent} ${v.gender || ''} ${v.tone || ''}`.toLowerCase();
         if (!text.includes(query)) return false;
       }
       return true;
     });
 
-    el.drawerVoiceCount.textContent = `${deepgramVoices.length} Voices Available`;
-
-    if (deepgramVoices.length === 0) {
-      renderEmptyState(grid, filter);
+    if (provider === 'fish') {
+      el.drawerVoiceCount.textContent = '1 Voice Available';
+      appendVoiceCardList(grid, [{ id: 'alloy', name: 'Fish Audio S2.1 Pro', gender: 'Adaptive', accent: 'Multilingual Neural', tone: 'Dynamic storytelling and high acoustic fidelity', recommended: true }], {
+        badgeForVoice: () => 'Expressive',
+        avatarForVoice: () => 'F',
+        onSelect: () => { state.voice = 'alloy'; }
+      });
       return;
     }
 
-    deepgramVoices.forEach(v => {
-      const isFav = state.favoriteVoices.has(v.id);
-      const isCurrentPreview = state.previewVoiceId === v.id && state.isPreviewPlaying;
-
-      const card = document.createElement('div');
-      card.className = `voice-select-card ${state.voice === v.id ? 'active' : ''}`;
-      card.innerHTML = `
-        <div class="card-left">
-          <div class="card-avatar">${v.name[0]}</div>
-          <div class="card-details">
-            <div class="card-name-row">
-              <span class="card-name">${v.name}</span>
-              ${v.recommended ? '<span class="card-pick">★ Pick</span>' : ''}
-            </div>
-            <span class="card-accent">${v.gender} · ${v.accent}</span>
-            ${v.tone ? `<span class="card-tone">${v.tone}</span>` : ''}
-          </div>
-        </div>
-        <div class="card-actions">
-          <button class="voice-preview-btn ${isCurrentPreview ? 'playing' : ''}" data-voice-id="${v.id}" title="Listen to Voice Sample">
-            <svg class="preview-icon-play ${isCurrentPreview ? 'hidden' : ''}" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="6 4 20 12 6 20 6 4"/>
-            </svg>
-            <svg class="preview-icon-pause ${isCurrentPreview ? '' : 'hidden'}" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16"/>
-              <rect x="14" y="4" width="4" height="16"/>
-            </svg>
-          </button>
-          <button class="voice-fav-btn ${isFav ? 'favorited' : ''}" data-voice-id="${v.id}" title="Toggle Favorite">
-            <svg viewBox="0 0 24 24" fill="${isFav ? '#f59e0b' : 'none'}" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-          </button>
-        </div>
-      `;
-
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.card-actions')) return;
-        state.voice = v.id;
-        syncVoicePill();
-        closeVoiceDrawer();
-        // toast silenced for calm UX
+    if (provider === 'cartesia') {
+      const list = baseFilter(DEFAULT_CARTESIA_VOICES);
+      el.drawerVoiceCount.textContent = `${list.length} Sonic Voices`;
+      if (!list.length) return renderEmptyState(grid, filter);
+      appendVoiceCardList(grid, list, {
+        badgeForVoice: (v) => v.recommended ? 'Sonic' : '',
+        onSelect: (v) => {
+          state.voice = v.id;
+          if (!state.model || !state.model.includes('cartesia')) setModel('cartesia/sonic-3.6');
+        }
       });
+      return;
+    }
 
-      const previewBtn = card.querySelector('.voice-preview-btn');
-      previewBtn.addEventListener('click', (e) => {
-        playVoicePreview(v.id, e);
+    if (provider === 'gemini') {
+      const list = baseFilter(DEFAULT_GEMINI_VOICES);
+      el.drawerVoiceCount.textContent = `${list.length} Gemini Voices`;
+      if (!list.length) return renderEmptyState(grid, filter);
+      appendVoiceCardList(grid, list, {
+        badgeForVoice: (v) => v.recommended ? 'Gemini' : '',
+        onSelect: (v) => {
+          state.voice = v.id;
+          if (!state.model || !state.model.includes('gemini')) setModel('google/gemini-2.5-flash-tts');
+        }
       });
+      return;
+    }
 
-      const favBtn = card.querySelector('.voice-fav-btn');
-      favBtn.addEventListener('click', (e) => {
-        toggleVoiceFavorite(v.id, e);
+    if (provider === 'groq') {
+      const list = baseFilter(DEFAULT_GROQ_ORPHEUS_VOICES, (v) => {
+        if (filter === 'English' && !v.model.includes('english')) return false;
+        if (filter === 'Arabic' && !v.model.includes('arabic')) return false;
+        return true;
       });
+      el.drawerVoiceCount.textContent = `${list.length} Orpheus Voices`;
+      if (!list.length) return renderEmptyState(grid, filter);
+      appendVoiceCardList(grid, list, {
+        badgeForVoice: (v) => v.model.includes('arabic') ? 'AR · SA' : 'Groq LPU',
+        onSelect: (v) => {
+          state.voice = v.id;
+          setModel(v.model.includes('arabic') ? 'groq/orpheus-arabic' : 'groq/orpheus-english');
+        }
+      });
+      return;
+    }
 
-      grid.appendChild(card);
+    if (provider === 'cloudflare') {
+      const list = baseFilter(DEFAULT_CLOUDFLARE_VOICES);
+      el.drawerVoiceCount.textContent = `${list.length} MeloTTS Accents`;
+      if (!list.length) return renderEmptyState(grid, filter);
+      appendVoiceCardList(grid, list, {
+        badgeForVoice: () => 'Edge AI',
+        avatarForVoice: () => 'M',
+        onSelect: (v) => {
+          state.voice = v.id;
+          if (!state.model || (!state.model.includes('cloudflare') && !state.model.includes('melotts'))) setModel('cloudflare/melotts');
+        }
+      });
+      return;
+    }
+
+    if (provider === 'elevenlabs') {
+      const list = baseFilter(DEFAULT_ELEVENLABS_VOICES);
+      el.drawerVoiceCount.textContent = `${list.length} Studio Voices`;
+      if (!list.length) return renderEmptyState(grid, filter);
+      appendVoiceCardList(grid, list, {
+        badgeForVoice: (v) => v.recommended ? 'Studio' : '',
+        onSelect: (v) => {
+          state.voice = v.id;
+          if (!state.model || !state.model.includes('elevenlabs')) setModel('elevenlabs/multilingual-v2');
+        }
+      });
+      return;
+    }
+
+    // Default: Deepgram Flux
+    const deepgramVoices = baseFilter(state.voicesCatalog, (v) => v.id.startsWith('flux-'));
+    el.drawerVoiceCount.textContent = `${deepgramVoices.length} Voices Available`;
+    if (!deepgramVoices.length) return renderEmptyState(grid, filter);
+    appendVoiceCardList(grid, deepgramVoices, {
+      badgeForVoice: (v) => v.recommended ? 'Pick' : '',
+      onSelect: (v) => { state.voice = v.id; }
     });
   }
 
   function renderEmptyState(grid, filter) {
     const empty = document.createElement('div');
-    empty.className = 'empty-voice-state';
-    empty.style.gridColumn = '1 / -1';
-    empty.style.padding = '36px 20px';
-    empty.style.textAlign = 'center';
-    empty.style.color = 'var(--text-muted)';
-    empty.style.fontSize = '0.86rem';
+    empty.className = 'vault-empty';
     empty.innerHTML = filter === 'favorites'
-      ? '<div style="font-size:1.5rem;margin-bottom:8px">★</div><strong>No favorite voices saved yet.</strong><br><span style="font-size:0.75rem;color:var(--text-ghost);margin-top:4px;display:inline-block">Click the star button on any voice card to pin it here.</span>'
+      ? '<strong>No favorite voices saved yet.</strong><br><span style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;display:inline-block">Tap the star icon on any voice card to pin it here.</span>'
       : 'No voices found matching your search.';
     grid.appendChild(empty);
   }
@@ -5200,17 +4724,25 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     const canvas = el.dockWaveformCanvas;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const targetW = Math.max(240, Math.round((rect.width || 300) * dpr));
+    const targetH = Math.max(40, Math.round((rect.height || 52) * dpr));
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
     const w = canvas.width;
     const h = canvas.height;
 
-    const isLight = document.body.classList.contains('theme-light');
-    const barActiveColor = isLight ? '#d97706' : '#f59e0b';
-    const barBaseColor = isLight ? '#cbd5e1' : '#3f3f46';
+    const styles = getComputedStyle(document.documentElement);
+    const barActiveColor = styles.getPropertyValue('--accent-signal').trim() || '#D44824';
+    const barBaseColor = styles.getPropertyValue('--border-strong').trim() || 'rgba(21, 21, 23, 0.22)';
 
     ctx.clearRect(0, 0, w, h);
 
     const audio = state.audioElement;
-    let duration = state.continuousDuration || (audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0 ? audio.duration : 1);
+    const duration = state.continuousDuration || (audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0 ? audio.duration : 1);
     let currentTime = 0;
 
     if (audio && !isNaN(audio.currentTime)) {
@@ -5225,17 +4757,16 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
     const peaks = state.waveformPeaks;
     const bars = peaks.length;
-    const gap = 2;
+    const gap = Math.max(2, Math.round(2 * dpr));
     const barW = Math.max(2, (w / bars) - gap);
 
     for (let i = 0; i < bars; i++) {
       const barRatio = (i + 0.5) / bars;
       const isPlayed = barRatio <= currentRatio;
 
-      // WAVE HEIGHT MAINTAINED ALWAYS: derived from decoded speech peaks!
       const peakVal = peaks[i];
-      const maxBarH = h - 6;
-      const minBarH = 4;
+      const maxBarH = h - Math.round(8 * dpr);
+      const minBarH = Math.round(4 * dpr);
       const bh = Math.max(minBarH, peakVal * maxBarH);
 
       const x = i * (barW + gap);
@@ -5253,107 +4784,120 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       ctx.fill();
     }
 
-    // Smooth playhead line position
-    el.dockPlayhead.style.left = `${currentRatio * 100}%`;
+    if (el.dockPlayhead) el.dockPlayhead.style.left = `${currentRatio * 100}%`;
 
     if (state.isPlaying) {
       state.animFrameId = requestAnimationFrame(drawDockWaveform);
     }
   }
 
-  // --- STT (Groq Whisper) Engine ---
+  // --- STT (Groq Whisper & Deepgram Nova-2) Engine ---
   function setupSTTEngine() {
-    // Big Mic Click
-    el.btnBigRecord.addEventListener('click', toggleMicRecording);
+    if (el.btnBigRecord) el.btnBigRecord.addEventListener('click', toggleMicRecording);
 
-    // File Drag & Drop
-    el.btnBrowseFile.addEventListener('click', () => el.inputAudioFile.click());
-    el.sttDropzone.addEventListener('click', (e) => {
-      if (e.target !== el.btnBrowseFile && !e.target.closest('.file-picked-chip')) {
-        el.inputAudioFile.click();
-      }
-    });
+    const browseTrigger = () => el.inputAudioFile && el.inputAudioFile.click();
+    if (el.btnBrowseFile) el.btnBrowseFile.addEventListener('click', browseTrigger);
+    const btnBrowseAlt = document.getElementById('btn-browse-file-alt');
+    if (btnBrowseAlt) btnBrowseAlt.addEventListener('click', browseTrigger);
 
-    el.inputAudioFile.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        selectAudioFile(e.target.files[0]);
-      }
-    });
+    if (el.sttDropzone) {
+      el.sttDropzone.addEventListener('click', (e) => {
+        if (e.target !== el.btnBrowseFile && !e.target.closest('#chip-picked-file')) {
+          browseTrigger();
+        }
+      });
 
-    el.sttDropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      el.sttDropzone.style.borderColor = 'var(--accent-coral)';
-    });
+      el.sttDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        el.sttDropzone.style.borderColor = 'var(--accent-signal)';
+      });
 
-    el.sttDropzone.addEventListener('dragleave', () => {
-      el.sttDropzone.style.borderColor = 'var(--border-subtle)';
-    });
+      el.sttDropzone.addEventListener('dragleave', () => {
+        el.sttDropzone.style.borderColor = '';
+      });
 
-    el.sttDropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      el.sttDropzone.style.borderColor = 'var(--border-subtle)';
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        selectAudioFile(e.dataTransfer.files[0]);
-      }
-    });
+      el.sttDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        el.sttDropzone.style.borderColor = '';
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          selectAudioFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
 
-    el.btnRemovePicked.addEventListener('click', (e) => {
-      e.stopPropagation();
-      state.pickedFile = null;
-      el.inputAudioFile.value = '';
-      el.chipPickedFile.classList.add('hidden');
-      if (el.sttDropzone) el.sttDropzone.classList.remove('has-file');
-      updateTranscribeBtnState();
-    });
+    if (el.inputAudioFile) {
+      el.inputAudioFile.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          selectAudioFile(e.target.files[0]);
+        }
+      });
+    }
 
-    // Transcribe Button Click
-    el.btnDoTranscribe.addEventListener('click', executeTranscription);
+    if (el.btnRemovePicked) {
+      el.btnRemovePicked.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.pickedFile = null;
+        if (el.inputAudioFile) el.inputAudioFile.value = '';
+        if (el.pickedFileName) el.pickedFileName.textContent = 'Or drop WAV, MP3, M4A, WEBM here';
+        if (el.chipPickedFile) el.chipPickedFile.classList.add('hidden');
+        if (el.sttDropzone) el.sttDropzone.classList.remove('has-file');
+        updateTranscribeBtnState();
+      });
+    }
 
-    // Copy Transcript
-    el.btnCopyStt.addEventListener('click', () => {
-      const text = el.sttTranscriptText.textContent;
-      if (!text) return;
-      navigator.clipboard.writeText(text);
-      showToast('Copied to clipboard', 'success');
-    });
+    if (el.btnDoTranscribe) el.btnDoTranscribe.addEventListener('click', executeTranscription);
 
-    // Export .txt
-    el.btnExportStt.addEventListener('click', () => {
-      const text = el.sttTranscriptText.textContent;
-      if (!text) return;
-      const b = new Blob([text], { type: 'text/plain' });
-      const u = URL.createObjectURL(b);
-      const a = document.createElement('a');
-      a.href = u;
-      a.download = `whisper_transcript_${new Date().toISOString().slice(0, 10)}.txt`;
-      a.click();
-      URL.revokeObjectURL(u);
-      showToast('Exported .txt file', 'success');
-    });
+    if (el.btnCopyStt) {
+      el.btnCopyStt.addEventListener('click', () => {
+        const text = el.sttTranscriptText ? el.sttTranscriptText.textContent : '';
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        showToast('Copied to clipboard', 'success');
+      });
+    }
 
-    // 1-Click Send to TTS
-    el.btnSendSttToTts.addEventListener('click', () => {
-      const text = el.sttTranscriptText.textContent;
-      if (!text) return;
-      el.textInput.value = text;
-      updateCanvasMetrics();
-      switchMode('tts');
-      showToast('Transferred to speech canvas!', 'info');
-      el.textInput.focus();
-    });
+    if (el.btnExportStt) {
+      el.btnExportStt.addEventListener('click', () => {
+        const text = el.sttTranscriptText ? el.sttTranscriptText.textContent : '';
+        if (!text) return;
+        const b = new Blob([text], { type: 'text/plain' });
+        const u = URL.createObjectURL(b);
+        const a = document.createElement('a');
+        a.href = u;
+        a.download = `transcript_${new Date().toISOString().slice(0, 10)}.txt`;
+        a.click();
+        URL.revokeObjectURL(u);
+        showToast('Exported .txt file', 'success');
+      });
+    }
+
+    if (el.btnSendSttToTts) {
+      el.btnSendSttToTts.addEventListener('click', () => {
+        const text = el.sttTranscriptText ? el.sttTranscriptText.textContent : '';
+        if (!text) return;
+        el.textInput.value = text;
+        updateCanvasMetrics();
+        switchMode('tts');
+        showToast('Transferred to Studio!', 'info');
+        el.textInput.focus();
+      });
+    }
+    updateTranscribeBtnState();
   }
 
   function selectAudioFile(file) {
     state.pickedFile = file;
-    el.pickedFileName.textContent = `${file.name} (${fmtBytes(file.size)})`;
-    el.chipPickedFile.classList.remove('hidden');
+    if (el.pickedFileName) el.pickedFileName.textContent = `${file.name} (${fmtBytes(file.size)})`;
+    if (el.chipPickedFile) el.chipPickedFile.classList.remove('hidden');
     if (el.sttDropzone) el.sttDropzone.classList.add('has-file');
     updateTranscribeBtnState();
   }
 
   function updateTranscribeBtnState() {
-    const ready = state.pickedFile || (state.recChunks.length > 0 && !state.isRecording);
-    el.btnDoTranscribe.classList.toggle('disabled', !ready);
+    const ready = !!(state.pickedFile || (state.recChunks.length > 0 && !state.isRecording));
+    if (el.btnDoTranscribe) {
+      el.btnDoTranscribe.classList.toggle('disabled', !ready);
+    }
   }
 
   async function toggleMicRecording() {
@@ -5371,8 +4915,13 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       state.recChunks = [];
       state.recSecs = 0;
 
-      el.micHalo.classList.add('recording');
-      el.sttHintDisplay.textContent = 'Listening... Click to finish recording';
+      if (el.micHalo) el.micHalo.classList.add('recording');
+      if (el.btnBigRecord) el.btnBigRecord.classList.add('is-recording');
+      const recLbl = document.getElementById('label-record-toggle');
+      if (recLbl) recLbl.textContent = 'Stop Recording';
+      const sttLbl = document.getElementById('stt-status-label');
+      if (sttLbl) sttLbl.textContent = 'Recording';
+      if (el.sttHintDisplay) el.sttHintDisplay.textContent = 'Listening... Tap Stop when finished';
 
       state.mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       state.mediaRecorder.ondataavailable = (e) => {
@@ -5382,24 +4931,24 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       state.mediaRecorder.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
         state.isRecording = false;
-        el.micHalo.classList.remove('recording');
-        el.sttHintDisplay.textContent = 'Recording finished. Click Transcribe below.';
+        if (el.micHalo) el.micHalo.classList.remove('recording');
+        if (el.btnBigRecord) el.btnBigRecord.classList.remove('is-recording');
+        if (recLbl) recLbl.textContent = 'Record Mic';
+        if (sttLbl) sttLbl.textContent = 'Ready';
+        if (el.sttHintDisplay) el.sttHintDisplay.textContent = 'Recording finished. Press Transcribe Audio below.';
         updateTranscribeBtnState();
         cancelAnimationFrame(state.micAnimFrame);
       };
 
       state.mediaRecorder.start(200);
 
-      // Timer
       clearInterval(state.recTimer);
       state.recTimer = setInterval(() => {
         state.recSecs++;
-        el.sttTimerDisplay.textContent = fmtTime(state.recSecs);
+        if (el.sttTimerDisplay) el.sttTimerDisplay.textContent = fmtTime(state.recSecs);
       }, 1000);
 
-      // Mic level visualizer
       startLiveMicVisualizer(stream);
-
     } catch (e) {
       console.error(e);
       showToast('Microphone access denied', 'error');
@@ -5415,7 +4964,7 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
   function startLiveMicVisualizer(stream) {
     const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
+    if (!Ctx || !el.sttLiveCanvas) return;
 
     state.micAudioCtx = new Ctx();
     state.micAnalyser = state.micAudioCtx.createAnalyser();
@@ -5426,25 +4975,23 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
     const canvas = el.sttLiveCanvas;
     const ctx = canvas.getContext('2d');
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-signal').trim() || '#D44824';
 
     function draw() {
       if (!state.isRecording) return;
       const buf = new Uint8Array(state.micAnalyser.frequencyBinCount);
       state.micAnalyser.getByteFrequencyData(buf);
 
-      let sum = 0;
-      for (let i = 0; i < buf.length; i++) sum += buf[i];
-      const avg = sum / buf.length / 255;
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const bars = 20;
       const bw = (canvas.width / bars) - 2;
 
       for (let i = 0; i < bars; i++) {
-        const bh = Math.max(3, avg * canvas.height * (0.6 + Math.random() * 0.4));
+        const energy = (buf[i % buf.length] || 0) / 255;
+        const bh = Math.max(3, energy * canvas.height);
         const x = i * (bw + 2);
         const y = (canvas.height - bh) / 2;
-        ctx.fillStyle = '#ef4444';
+        ctx.fillStyle = accent;
         ctx.fillRect(x, y, bw, bh);
       }
 
@@ -5463,14 +5010,17 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       upload = new Blob(state.recChunks, { type: 'audio/webm' });
     }
 
+    const useDeepgram = state.sttEngine === 'deepgram';
     el.btnDoTranscribe.disabled = true;
     el.btnDoTranscribe.classList.add('loading');
-    el.labelTranscribe.textContent = 'Transcribing with Groq...';
+    el.labelTranscribe.textContent = useDeepgram ? 'Transcribing with Deepgram...' : 'Transcribing with Whisper...';
 
     const formData = new FormData();
     formData.append('file', upload, upload.name || 'speech.webm');
     formData.append('model', 'whisper-large-v3-turbo');
+    formData.append('engine', useDeepgram ? 'deepgram' : 'whisper');
     if (state.customGroqKey) formData.append('api_key', state.customGroqKey);
+    if (state.customDeepgramKey) formData.append('deepgram_key', state.customDeepgramKey);
 
     try {
       const res = await fetch('/api/stt', {
@@ -5487,31 +5037,33 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       const text = data.text || '';
 
       el.sttResultCard.classList.remove('hidden');
-      el.sttTranscriptText.textContent = text;
+      el.sttTranscriptText.textContent = text || 'No speech detected in audio.';
+      const hasText = !!text.trim();
+      if (el.btnCopyStt) el.btnCopyStt.disabled = !hasText;
+      if (el.btnExportStt) el.btnExportStt.disabled = !hasText;
+      if (el.btnSendSttToTts) el.btnSendSttToTts.disabled = !hasText;
 
-      addToLibrary({
-        type: 'stt',
-        model: 'Whisper Large v3 Turbo',
-        text: text,
-        timestamp: new Date().toISOString()
-      });
+      if (hasText) {
+        addToLibrary({
+          type: 'stt',
+          model: data.engine === 'deepgram-nova-2' ? 'Deepgram Nova-2' : 'Whisper Large v3 Turbo',
+          text: text,
+          timestamp: new Date().toISOString()
+        });
+      }
 
-      showToast('Transcribed instantly!', 'success');
-
+      showToast('Transcribed successfully', 'success');
     } catch (err) {
       console.error(err);
       showToast(err.message, 'error', 4500);
     } finally {
       el.btnDoTranscribe.disabled = false;
       el.btnDoTranscribe.classList.remove('loading');
-      el.labelTranscribe.textContent = 'Transcribe Audio with Groq';
+      el.labelTranscribe.textContent = 'Transcribe Audio';
     }
   }
 
-  // --- Library Management ---
   // --- Library (Archive tab) ---
-  // The standalone library drawer was folded into the Archive tab, so the
-  // open/close button may no longer exist in the DOM. Guard every access.
   function setupLibrary() {
     if (el.btnOpenLib) el.btnOpenLib.addEventListener('click', openLibrary);
     if (el.btnCloseLibDrawer) el.btnCloseLibDrawer.addEventListener('click', closeLibrary);
@@ -5521,16 +5073,30 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
       });
     }
 
-    el.btnClearAllLib.addEventListener('click', () => {
-      if (confirm('Clear all items from your library?')) {
+    if (el.btnClearAllLib) {
+      let confirmTimer = null;
+      el.btnClearAllLib.addEventListener('click', () => {
+        if (!el.btnClearAllLib.classList.contains('confirming')) {
+          el.btnClearAllLib.classList.add('confirming');
+          el.btnClearAllLib.textContent = 'Tap again to confirm';
+          clearTimeout(confirmTimer);
+          confirmTimer = setTimeout(() => {
+            el.btnClearAllLib.classList.remove('confirming');
+            el.btnClearAllLib.textContent = 'Clear All Clips';
+          }, 3500);
+          return;
+        }
+        clearTimeout(confirmTimer);
+        el.btnClearAllLib.classList.remove('confirming');
+        el.btnClearAllLib.textContent = 'Clear All Clips';
         state.library = [];
         localStorage.setItem('voxflow_library', JSON.stringify([]));
         renderLibraryItems();
         stopVaultPlayback();
         clearVaultDB().then(() => renderVault(document.getElementById('vault-list'))).catch(() => {});
-        showToast('Library cleared', 'info');
-      }
-    });
+        showToast('Archive cleared', 'info');
+      });
+    }
   }
 
   function openLibrary() {
@@ -5550,14 +5116,13 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
   function renderLibraryItems(searchQuery = '') {
     if (el.libBadge) el.libBadge.textContent = state.library.length;
-    
-    // Update Vault telemetry
+
     const countLabel = document.getElementById('archive-count-label');
-    if (countLabel) countLabel.textContent = `${state.library.length} Clips Saved`;
+    if (countLabel) countLabel.textContent = `${state.library.length} ${state.library.length === 1 ? 'Clip' : 'Clips'} Saved`;
 
     const pBar = document.getElementById('archive-progress-bar');
     if (pBar) {
-      const pct = Math.min(100, Math.round((state.library.length / 30) * 100));
+      const pct = state.library.length === 0 ? 0 : Math.min(100, Math.max(6, Math.round((state.library.length / 30) * 100)));
       pBar.style.width = `${pct}%`;
     }
 
@@ -5567,17 +5132,17 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
     const q = (typeof searchQuery === 'string') ? searchQuery.toLowerCase() : '';
     const filtered = q
-      ? state.library.filter(i => 
-          (i.text && i.text.toLowerCase().includes(q)) || 
-          (i.voice && i.voice.toLowerCase().includes(q)) || 
+      ? state.library.filter(i =>
+          (i.text && i.text.toLowerCase().includes(q)) ||
+          (i.voice && i.voice.toLowerCase().includes(q)) ||
           (i.model && i.model.toLowerCase().includes(q))
         )
       : state.library;
 
     if (filtered.length === 0) {
       list.innerHTML = `
-        <div class="p-8 text-center text-on-surface-variant font-mono text-xs rounded-xl bg-surface-container-low border border-white/[0.04]">
-          ${q ? 'No matching audio clips found in archive.' : 'No saved audio clips yet. Synthesize speech in Studio to build your personal archive.'}
+        <div class="vault-empty">
+          ${q ? 'No matching scripts found in archive.' : 'No saved script history yet. Synthesize speech in Studio to build your archive.'}
         </div>
       `;
       return;
@@ -5585,23 +5150,20 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
 
     filtered.forEach(item => {
       const card = document.createElement('div');
-      card.className = 'archive-card flex flex-col p-4 rounded-xl bg-surface-container border border-white/[0.04] hover:border-white/[0.08] transition-all gap-2.5';
+      card.className = 'archive-card';
       const time = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const badge = item.type === 'tts' ? `${item.model.split('/')[1] || 'TTS'} · ${item.voice || ''}` : 'Whisper STT';
+      const badge = item.type === 'tts' ? `${item.model.split('/')[1] || 'TTS'} · ${item.voice || ''}` : (item.model || 'Whisper STT');
 
       card.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-            <span class="font-mono text-xs text-primary font-medium uppercase tracking-wider">${badge}</span>
-          </div>
-          <span class="font-mono text-[10px] text-outline">${time}</span>
+        <div class="vx-history-card-top">
+          <span class="vx-tag">${escapeHtml(badge)}</span>
+          <span class="archive-item-meta">${time}</span>
         </div>
-        <p class="text-sm text-on-surface leading-relaxed line-clamp-2 select-text">${escapeHtml(item.text)}</p>
-        <div class="flex items-center justify-between pt-2 border-t border-white/[0.04]">
-          <button class="lib-btn-reuse px-3 py-1 rounded-full bg-surface-container-high text-xs text-primary hover:bg-surface-container-highest transition-colors font-mono uppercase tracking-wider" data-reuse-id="${item.id}">Load Script</button>
-          <button class="lib-btn-del w-7 h-7 rounded-full flex items-center justify-center text-outline hover:text-error hover:bg-surface-container-high transition-colors" data-del-id="${item.id}" title="Delete clip" aria-label="Delete clip">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <p class="vx-history-text">${escapeHtml(item.text)}</p>
+        <div class="vx-history-foot">
+          <button class="lib-btn-reuse" type="button" data-reuse-id="${item.id}">Load Script</button>
+          <button class="lib-btn-del" type="button" data-del-id="${item.id}" title="Delete clip" aria-label="Delete clip">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
         </div>
       `;
@@ -5779,23 +5341,23 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     function refreshApiModalState() {
       const savedKey = localStorage.getItem('voxflow_api_key');
       if (savedKey) {
-        el.displayApiKey.value = savedKey;
+        if (el.displayApiKey) el.displayApiKey.textContent = savedKey;
         el.apiKeyDisplayArea.classList.remove('hidden');
         if (el.apiSampleCurl) {
           el.apiSampleCurl.textContent = `curl -X POST https://voxflow-809.pages.dev/api/tts \\
   -H "Authorization: Bearer ${savedKey}" \\
   -H "Content-Type: application/json" \\
-  -d '{"text": "Hello world from VoxFlow API", "voice": "flux-alexis-en"}' \\
+  -d '{"text": "Hello world from Voice Actors", "voice": "flux-alexis-en"}' \\
   --output speech.mp3`;
         }
       } else {
-        el.displayApiKey.value = '';
+        if (el.displayApiKey) el.displayApiKey.textContent = '';
         el.apiKeyDisplayArea.classList.add('hidden');
         if (el.apiSampleCurl) {
           el.apiSampleCurl.textContent = `curl -X POST https://voxflow-809.pages.dev/api/tts \\
   -H "Authorization: Bearer YOUR_VOX_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"text": "Hello world from VoxFlow API", "voice": "flux-alexis-en"}' \\
+  -d '{"text": "Hello world from Voice Actors", "voice": "flux-alexis-en"}' \\
   --output speech.mp3`;
         }
       }
@@ -5847,13 +5409,12 @@ import { renderVault, replay, download, togglePlayPause, stopVaultPlayback } fro
     // Copy Key
     if (el.btnCopyApiKey) {
       el.btnCopyApiKey.addEventListener('click', () => {
-        if (!el.displayApiKey.value) return;
-        navigator.clipboard.writeText(el.displayApiKey.value).then(() => {
+        const keyVal = el.displayApiKey ? el.displayApiKey.textContent.trim() : '';
+        if (!keyVal) return;
+        navigator.clipboard.writeText(keyVal).then(() => {
           showToast('API key copied to clipboard!', 'success');
         }).catch(() => {
-          el.displayApiKey.select();
-          document.execCommand('copy');
-          showToast('API key copied!', 'success');
+          showToast('Copy failed — select token manually', 'error');
         });
       });
     }
@@ -6013,11 +5574,8 @@ function updateFavoriteToggleBtn() {
   if (!btn) return;
   const activeId = (window.__VOX_BRIDGE && window.__VOX_BRIDGE.getActiveVoiceId()) || studioState.currentVoiceId;
   const isFav = isFavorite(activeId);
-  btn.classList.toggle('text-tertiary-fixed-dim', isFav);
   btn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
   btn.title = isFav ? 'Unpin from favorites' : 'Pin to favorites';
-  const label = btn.querySelector('.font-mono');
-  if (label) label.textContent = isFav ? 'Pinned' : 'Pin';
 }
 
 function wireFavoriteToggle() {

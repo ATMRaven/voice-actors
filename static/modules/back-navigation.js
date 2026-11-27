@@ -97,10 +97,10 @@ class BackNavigationManager {
     }
 
     // 3. Tab navigation: if not on studio, switch back to studio
-    const activeTabBtn = document.querySelector('.dock-tab-btn.active, .vx-nav__item[aria-current="page"], .nav-desktop-tab.active');
+    const activeTabBtn = document.querySelector('.dock-tab-btn[aria-current="page"], .vx-nav__item[aria-current="page"]');
     const currentTab = activeTabBtn ? activeTabBtn.getAttribute('data-tab') : 'studio';
     if (currentTab && currentTab !== 'studio') {
-      const studioTabBtn = document.querySelector('.dock-tab-btn[data-tab="studio"], .vx-nav__item[data-tab="studio"], .nav-desktop-tab[data-tab="studio"]');
+      const studioTabBtn = document.querySelector('.dock-tab-btn[data-tab="studio"], .vx-nav__item[data-tab="studio"]');
       if (studioTabBtn) {
         studioTabBtn.click();
         return;
@@ -127,21 +127,21 @@ class BackNavigationManager {
     toast.textContent = message;
     toast.style.cssText = `
       position: fixed;
-      bottom: calc(64px + env(safe-area-inset-bottom, 16px));
+      bottom: calc(74px + env(safe-area-inset-bottom, 16px));
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(27, 28, 29, 0.94);
-      border: 1px solid rgba(244, 245, 247, 0.12);
-      color: #f4f5f7;
+      background: var(--cta-bg, #151517);
+      border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.14));
+      color: var(--cta-fg, #FCFBF8);
       padding: 10px 22px;
       border-radius: 9999px;
       font-size: 13.5px;
       font-weight: 500;
       letter-spacing: 0.01em;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.25));
       z-index: 999999;
       pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transition: opacity 0.2s ease;
       opacity: 0;
     `;
 

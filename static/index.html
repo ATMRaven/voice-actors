@@ -1,172 +1,179 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Voice Actors — Neural Audio Studio</title>
-  <meta name="description" content="High-fidelity neural voice studio powered by ElevenLabs, Cartesia Sonic, Gemini, Groq, Deepgram, and Mistral.">
-  
-  <!-- Fonts: Geist Grotesk, Geist Mono, Newsreader, Material Symbols -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <meta name="description" content="Precision neural voice synthesis, speech transcription, and word-level karaoke alignment studio." />
 
-  <!-- PWA & Mobile Ergonomics -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#121315">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Voice Actors">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-
-  <!-- Tailwind CSS with Obsidian Acoustic Color Tokens -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script id="tailwind-config">
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        colors: {
-          'background': '#121315',
-          'surface': '#121315',
-          'surface-dim': '#121315',
-          'surface-bright': '#38393a',
-          'surface-container-lowest': '#0d0e0f',
-          'surface-container-low': '#1b1c1d',
-          'surface-container': '#1f2021',
-          'surface-container-high': '#292a2b',
-          'surface-container-highest': '#343536',
-          'on-surface': '#e3e2e3',
-          'on-surface-variant': '#c4c7c9',
-          'primary': '#ffffff',
-          'on-primary': '#2e3132',
-          'primary-container': '#e1e2e4',
-          'on-primary-container': '#626566',
-          'secondary': '#c3c6d0',
-          'on-secondary': '#2c3138',
-          'secondary-container': '#454951',
-          'tertiary-fixed': '#ffddb7',
-          'tertiary-fixed-dim': '#efbe82',
-          'outline': '#8e9193',
-          'outline-variant': '#444749',
-          'error': '#ffb4ab',
-          'error-container': '#93000a'
-        },
-        fontFamily: {
-          'display': ['Newsreader', 'Geist', 'serif'],
-          'headline': ['Geist', 'sans-serif'],
-          'body': ['Geist', 'sans-serif'],
-          'mono': ['Geist Mono', 'monospace'],
-          'technical-mono': ['Geist Mono', 'monospace']
-        },
-        spacing: {
-          'space-xs': '0.25rem',
-          'space-sm': '0.5rem',
-          'space-md': '1rem',
-          'space-lg': '1.5rem',
-          'space-xl': '2.5rem',
-          'gutter': '1.25rem',
-          'gutter-mobile': '1rem',
-          'margin': '2rem',
-          'margin-mobile': '1.25rem'
+  <!-- Synchronous Theme & Native Platform Init (Prevents FOUC) -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('voxflow_theme');
+        var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#131416' : '#F3F1EC');
+        if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+          document.documentElement.setAttribute('data-native', 'true');
         }
-      }
-    }
-  };
+      } catch (e) {}
+    })();
   </script>
 
-  <!-- Bespoke Studio & Custom Component Styles -->
-  <link rel="stylesheet" href="styles.css">
-  <!-- UI/UX overhaul layer (additive; loads after the base system) -->
-  <link rel="stylesheet" href="styles-overhaul.css">
-  <link rel="stylesheet" href="mobile.css">
+  <!-- Typography: Newsreader (Editorial Display), Plus Jakarta Sans (UI), JetBrains Mono (Telemetry) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400..500;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- PWA & Mobile Metadata -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#F3F1EC" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Voice Actors" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- Self-Contained Studio Stylesheets -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="mobile.css" />
 </head>
 
-<body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-surface-variant selection:text-primary font-body antialiased">
+<body class="theme-light">
 
   <!-- =====================================================================
-       1. FIXED TOP HEADER (Voice Actors · Quiet Luxury Branding & Desktop Nav)
+       1. FIXED TOP BAR
        ===================================================================== -->
   <header class="vx-header" id="app-header">
     <div class="vx-header__bar">
 
-      <!-- Brand & Watermark -->
+      <!-- Brand -->
       <div class="vx-brand">
         <span class="vx-brand__mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M3 12v3M7.5 8v11M12 4v16M16.5 9v6M21 11v2"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round">
+            <path d="M3 11v2M7.5 7v10M12 4v16M16.5 8v8M21 11v2" />
           </svg>
         </span>
-        <span class="vx-brand__name">Voice Actors</span>
-        <span class="vx-brand__sub">Made by A.T.M.R</span>
+        <div class="vx-brand__text">
+          <span class="vx-brand__name">Voice Actors</span>
+          <span class="vx-brand__sub">Made by A.T.M.R</span>
+        </div>
       </div>
 
-      <!-- Desktop Navigation Bar (Centered) -->
+      <!-- Desktop Segmented Navigation -->
       <nav class="vx-nav" aria-label="Primary">
         <button class="vx-nav__item" data-tab="studio" type="button" aria-current="page">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-          Studio
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+          </svg>
+          <span>Studio</span>
         </button>
         <button class="vx-nav__item" data-tab="transcribe" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3z"/><path d="M7 15h2l2-4 2 8 2-6 1.5 2H21"/></svg>
-          Transcribe
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M7 13h2l2-4 2 7 2-5 1.5 2H21" />
+          </svg>
+          <span>Transcribe</span>
         </button>
         <button class="vx-nav__item" data-tab="models" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
-          Models
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12" />
+          </svg>
+          <span>Models</span>
         </button>
         <button class="vx-nav__item" data-tab="archive" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v4H4z"/><path d="M5 8v12h14V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-          Archive
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 4h16v4H4z" />
+            <path d="M5 8v12h14V8" />
+            <line x1="10" y1="12" x2="14" y2="12" />
+          </svg>
+          <span>Archive</span>
         </button>
       </nav>
 
-      <!-- Header Actions -->
+      <!-- Header Utility Cluster -->
       <div class="vx-actions">
-        <!-- Status now explains itself instead of a bare coloured dot -->
         <div class="vx-status" id="global-status-chip" role="status" aria-live="polite">
           <span class="vx-status__dot" id="global-status-dot"></span>
           <span id="global-status-text">Engines Ready</span>
         </div>
 
-        <!-- Developer API Modal Button -->
-        <button class="vx-iconbtn" id="btn-open-api" title="API Keys &amp; Integration" type="button" aria-label="Developer API">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <button class="vx-iconbtn" id="btn-toggle-theme" type="button" title="Switch Light / Dark Studio Theme" aria-label="Toggle studio theme">
+          <svg class="vx-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+          <svg class="vx-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+          </svg>
         </button>
 
-        <!-- Settings & Keys Modal Button -->
-        <button class="vx-iconbtn" id="btn-open-settings" title="Engine Settings &amp; API Keys" type="button" aria-label="Engine settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        <button class="vx-iconbtn" id="btn-open-api" type="button" title="API Keys &amp; Integration" aria-label="Developer API">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+          </svg>
         </button>
 
-        <!-- "Get the app" — consolidates the APK download + QR + PWA install
-             that previously competed with core navigation in the header. -->
+        <button class="vx-iconbtn" id="btn-open-settings" type="button" title="Settings &amp; Provider Keys" aria-label="Engine settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="21" x2="4" y2="14" />
+            <line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" />
+            <line x1="20" y1="12" x2="20" y2="3" />
+            <line x1="1" y1="14" x2="7" y2="14" />
+            <line x1="9" y1="8" x2="15" y2="8" />
+            <line x1="17" y1="16" x2="23" y2="16" />
+          </svg>
+        </button>
+
+        <!-- Web-only APK & PWA Install Menu (hidden natively) -->
         <div class="vx-menu" id="get-app-menu">
           <button class="vx-iconbtn" id="btn-get-app" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Get the Android app">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
           </button>
           <div class="vx-menu__panel" id="get-app-panel" data-open="false" role="menu" aria-label="Get the app">
             <div class="vx-menu__title">Voice Actors for Android</div>
             <a class="vx-menu__row" href="https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk" download="voice-actors-latest.apk" target="_blank" rel="noopener" role="menuitem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               <span>
                 Download APK
-                <span class="vx-menu__meta" id="get-app-meta">v1.1.3 · 9.3 MB</span>
+                <span class="vx-menu__meta" id="get-app-meta">v1.1.5 · 9.3 MB</span>
               </span>
             </a>
             <div class="vx-menu__sep"></div>
             <button class="vx-menu__row" id="btn-install-pwa" type="button" role="menuitem" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
               <span>
                 Install web app
                 <span class="vx-menu__meta">Add to home screen</span>
               </span>
             </button>
             <a class="vx-menu__row" href="https://github.com/ATMRaven/voice-actors/releases" target="_blank" rel="noopener" role="menuitem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
               <span>
                 Release notes
                 <span class="vx-menu__meta">Version history &amp; checksums</span>
@@ -176,1133 +183,966 @@
         </div>
       </div>
     </div>
-    <div id="engine-status" class="engine-status" role="status" aria-live="polite">
-      <span class="engine-status-dot" aria-hidden="true"></span>
-      <span class="engine-status-label">Checking engine</span>
-    </div>
   </header>
 
   <!-- =====================================================================
-       2. PRIMARY VIEWPORT CONTAINER
+       2. PRIMARY VIEWPORT
        ===================================================================== -->
-  <main class="flex-1 w-full max-w-4xl mx-auto pt-20 pb-32 md:pb-32 px-gutter-mobile">
-    
-    <!-- ===================================================================
-         VIEW 1: TTS STUDIO (Neural Acoustic Speech Engine)
-         =================================================================== -->
-    <section class="flex flex-col w-full" id="view-tts">
-      <section id="favorites-strip" class="favorites-strip" aria-label="Pinned voices"></section>
-      
-      <!-- Studio Header & Model Pill -->
-      <div class="vx-studio-head flex items-center justify-between pt-2 pb-4">
-        <div class="vx-studio-head__title">
-          <h1 class="font-display text-2xl sm:text-3xl text-primary tracking-tight font-normal">Speech Studio</h1>
-          <p class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant mt-0.5">Multi-Provider Neural Synthesis</p>
-        </div>
-
-        <!-- Model Selector Dropdown Trigger -->
-        <div class="relative">
-          <button class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface border border-white/[0.06] active:scale-95 duration-150" id="dock-model-pill" type="button">
-            <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-            <span class="font-mono text-xs tracking-wider text-primary truncate max-w-[140px] sm:max-w-[200px]" id="dock-model-name">Deepgram Flux</span>
-            <svg class="w-3.5 h-3.5 text-on-surface-variant shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-
-          <!-- Model Dropdown Popover Menu -->
-          <div class="hidden absolute right-0 top-full mt-2 w-72 rounded-xl bg-surface-container-low/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_16px_40px_rgba(0,0,0,0.8)] z-50 p-1.5 flex flex-col gap-1" id="menu-model-select">
-            <div class="px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-widest text-outline">Select Speech Engine</div>
-            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="deepgram/flux-tts:free" type="button">
-              <div>
-                <span class="item-name text-xs font-medium text-primary block">Deepgram Flux (Free)</span>
-                <span class="text-[10px] text-on-surface-variant block">36 Studio Voices • Low Latency</span>
-              </div>
-              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Free</span>
-            </button>
-            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="cartesia/sonic-3.6" type="button">
-              <div>
-                <span class="item-name text-xs font-medium text-primary block">Cartesia Sonic 3.6</span>
-                <span class="text-[10px] text-on-surface-variant block">Ultra Low-Latency • 90ms Realtime</span>
-              </div>
-              <span class="text-[10px] font-mono text-pink-400 bg-pink-950/60 px-1.5 py-0.5 rounded">90ms</span>
-            </button>
-            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="elevenlabs/multilingual-v2" type="button">
-              <div>
-                <span class="item-name text-xs font-medium text-primary block">ElevenLabs Studio v2</span>
-                <span class="text-[10px] text-on-surface-variant block">21 Expressive Pre-made Personas</span>
-              </div>
-              <span class="text-[10px] font-mono text-purple-400 bg-purple-950/60 px-1.5 py-0.5 rounded">Studio</span>
-            </button>
-            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="google/gemini-2.5-flash-tts" type="button">
-              <div>
-                <span class="item-name text-xs font-medium text-primary block">Google Gemini Audio</span>
-                <span class="text-[10px] text-on-surface-variant block">5 Expressive Personas • AI Studio</span>
-              </div>
-              <span class="text-[10px] font-mono text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded">Expressive</span>
-            </button>
-            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="groq/orpheus-english" type="button">
-              <div>
-                <span class="item-name text-xs font-medium text-primary block">Groq Orpheus (English)</span>
-                <span class="text-[10px] text-on-surface-variant block">6 Natural English Voices • Groq LPU</span>
-              </div>
-              <span class="text-[10px] font-mono text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded">LPU Speed</span>
-            </button>
-            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="groq/orpheus-arabic" type="button">
-              <div>
-                <span class="item-name text-xs font-medium text-primary block">Groq Orpheus (Saudi Arabic)</span>
-                <span class="text-[10px] text-on-surface-variant block">6 Authentic Saudi Voices • Groq LPU</span>
-              </div>
-              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">🇸🇦 Arabic</span>
-            </button>
-            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="mistral/voxtral-mini-tts" type="button">
-              <div>
-                <span class="item-name text-xs font-medium text-primary block">Mistral Voxtral Mini</span>
-                <span class="text-[10px] text-on-surface-variant block">4 Personas • 30 Emotional Shades</span>
-              </div>
-              <span class="text-[10px] font-mono text-orange-400 bg-orange-950/60 px-1.5 py-0.5 rounded">Emotions</span>
-            </button>
-            <button class="dropdown-item flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-left" data-model="cloudflare/melotts" type="button">
-              <div>
-                <span class="item-name text-xs font-medium text-primary block">Cloudflare MeloTTS</span>
-                <span class="text-[10px] text-on-surface-variant block">9 Global Edge Accents • Fast Edge</span>
-              </div>
-              <span class="text-[10px] font-mono text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded">Edge</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Persona Card -->
-      <div class="flex items-center justify-between p-4 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] transition-all hover:border-white/[0.08]" id="active-persona-card">
-        <div class="flex items-center gap-3.5 min-w-0">
-          <div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container-highest shrink-0 flex items-center justify-center font-medium text-lg text-primary border border-white/[0.06] shadow-inner" id="dock-voice-avatar">
-            A
-          </div>
-          <div class="flex flex-col min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="font-medium text-base text-primary tracking-tight truncate" id="dock-voice-name">Alexis</span>
-              <svg class="vx-verified-icon w-3.5 h-3.5 text-tertiary-fixed-dim shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 2.38 3.36-.34.34 3.36L20.48 9.8 19.2 12l1.28 2.2-2.39 2.4-.34 3.36-3.36-.34L12 22l-2.39-2.38-3.36.34-.34-3.36L3.52 14.2 4.8 12 3.52 9.8l2.39-2.4.34-3.36 3.36.34L12 2zm-1.1 13.2l5.3-5.3-1.4-1.4-3.9 3.9-1.7-1.7-1.4 1.4 3.1 3.1z"/></svg>
-            </div>
-            <span class="font-mono text-xs uppercase tracking-wider text-on-surface-variant truncate" id="dock-voice-accent">Female · US English</span>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2 shrink-0">
-          <!-- Favorite Pin Toggle Button -->
-          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05] min-h-[36px]" id="favorite-toggle" type="button" title="Pin to favorites" aria-pressed="false">
-            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            <span class="font-mono text-[11px] tracking-widest uppercase hidden sm:inline">Pin</span>
-          </button>
-          
-          <!-- Quick Voice Sample Preview Button -->
-          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05] min-h-[36px]" id="btn-dock-voice-sample" type="button" title="Listen to Voice Sample">
-            <span class="vx-play-icon" id="sample-icon" aria-hidden="true">
-              <svg class="vx-icon-play w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-              <svg class="vx-icon-pause w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-            </span>
-            <span class="font-mono text-[11px] tracking-widest uppercase" id="sample-label">Sample</span>
-          </button>
-          
-          <!-- Swap Voice Button -->
-          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface hover:text-primary transition-all active:scale-95 border border-white/[0.05] min-h-[36px]" id="dock-voice-pill" type="button" title="Browse all 96 voices">
-            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-            <span class="font-mono text-[11px] tracking-widest uppercase hidden sm:inline">Change</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Distraction-Free Script Input Canvas -->
-      <div class="relative flex flex-col p-4 sm:p-5 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] focus-within:border-white/[0.12] transition-colors duration-200" id="textarea-stage">
-        
-        <!-- Script Header -->
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 text-on-surface-variant border-b border-white/[0.06]">
-          <div class="vx-script-title flex items-center gap-2">
-            <span class="font-mono text-xs uppercase tracking-widest text-primary font-medium">Script Input</span>
-            <span class="hidden sm:inline-block font-mono text-[10px] text-outline px-1.5 py-0.5 rounded bg-surface-container-highest/60 border border-white/[0.04]">Text &amp; Vision</span>
-          </div>
-          
-          <div class="vx-script-actions flex items-center gap-2">
-            <!-- Prominent Scan Image / Screenshot Button -->
-            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-highest hover:bg-white/[0.1] text-primary border border-white/[0.1] hover:border-amber-400/50 text-xs font-medium transition-all shadow-sm active:scale-95 cursor-pointer group" id="btn-scan-image" type="button" title="Scan screenshot or image to speech (or press Ctrl+V)">
-              <svg class="w-4 h-4 text-tertiary-fixed-dim shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
-              <span class="font-medium">Scan</span>
-              <span class="hidden md:inline-block font-mono text-[9.5px] px-1.5 py-0.5 rounded bg-black/40 text-outline border border-white/[0.06]">Ctrl+V</span>
-            </button>
-
-            <!-- Paste & Replace Button -->
-            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary border border-white/[0.06] hover:border-white/[0.14] text-xs font-medium transition-all active:scale-95 cursor-pointer" id="btn-paste" type="button" title="Paste clipboard content and replace existing text">
-              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
-              <span>Paste</span>
-            </button>
-
-            <!-- Load a long script from a text file (phone-friendly) -->
-            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary border border-white/[0.06] hover:border-white/[0.14] text-xs font-medium transition-all active:scale-95 cursor-pointer" id="btn-load-file" type="button" title="Load a .txt or .md script from this device">
-              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
-              <span>File</span>
-            </button>
-            <input class="hidden" id="input-script-file" type="file" accept=".txt,.md,.markdown,.csv,.srt,.vtt,text/plain,text/markdown" />
-
-            <!-- Clear Script Button -->
-            <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-outline hover:text-error hover:bg-error/10 text-xs font-mono uppercase tracking-wider transition-all cursor-pointer" id="btn-clear" type="button" title="Clear script">
-              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              <span>Clear</span>
-            </button>
-          </div>
-        </div>
-
-        <button class="hidden" id="btn-samples-menu" type="button"></button>
-        <div class="hidden" id="samples-popover"></div>
-
-        <!-- Textarea -->
-        <textarea class="w-full bg-transparent font-sans text-base text-primary placeholder:text-outline/40 focus:outline-none resize-none leading-relaxed tracking-tight min-h-[105px]" id="text-input" placeholder="Type or paste text to synthesize, drop an image, or press Ctrl+V to scan a screenshot...">In the quiet corners of deep space, silence is the canvas upon which cosmic light writes its timeless symphony.</textarea>
-
-        <!-- Script Footer Metrics -->
-        <div class="flex items-center justify-between pt-3 mt-1 text-on-surface-variant border-t border-white/[0.04]">
-          <div class="flex items-center gap-1.5 min-w-0">
-            <span class="w-1.5 h-1.5 rounded-full bg-primary/40 shrink-0"></span>
-            <span class="font-mono text-[11px] tracking-wider uppercase text-on-surface-variant truncate">
-              <span id="stat-words">0</span> Words • <span id="stat-chars">0</span> Chars • ~<span id="stat-duration">0</span>s
-            </span>
-          </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <!-- 48kHz is informational, not a setting — de-emphasised and labelled -->
-            <span class="font-mono text-[10px] uppercase text-tertiary-fixed-dim px-2 py-0.5 rounded bg-surface-container-lowest border border-white/[0.06]" title="Output sample rate (fixed by the selected engine)">48kHz out</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Fine Audio Controls (Speed Slider & Cadence) -->
-      <div class="vx-speed-card p-4 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04] space-y-3">
-        <div class="vx-speed-card__inner flex flex-col gap-2">
-          <div class="vx-speed-card__header flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-              <span class="text-sm font-medium text-primary">Speed</span>
-              <span class="vx-speed-sub text-xs text-on-surface-variant">Playback cadence</span>
-            </div>
-            <span class="font-mono text-xs text-primary font-medium tracking-widest" id="dock-speed-label">1.0x</span>
-          </div>
-          <div class="relative w-full h-5 flex items-center group cursor-pointer" id="dock-speed-pill">
-            <input class="w-full h-1 bg-surface-container-highest rounded-full appearance-none outline-none cursor-pointer accent-white" id="slider-speed" max="2.0" min="0.5" step="0.1" type="range" value="1.0"/>
-          </div>
-        </div>
-        
-        <!-- Speed quick selection options hidden container for app.js sync -->
-        <div class="hidden" id="menu-speed-select">
-          <button class="speed-opt" data-speed="0.75">0.75x</button>
-          <button class="speed-opt active" data-speed="1.0">1.0x</button>
-          <button class="speed-opt" data-speed="1.25">1.25x</button>
-          <button class="speed-opt" data-speed="1.5">1.5x</button>
-          <button class="speed-opt" data-speed="2.0">2.0x</button>
-        </div>
-      </div>
-
-      <!-- Primary Generation CTA (Directly visible on Desktop without scrolling) -->
-      <div class="flex flex-col gap-2 pt-1 mb-4" id="cta-generate-zone">
-        <!-- Streaming progress for long scripts -->
-        <div id="gen-progress" aria-hidden="true">
-          <div id="gen-progress__track"><div id="gen-progress__fill"></div></div>
-          <div id="gen-progress__label">
-            <span id="gen-progress__stage">Preparing</span>
-            <span id="gen-progress__count">0 / 0</span>
-          </div>
-        </div>
-
-        <button class="vx-generate w-full h-12 rounded-full bg-primary text-on-primary flex items-center justify-center gap-2 shadow-[0_12px_28px_-6px_rgba(255,255,255,0.18)] hover:bg-primary-container active:scale-[0.98] transition-all duration-150 font-medium text-base tracking-tight cursor-pointer" id="btn-main-generate" type="button">
-          <span class="vx-generate__spinner" id="generate-spinner" aria-hidden="true"></span>
-          <svg class="w-5 h-5 shrink-0" id="generate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12v2M7.5 8v8M12 4v16M16.5 8v8M21 12v2"/></svg>
-          <span id="label-generate">Generate Speech</span>
-          <kbd class="vx-generate__kbd" id="generate-kbd" title="Keyboard shortcut">Ctrl ↵</kbd>
-        </button>
-
-        <!-- Prominent Stop Generation Button (Revealed during synthesis) -->
-        <button class="hidden w-full h-12 rounded-full bg-red-950/40 border border-red-500/40 text-red-400 hover:bg-red-950/60 flex items-center justify-center gap-2 font-mono text-xs uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer shadow-sm" id="btn-cancel-generate" type="button">
-          <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>
-          <span>Stop Audio Generation</span>
-        </button>
-
-        <div class="vx-cta-latency flex items-center justify-center gap-1.5 text-on-surface-variant opacity-75">
-          <svg class="w-3.5 h-3.5 text-tertiary-fixed-dim shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span class="font-mono text-[10px] uppercase tracking-widest">Est. Latency ~180ms • Uncompressed Audio</span>
-        </div>
-      </div>
-
-      <!-- Buffer Preview / Audio Waveform Monitor (Hidden by default, shown when audio ready) -->
-      <div class="hidden flex flex-col p-4 rounded-xl bg-surface-container mb-4 border border-white/[0.06] shadow-md transition-all duration-300" id="dock-player">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" id="audio-ready-dot"></span>
-            <span class="font-mono text-[11px] tracking-widest uppercase text-tertiary-fixed-dim">Buffer Preview</span>
-          </div>
-          <span class="font-mono text-[11px] tracking-widest text-on-surface-variant" id="player-time-display">0:00 / 0:00</span>
-        </div>
-
-        <!-- Waveform Scrub Rail Canvas -->
-        <div class="relative flex items-center gap-1 h-11 w-full py-1 cursor-pointer overflow-hidden rounded-lg bg-surface-container-lowest/60 border border-white/[0.04]" id="waveform-scrub-zone">
-          <canvas class="w-full h-full" id="dock-waveform-canvas"></canvas>
-          <div class="absolute top-0 bottom-0 w-0.5 bg-tertiary-fixed-dim pointer-events-none" id="dock-playhead" style="left:0%"></div>
-        </div>
-
-        <!-- Player Action Toolbar -->
-        <div class="flex items-center justify-between pt-3 border-t border-white/[0.04] mt-2">
-          <div class="flex items-center gap-2.5">
-            <!-- Play/Pause Button with dynamic icon -->
-            <button class="w-10 h-10 rounded-full bg-primary text-on-primary hover:bg-primary-container flex items-center justify-center active:scale-95 transition-all shadow-md cursor-pointer" id="dock-btn-play" type="button" title="Play/Pause Synthesis">
-              <span class="vx-play-icon" id="play-pause-icon" aria-hidden="true">
-                <svg class="vx-icon-play w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                <svg class="vx-icon-pause w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-              </span>
-            </button>
-            
-            <!-- Download MP3 Button -->
-            <button class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center active:scale-95 transition-colors border border-white/[0.04] cursor-pointer" id="btn-dock-download" type="button" title="Download Audio File">
-              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </button>
-
-            <!-- Toggle Live Sync Stage -->
-            <button class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center active:scale-95 transition-colors border border-white/[0.04] cursor-pointer" id="btn-toggle-reader" type="button" title="Toggle Word-by-Word Reading Stage">
-              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="11" x2="12" y2="11"/><line x1="6" y1="15" x2="16" y2="15"/></svg>
-            </button>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <span class="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider" id="player-label-voice">Alexis</span>
-            <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
-            <span class="font-mono text-[11px] text-tertiary-fixed-dim uppercase tracking-wider font-medium" id="player-speed-text">1.0x</span>
-            <button class="hidden" id="btn-close-player" type="button"></button>
-            <button class="hidden" id="btn-player-speed" type="button"></button>
-            <span class="hidden" id="player-label-model"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Real-Time Interactive Reading & Karaoke Stage (Collapsible) -->
-      <div class="hidden flex flex-col p-5 rounded-xl bg-surface-container mb-4 shadow-sm border border-tertiary-fixed-dim/30 transition-all duration-300" id="interactive-stage">
-        <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.06]">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></span>
-            <span class="font-mono text-xs uppercase tracking-widest text-primary">Karaoke Sync Stage</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/15 hover:bg-red-500/25 text-red-400 font-mono text-[11px] uppercase tracking-wider transition-colors cursor-pointer" id="btn-stage-cancel" type="button" title="Stop Audio Playback">
-              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
-              <span>Stop Audio</span>
-            </button>
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer px-2 py-1.5" id="btn-back-to-editor" type="button">Back to Editor</button>
-          </div>
-          <span class="hidden" id="label-reader-toggle"></span>
-          <span class="hidden" id="interactive-status-label"></span>
-        </div>
-
-        <div class="interactive-reading-content font-sans text-lg sm:text-xl text-primary leading-relaxed min-h-[100px] py-2" id="interactive-reading-body">
-          <!-- Live synchronized words render here dynamically -->
-        </div>
-
-        <div class="mt-4 pt-3 border-t border-white/[0.04]" id="continuous-timeline-ribbon">
-          <div class="relative w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden cursor-pointer" id="ribbon-track">
-            <div class="h-full bg-tertiary-fixed-dim rounded-full transition-all duration-100" id="ribbon-progress" style="width: 0%;"></div>
-            <div class="hidden" id="ribbon-playhead"></div>
-          </div>
-          <div class="flex items-center justify-between pt-2 font-mono text-[10px] text-on-surface-variant uppercase tracking-wider">
-            <span id="ribbon-time-display">0:00 / 0:00</span>
-            <span id="ribbon-segments-badge">1 Sentence</span>
-          </div>
-        </div>
-      </div>
-    </section>
+  <main class="vx-main">
 
     <!-- ===================================================================
-         VIEW 2: LIVE TRANSCRIBE (Speech-to-Text & Whisper)
+         VIEW 1: SPEECH STUDIO (4-Zone Asymmetric Desktop / Natural Mobile Flow)
          =================================================================== -->
-    <section class="hidden flex flex-col w-full" id="view-stt">
-      
-      <!-- Engine Toggle Segmented Control -->
-      <div class="w-full flex justify-center pt-2 pb-5">
-        <div class="relative bg-surface-container-low p-1 rounded-full flex items-center shadow-inner max-w-xs w-full border border-white/[0.04]">
-          <button class="flex-1 py-1.5 text-center font-mono text-xs tracking-widest uppercase transition-all duration-200 bg-surface-container-highest text-primary rounded-full shadow-sm cursor-pointer" id="btn-engine-whisper" type="button">Whisper v3</button>
-          <button class="flex-1 py-1.5 text-center font-mono text-xs tracking-widest uppercase transition-all duration-200 text-on-surface-variant hover:text-primary rounded-full cursor-pointer" id="btn-engine-deepgram" type="button">Deepgram</button>
-        </div>
-      </div>
+    <section class="vx-view" id="view-tts">
+      <div class="vx-studio-layout">
 
-      <!-- Center Hero: Serene Audio Recording Session Visualizer -->
-      <div class="flex flex-col items-center justify-center my-4">
-        <div class="relative w-40 h-40 flex items-center justify-center">
-          <!-- Outer Gentle Ambient Pulse Aura -->
-          <div class="absolute inset-0 rounded-full bg-tertiary-fixed-dim/5 duration-1000 ease-out pointer-events-none transition-all" id="mic-halo"></div>
-          
-          <!-- Concentric Halos & Breathing Ring -->
-          <div class="absolute inset-2 rounded-full bg-surface-container-lowest/60 backdrop-blur-md shadow-2xl flex items-center justify-center border border-white/[0.06]">
-            <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 100 100">
-              <circle class="stroke-surface-container-high" cx="50" cy="50" fill="none" r="46" stroke-width="1.5"></circle>
-              <circle class="stroke-primary transition-all duration-300" cx="50" cy="50" fill="none" id="progress-orbit" r="46" stroke-dasharray="289" stroke-dashoffset="289" stroke-linecap="round" stroke-width="1.5"></circle>
-            </svg>
-            
-            <!-- Dynamic Counter Display -->
-            <div class="flex flex-col items-center justify-center space-y-1">
-              <div class="flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" id="recording-dot"></span>
-                <span class="font-mono text-[10px] uppercase text-on-surface-variant tracking-widest" id="stt-status-label">Ready</span>
-              </div>
-              <span class="font-mono text-3xl font-light text-primary tracking-tight" id="stt-timer-display">00:00</span>
-              
-              <!-- Minimalist 4-Bar Acoustic Waveform -->
-              <div class="flex items-end gap-1 h-3 mt-0.5">
-                <span class="w-0.5 bg-tertiary-fixed-dim rounded-full h-2"></span>
-                <span class="w-0.5 bg-primary rounded-full h-3"></span>
-                <span class="w-0.5 bg-tertiary-fixed-dim rounded-full h-1.5"></span>
-                <span class="w-0.5 bg-primary rounded-full h-2.5"></span>
-              </div>
+        <!-- Zone A: Studio Heading + Pinned Voices Rail -->
+        <div class="vx-studio-head-zone">
+          <div class="vx-studio-head">
+            <div>
+              <h1 class="vx-studio-title">Speech Studio</h1>
+              <p class="vx-studio-sub">8 Neural Engines · 96 Actors · Live Sync</p>
             </div>
+            <button class="vx-palette-trigger" id="btn-open-palette" type="button" title="Quick Voice Switcher (Ctrl+K)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span>Quick Switch</span>
+              <kbd id="palette-kbd">Ctrl K</kbd>
+            </button>
           </div>
+          <section id="favorites-strip" class="favorites-strip" aria-label="Pinned voices"></section>
         </div>
 
-        <!-- Quality Tag -->
-        <div class="flex items-center gap-2 mt-3 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant border border-white/[0.04]">
-          <!-- Was a padlock, which reads as "secure" rather than "format spec" -->
-          <svg class="w-3.5 h-3.5 text-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/><circle cx="12" cy="9" r="2"/></svg>
-          <span class="font-mono text-[10px] tracking-widest uppercase">Captured at 48 kHz • FLAC</span>
-        </div>
-      </div>
-
-      <!-- Primary Actions
-           Previously: a "Transcribe Audio" button with a *microphone* icon
-           (misleading — it transcribes the selected/recorded file, it is
-           not the record control), a second round mic button, plus Browse.
-           Three ways to start, only one clearly labelled.
-           Now: one labelled "Upload file" path and one labelled "Record" path. -->
-      <div class="grid grid-cols-2 gap-3 my-4">
-        <button class="h-14 rounded-xl bg-surface-container border border-white/[0.06] hover:border-white/[0.12] hover:bg-surface-container-high transition-all flex flex-col items-center justify-center gap-1 cursor-pointer disabled:opacity-40 disabled:pointer-events-none" id="btn-browse-file-alt" type="button">
-          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
-          <span class="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant">Upload file</span>
-        </button>
-        <button class="h-14 rounded-xl bg-surface-container border border-white/[0.06] hover:border-white/[0.12] hover:bg-surface-container-high transition-all flex flex-col items-center justify-center gap-1 cursor-pointer" id="btn-big-record" type="button" aria-label="Record with microphone">
-          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/></svg>
-          <span class="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant" id="label-record-toggle">Record</span>
-        </button>
-      </div>
-
-      <!-- The primary transcribe action now sits directly under the two
-           input paths, so the flow is: choose input -> transcribe. -->
-      <button class="w-full h-12 rounded-full bg-primary text-on-primary font-medium text-sm flex items-center justify-center gap-2 shadow-[0_12px_24px_-6px_rgba(255,255,255,0.2)] hover:bg-primary-container active:scale-[0.98] transition-all cursor-pointer disabled:opacity-40 disabled:pointer-events-none" id="btn-do-transcribe" type="button">
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10V5a1 1 0 0 1 1-1h3"/><path d="M17 4h3a1 1 0 0 1 1 1v5"/><path d="M20 14v5a1 1 0 0 1-1 1h-3"/><path d="M7 20H4a1 1 0 0 1-1-1v-5"/><path d="M9 12h6"/></svg>
-        <span class="font-mono uppercase tracking-wider text-xs font-semibold" id="label-transcribe">Transcribe Audio</span>
-      </button>
-
-      <!-- File Dropzone Option -->
-      <div class="p-3.5 rounded-xl bg-surface-container-low mb-4 border border-dashed border-white/[0.08] flex items-center justify-between" id="stt-dropzone">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <svg class="w-5 h-5 text-outline shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
-          <div class="flex flex-col min-w-0">
-            <span class="text-xs font-medium text-primary truncate" id="picked-file-name">Or select an audio file (WAV, MP3, M4A, WEBM)</span>
-            <span class="font-mono text-[10px] text-outline truncate" id="stt-hint-display">Upload file for direct neural transcription</span>
-          </div>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <input class="hidden" id="input-audio-file" type="file" accept="audio/*"/>
-          <button class="px-3.5 py-1.5 rounded-full bg-surface-container-high text-xs text-primary hover:bg-surface-container-highest transition-colors border border-white/[0.05] cursor-pointer" id="btn-browse-file" type="button">Browse</button>
-          <button class="hidden" id="btn-remove-picked" type="button"></button>
-          <span class="hidden" id="chip-picked-file"></span>
-        </div>
-      </div>
-
-      <!-- Live Transcript Feed Card -->
-      <div class="flex flex-col p-4 sm:p-5 rounded-xl bg-surface-container mb-4 shadow-sm border border-white/[0.04]" id="stt-result-card">
-        <div class="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.04]">
-          <span class="font-mono text-[11px] uppercase tracking-widest text-outline">Live Transcript</span>
-          <div class="flex items-center gap-2">
-            <!-- Both actions were enabled while the transcript was still the
-                 placeholder string, so clicking them copied/forwarded nothing.
-                 They are disabled on init and enabled once text exists. -->
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer disabled:opacity-35 disabled:hover:text-outline disabled:cursor-not-allowed" id="btn-copy-stt" type="button" disabled>Copy</button>
-            <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
-            <button class="font-mono text-[11px] uppercase tracking-wider text-outline hover:text-primary transition-colors cursor-pointer disabled:opacity-35 disabled:hover:text-outline disabled:cursor-not-allowed" id="btn-send-stt-to-tts" type="button" disabled>Send to Studio</button>
-            <button class="hidden" id="btn-export-stt" type="button"></button>
-          </div>
-        </div>
-
-        <div class="font-sans text-base text-primary leading-relaxed min-h-[85px] py-1 select-text" id="stt-transcript-text">
-          Click "Transcribe Audio" or record with your microphone to begin speech recognition.
-        </div>
-      </div>
-
-      <canvas class="hidden" id="stt-live-canvas"></canvas>
-    </section>
-
-    <!-- ===================================================================
-         VIEW 3: MODELS & ENGINES (Architecture & Connected Providers)
-         =================================================================== -->
-    <section class="hidden flex flex-col w-full" id="view-models">
-      <!-- View Header -->
-      <div class="vx-models-head flex flex-col pt-2 pb-5">
-        <span class="vx-models-eyebrow font-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Architecture</span>
-        <h1 class="font-display text-3xl sm:text-4xl text-primary tracking-tight font-normal mt-0.5">Providers &amp; Engines</h1>
-        <p class="vx-models-sub font-mono text-xs text-on-surface-variant mt-1">High-fidelity acoustic speech models</p>
-      </div>
-
-      <!-- Telemetry Stats Row -->
-      <div class="vx-models-stats flex items-baseline justify-between py-3 mb-5 border-y border-white/[0.04]">
-        <div class="flex flex-col">
-          <div class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-            <span class="font-display text-2xl text-primary font-light" id="models-stat-connected">8</span>
-          </div>
-          <span class="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">Connected</span>
-        </div>
-        <div class="flex flex-col">
-          <div class="flex items-baseline">
-            <span class="font-display text-2xl text-primary font-light">94</span>
-            <span class="font-mono text-xs text-on-surface-variant ml-0.5">ms</span>
-          </div>
-          <span class="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">Mean Latency</span>
-        </div>
-        <div class="flex flex-col text-right">
-          <div class="flex items-baseline justify-end">
-            <span class="font-display text-2xl text-primary font-light">96</span>
-            <span class="font-mono text-xs text-on-surface-variant ml-1">Voices</span>
-          </div>
-          <span class="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">Audio Previews</span>
-        </div>
-      </div>
-
-      <!-- Engine Filter Tabs -->
-      <div class="flex items-center gap-1 p-1 rounded-full bg-surface-container-low max-w-xs mb-4 border border-white/[0.04]">
-        <button class="models-filter-tab flex-1 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-center transition-all bg-surface-container-highest text-primary" data-cat="all" type="button">All (8)</button>
-        <button class="models-filter-tab flex-1 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-center transition-all text-on-surface-variant hover:text-primary" data-cat="tts" type="button">TTS (7)</button>
-        <button class="models-filter-tab flex-1 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-center transition-all text-on-surface-variant hover:text-primary" data-cat="stt" type="button">STT (2)</button>
-      </div>
-
-      <!-- Engines Cards List -->
-      <div class="flex flex-col gap-3" id="engines-cards-list">
-        
-        <!-- Cartesia Sonic -->
-        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-pink-500/15 text-pink-400 flex items-center justify-center shrink-0 font-medium">
-              <span class="material-symbols-outlined text-[20px]">bolt</span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-sm text-primary">Cartesia Sonic</span>
-                <span class="font-mono text-[10px] text-pink-400 bg-pink-950/60 px-1.5 py-0.5 rounded-full">90ms</span>
-              </div>
-              <span class="text-xs text-on-surface-variant truncate">Ultra low-latency neural synthesis • 8 Voices</span>
-            </div>
-          </div>
-          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="95856005-0332-41b0-935f-352e296aa0df" type="button" title="Audition Cartesia Voice">
-            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-          </button>
-        </div>
-
-        <!-- ElevenLabs Turbo -->
-        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0 font-medium">
-              <span class="material-symbols-outlined text-[20px]">auto_fix_high</span>
-            </div>
-            <div class="flex items-center flex-col min-w-0 items-start">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-sm text-primary">ElevenLabs Turbo v2.5</span>
-                <span class="font-mono text-[10px] text-purple-400 bg-purple-950/60 px-1.5 py-0.5 rounded-full">120ms</span>
-              </div>
-              <span class="text-xs text-on-surface-variant truncate">Studio realism &amp; expressive timbre • 21 Voices</span>
-            </div>
-          </div>
-          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="CwhRBWXzGAHq8TQ4Fs17" type="button" title="Audition ElevenLabs Voice">
-            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-          </button>
-        </div>
-
-        <!-- Google Gemini Flash Audio -->
-        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 font-medium">
-              <span class="material-symbols-outlined text-[20px]">cognition</span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-sm text-primary">Google Gemini 2.5 Audio</span>
-                <span class="font-mono text-[10px] text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded-full">Multimodal</span>
-              </div>
-              <span class="text-xs text-on-surface-variant truncate">Expressive prosody &amp; AI Studio • 5 Voices</span>
-            </div>
-          </div>
-          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="Puck" type="button" title="Audition Gemini Voice">
-            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-          </button>
-        </div>
-
-        <!-- Groq Orpheus -->
-        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 font-medium">
-              <span class="material-symbols-outlined text-[20px]">speed</span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-sm text-primary">Groq Orpheus LPU</span>
-                <span class="font-mono text-[10px] text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded-full">85ms</span>
-              </div>
-              <span class="text-xs text-on-surface-variant truncate">English &amp; Saudi Arabic Speech • 12 Voices</span>
-            </div>
-          </div>
-          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="autumn" type="button" title="Audition Groq Voice">
-            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-          </button>
-        </div>
-
-        <!-- Deepgram Flux & Nova -->
-        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 font-medium">
-              <span class="material-symbols-outlined text-[20px]">waves</span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-sm text-primary">Deepgram Flux &amp; Nova-2</span>
-                <span class="font-mono text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded-full">Live Edge</span>
-              </div>
-              <span class="text-xs text-on-surface-variant truncate">36 Broadcast TTS Voices • Live Whisper STT</span>
-            </div>
-          </div>
-          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="flux-alexis-en" type="button" title="Audition Deepgram Voice">
-            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-          </button>
-        </div>
-
-        <!-- Mistral Voxtral -->
-        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-orange-500/15 text-orange-400 flex items-center justify-center shrink-0 font-medium">
-              <span class="material-symbols-outlined text-[20px]">theater_comedy</span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-sm text-primary">Mistral Voxtral Mini</span>
-                <span class="font-mono text-[10px] text-orange-400 bg-orange-950/60 px-1.5 py-0.5 rounded-full">Emotions</span>
-              </div>
-              <span class="text-xs text-on-surface-variant truncate">4 Personas • 30 Emotional Vocal Inflections</span>
-            </div>
-          </div>
-          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="en_paul" type="button" title="Audition Mistral Voice">
-            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-          </button>
-        </div>
-
-        <!-- Cloudflare MeloTTS -->
-        <div class="engine-row flex items-center justify-between p-4 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors border border-white/[0.04]">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0 font-medium">
-              <span class="material-symbols-outlined text-[20px]">public</span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-sm text-primary">Cloudflare MeloTTS</span>
-                <span class="font-mono text-[10px] text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded-full">Edge AI</span>
-              </div>
-              <span class="text-xs text-on-surface-variant truncate">Global Multi-lingual Accents • 9 Accents</span>
-            </div>
-          </div>
-          <button class="btn-audition-engine shrink-0 w-9 h-9 rounded-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-all active:scale-95" data-audition-id="en-us" type="button" title="Audition Cloudflare Accent">
-            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Engine Configuration Button -->
-      <div class="mt-6 flex justify-center">
-        <button class="px-5 py-2.5 rounded-full bg-surface-container hover:bg-surface-container-high text-xs font-mono uppercase tracking-wider text-primary border border-white/[0.06] transition-all flex items-center gap-2" id="btn-open-settings-from-models" type="button">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-          <span>Configure API Credentials</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- ===================================================================
-         VIEW 4: AUDIO ARCHIVE (Vault & Generated History)
-         =================================================================== -->
-    <section class="hidden flex flex-col w-full" id="view-archive">
-      
-      <!-- View Header -->
-      <div class="vx-archive-head flex flex-col pt-2 pb-5">
-        <span class="vx-archive-eyebrow font-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Releases &amp; Storage</span>
-        <h1 class="font-display text-3xl sm:text-4xl text-primary tracking-tight font-normal mt-0.5">Archive</h1>
-        <p class="vx-archive-sub font-mono text-xs text-on-surface-variant mt-1">Saved audio recordings and session history</p>
-      </div>
-
-      <!-- Official Android Application Release & Download Card (hidden inside native APK) -->
-      <div id="apk-release-card" class="mb-6 p-5 sm:p-6 rounded-2xl bg-surface-container border border-white/[0.06] hover:border-tertiary-fixed-dim/30 transition-all shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          
-          <!-- Left: App Identity & Description -->
-          <div class="flex items-start gap-4 min-w-0">
-            <div class="w-12 h-12 rounded-xl bg-tertiary-fixed-dim/15 text-tertiary-fixed-dim border border-tertiary-fixed-dim/30 flex items-center justify-center shrink-0 shadow-inner">
-              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <h3 class="font-display text-xl text-primary font-medium tracking-tight">Voice Actors for Android</h3>
-                <span class="font-mono text-[10px] uppercase tracking-wider text-tertiary-fixed-dim bg-tertiary-fixed-dim/10 border border-tertiary-fixed-dim/20 px-2 py-0.5 rounded-full font-semibold" id="download-version-badge">v1.1.5 Release</span>
-                <span class="font-mono text-[10px] text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded-full" id="download-size-badge">9.3 MB</span>
-              </div>
-              <p class="text-xs text-on-surface-variant mt-1.5 leading-relaxed max-w-xl">
-                Official native Android standalone package with neural streaming, hardware back navigation, and automatic OTA updates.
-              </p>
-              
-              <!-- Key Technical Invariants / Specs -->
-              <div class="flex flex-wrap items-center gap-3 mt-3 font-mono text-[10.5px] text-outline">
-                <span class="flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Package: com.atmr.voiceactors
+        <!-- Zone B: Engine Selector + Active Voice Actor Card -->
+        <div class="vx-studio-actors-zone">
+          <!-- Engine Selector -->
+          <div class="vx-engine-selector">
+            <button class="vx-engine-trigger" id="dock-model-pill" type="button" aria-haspopup="listbox" aria-expanded="false">
+              <span class="vx-engine-trigger__left">
+                <span class="vx-engine-dot" aria-hidden="true"></span>
+                <span class="vx-engine-trigger__meta">
+                  <span class="vx-engine-trigger__kicker">Active Engine</span>
+                  <span class="vx-engine-trigger__name" id="dock-model-name">Deepgram Flux</span>
                 </span>
-                <span>•</span>
-                <span>Android 8.0+ (API 26+)</span>
-                <span>•</span>
-                <span>Signed Release APK</span>
+              </span>
+              <svg class="vx-engine-trigger__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <div class="vx-model-menu hidden" id="menu-model-select" role="listbox" aria-label="Select speech engine">
+              <div class="vx-model-menu__title">Select Speech Engine</div>
+              <button class="dropdown-item active" data-model="deepgram/flux-tts:free" type="button">
+                <div>
+                  <span class="item-name">Deepgram Flux</span>
+                  <span class="item-desc">36 Studio Voices · Broadcast Latency</span>
+                </div>
+                <span class="vx-badge-tag">36 Voices</span>
+              </button>
+              <button class="dropdown-item" data-model="cartesia/sonic-3.6" type="button">
+                <div>
+                  <span class="item-name">Cartesia Sonic 3.6</span>
+                  <span class="item-desc">Ultra Low-Latency · 90ms Realtime</span>
+                </div>
+                <span class="vx-badge-tag">90ms</span>
+              </button>
+              <button class="dropdown-item" data-model="elevenlabs/multilingual-v2" type="button">
+                <div>
+                  <span class="item-name">ElevenLabs Studio v2</span>
+                  <span class="item-desc">21 Expressive Personas</span>
+                </div>
+                <span class="vx-badge-tag">Studio</span>
+              </button>
+              <button class="dropdown-item" data-model="google/gemini-2.5-flash-tts" type="button">
+                <div>
+                  <span class="item-name">Google Gemini Audio</span>
+                  <span class="item-desc">5 Expressive AI Studio Personas</span>
+                </div>
+                <span class="vx-badge-tag">Expressive</span>
+              </button>
+              <button class="dropdown-item" data-model="groq/orpheus-english" type="button">
+                <div>
+                  <span class="item-name">Groq Orpheus (English)</span>
+                  <span class="item-desc">6 Natural English Voices · Groq LPU</span>
+                </div>
+                <span class="vx-badge-tag">LPU EN</span>
+              </button>
+              <button class="dropdown-item" data-model="groq/orpheus-arabic" type="button">
+                <div>
+                  <span class="item-name">Groq Orpheus (Saudi Arabic)</span>
+                  <span class="item-desc">6 Authentic Saudi Voices · Groq LPU</span>
+                </div>
+                <span class="vx-badge-tag">AR · SA</span>
+              </button>
+              <button class="dropdown-item" data-model="mistral/voxtral-mini-tts" type="button">
+                <div>
+                  <span class="item-name">Mistral Voxtral Mini</span>
+                  <span class="item-desc">4 Personas · 30 Emotional Shades</span>
+                </div>
+                <span class="vx-badge-tag">Emotions</span>
+              </button>
+              <button class="dropdown-item" data-model="cloudflare/melotts" type="button">
+                <div>
+                  <span class="item-name">Cloudflare MeloTTS</span>
+                  <span class="item-desc">9 Global Edge Languages</span>
+                </div>
+                <span class="vx-badge-tag">Edge AI</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Persona Card -->
+          <div class="vx-card vx-actor-card" id="active-persona-card">
+            <div class="vx-actor-row">
+              <div class="vx-actor-identity">
+                <div class="vx-actor-avatar" id="dock-voice-avatar">A</div>
+                <div class="vx-actor-info">
+                  <div class="vx-actor-name-line">
+                    <span class="vx-actor-name" id="dock-voice-name">Alexis</span>
+                    <svg class="vx-verified-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 2l2.39 2.38 3.36-.34.34 3.36L20.48 9.8 19.2 12l1.28 2.2-2.39 2.4-.34 3.36-3.36-.34L12 22l-2.39-2.38-3.36.34-.34-3.36L3.52 14.2 4.8 12 3.52 9.8l2.39-2.4.34-3.36 3.36.34L12 2zm-1.1 13.2l5.3-5.3-1.4-1.4-3.9 3.9-1.7-1.7-1.4 1.4 3.1 3.1z" />
+                    </svg>
+                  </div>
+                  <span class="vx-actor-meta" id="dock-voice-accent">US · Female</span>
+                </div>
+              </div>
+
+              <div class="vx-actor-actions">
+                <button class="vx-circle-btn" id="favorite-toggle" type="button" title="Pin to favorites" aria-pressed="false" aria-label="Pin voice to favorites">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+                <button class="vx-pill-action" id="btn-dock-voice-sample" type="button" title="Audition voice sample">
+                  <span class="vx-play-icon" id="sample-icon" aria-hidden="true">
+                    <svg class="vx-icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4" /></svg>
+                    <svg class="vx-icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                  </span>
+                  <span id="sample-label">Sample</span>
+                </button>
+                <button class="vx-pill-action" id="dock-voice-pill" type="button" title="Browse all 96 voices">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="17 1 21 5 17 9" />
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                    <polyline points="7 23 3 19 7 15" />
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                  </svg>
+                  <span>Change</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Emotion Quick-Rack (Revealed when Mistral Voxtral is active) -->
+            <div class="vx-emotion-rack hidden" id="inline-emotion-rack">
+              <div class="vx-emotion-rack__head">
+                <span>Emotion Shade</span>
+                <span id="inline-emotion-count">8 shades</span>
+              </div>
+              <div class="vx-emotion-rack__chips" id="inline-emotion-chips"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zone C: Script Input Canvas / Karaoke Sync Reader -->
+        <div class="vx-studio-editor-zone">
+          <div class="vx-card vx-script-card" id="textarea-stage">
+            <div class="vx-script-toolbar">
+              <div class="vx-script-label">
+                <span class="vx-eyebrow">Script Desk</span>
+                <span class="vx-tag">Text &amp; Vision</span>
+              </div>
+              <div class="vx-script-actions">
+                <button class="vx-tool-btn vx-tool-btn--accent" id="btn-scan-image" type="button" title="Scan screenshot or image to speech (Ctrl+V)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                    <line x1="7" y1="12" x2="17" y2="12" />
+                  </svg>
+                  <span>Scan</span>
+                  <span class="vx-kbd-chip">Ctrl+V</span>
+                </button>
+                <button class="vx-tool-btn" id="btn-paste" type="button" title="Paste clipboard and replace script">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  </svg>
+                  <span>Paste</span>
+                </button>
+                <button class="vx-tool-btn" id="btn-load-file" type="button" title="Load .txt, .md, or .srt script from device">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <polyline points="9 15 12 12 15 15" />
+                  </svg>
+                  <span>File</span>
+                </button>
+                <input class="hidden" id="input-script-file" type="file" accept=".txt,.md,.markdown,.csv,.srt,.vtt,text/plain,text/markdown" />
+                <button class="vx-tool-btn vx-tool-btn--ghost" id="btn-clear" type="button" title="Clear script">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  <span>Clear</span>
+                </button>
+              </div>
+            </div>
+
+            <button class="hidden" id="btn-samples-menu" type="button"></button>
+            <div class="hidden" id="samples-popover"></div>
+
+            <textarea class="vx-textarea" id="text-input" placeholder="Type or paste text to synthesize, drop an image, or press Ctrl+V to scan a screenshot...">In the quiet corners of deep space, silence is the canvas upon which cosmic light writes its timeless symphony.</textarea>
+
+            <div class="vx-script-footer">
+              <div class="vx-metrics">
+                <span class="vx-metrics__dot" aria-hidden="true"></span>
+                <span><span id="stat-words">0</span> words · <span id="stat-chars">0</span> chars · ~<span id="stat-duration">0</span>s</span>
+              </div>
+              <span class="vx-spec-pill" title="Output sample rate">48 kHz</span>
+            </div>
+          </div>
+
+          <!-- Real-Time Interactive Reading & Karaoke Stage -->
+          <div class="vx-card vx-reader-card hidden" id="interactive-stage">
+            <div class="vx-reader-header">
+              <div class="vx-live-badge">
+                <span class="vx-live-dot" aria-hidden="true"></span>
+                <span>Karaoke Sync Stage</span>
+              </div>
+              <div class="vx-reader-actions">
+                <button class="vx-btn-stop-mini hidden" id="btn-stage-cancel" type="button" title="Stop Audio Playback">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
+                  <span>Stop</span>
+                </button>
+                <button class="vx-btn-text" id="btn-back-to-editor" type="button">Edit Script</button>
+              </div>
+              <span class="hidden" id="label-reader-toggle"></span>
+              <span class="hidden" id="interactive-status-label"></span>
+            </div>
+
+            <div class="interactive-reading-content" id="interactive-reading-body"></div>
+
+            <div class="vx-ribbon" id="continuous-timeline-ribbon">
+              <div class="vx-ribbon__track" id="ribbon-track">
+                <div class="vx-ribbon__fill" id="ribbon-progress"></div>
+                <div class="hidden" id="ribbon-playhead"></div>
+              </div>
+              <div class="vx-ribbon__meta">
+                <span id="ribbon-time-display">0:00 / 0:00</span>
+                <span id="ribbon-segments-badge">1 Sentence</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zone D: Speed Control + Generate CTA + Audio Player Monitor -->
+        <div class="vx-studio-transport-zone">
+
+          <!-- Cadence Speed Card -->
+          <div class="vx-card vx-speed-card">
+            <div class="vx-speed-head">
+              <div>
+                <span class="vx-speed-title">Speed</span>
+                <span class="vx-speed-sub">Playback cadence</span>
+              </div>
+              <span class="vx-speed-value" id="dock-speed-label">1.0x</span>
+            </div>
+            <div class="vx-slider-track" id="dock-speed-pill">
+              <input id="slider-speed" type="range" min="0.5" max="2.0" step="0.1" value="1.0" aria-label="Speech playback speed" />
+            </div>
+            <div class="vx-speed-presets" id="speed-snap-group">
+              <button class="vx-speed-snap" data-speed-snap="0.75" type="button">0.75x</button>
+              <button class="vx-speed-snap active" data-speed-snap="1.0" type="button">1.0x</button>
+              <button class="vx-speed-snap" data-speed-snap="1.25" type="button">1.25x</button>
+              <button class="vx-speed-snap" data-speed-snap="1.5" type="button">1.5x</button>
+            </div>
+            <div class="hidden" id="menu-speed-select">
+              <button class="speed-opt" data-speed="0.75" type="button">0.75x</button>
+              <button class="speed-opt active" data-speed="1.0" type="button">1.0x</button>
+              <button class="speed-opt" data-speed="1.25" type="button">1.25x</button>
+              <button class="speed-opt" data-speed="1.5" type="button">1.5x</button>
+              <button class="speed-opt" data-speed="2.0" type="button">2.0x</button>
+            </div>
+          </div>
+
+          <!-- Generate CTA & Progress -->
+          <div class="vx-cta-zone" id="cta-generate-zone">
+            <div id="gen-progress" aria-hidden="true">
+              <div id="gen-progress__track"><div id="gen-progress__fill"></div></div>
+              <div id="gen-progress__label">
+                <span id="gen-progress__stage">Preparing</span>
+                <span id="gen-progress__count">0 / 0</span>
+              </div>
+            </div>
+
+            <button class="vx-generate" id="btn-main-generate" type="button">
+              <span class="vx-generate__spinner" id="generate-spinner" aria-hidden="true"></span>
+              <svg id="generate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M3 12v2M7.5 8v8M12 4v16M16.5 8v8M21 12v2" />
+              </svg>
+              <span id="label-generate">Generate Speech</span>
+              <kbd class="vx-generate__kbd" id="generate-kbd" title="Keyboard shortcut">Ctrl ↵</kbd>
+            </button>
+
+            <button class="vx-btn-cancel hidden" id="btn-cancel-generate" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <rect x="9" y="9" width="6" height="6" />
+              </svg>
+              <span>Stop Audio Generation</span>
+            </button>
+
+            <div class="vx-cta-latency">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              <span>Streaming Edge Synthesis · Instant Buffer</span>
+            </div>
+          </div>
+
+          <!-- Live Buffer Preview / Waveform Monitor -->
+          <div class="vx-card vx-player-card hidden" id="dock-player">
+            <div class="vx-player-head">
+              <div class="vx-player-badge">
+                <span class="vx-ready-dot" id="audio-ready-dot"></span>
+                <span>Audio Monitor</span>
+              </div>
+              <span class="vx-player-time" id="player-time-display">0:00 / 0:00</span>
+            </div>
+
+            <div class="vx-waveform-well" id="waveform-scrub-zone">
+              <canvas id="dock-waveform-canvas"></canvas>
+              <div class="vx-playhead" id="dock-playhead"></div>
+            </div>
+
+            <div class="vx-player-controls">
+              <div class="vx-player-btns">
+                <button class="vx-play-main" id="dock-btn-play" type="button" title="Play / Pause Synthesis">
+                  <span class="vx-play-icon" id="play-pause-icon" aria-hidden="true">
+                    <svg class="vx-icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4" /></svg>
+                    <svg class="vx-icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                  </span>
+                </button>
+                <button class="vx-circle-btn" id="btn-dock-download" type="button" title="Download Audio File" aria-label="Download audio file">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </button>
+                <button class="vx-circle-btn" id="btn-toggle-reader" type="button" title="Toggle Karaoke Sync Reader" aria-label="Toggle Karaoke Sync Reader">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                    <line x1="6" y1="11" x2="12" y2="11" />
+                    <line x1="6" y1="15" x2="16" y2="15" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="vx-player-meta">
+                <span id="player-label-voice">Alexis</span>
+                <span>·</span>
+                <button class="vx-btn-text" id="btn-player-speed" type="button" title="Cycle playback speed">
+                  <span id="player-speed-text">1.0x</span>
+                </button>
+                <button class="hidden" id="btn-close-player" type="button"></button>
+                <span class="hidden" id="player-label-model"></span>
               </div>
             </div>
           </div>
 
-          <!-- Right: Direct Download CTAs + QR Code -->
-          <div class="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            
-            <!-- Direct Download Button -->
-            <a href="https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk" 
-               class="px-5 py-3 rounded-full bg-tertiary-fixed-dim text-surface-container-lowest font-medium text-xs font-mono uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-[0_4px_16px_rgba(239,190,130,0.25)]" 
-               download="voice-actors-latest.apk"
-               target="_blank" 
-               rel="noopener">
-              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <span>Download APK</span>
-            </a>
-
-            <!-- GitHub Release Note Link -->
-            <a href="https://github.com/ATMRaven/voice-actors/releases/tag/v1.1.5" id="download-release-link" 
-               class="px-4 py-3 rounded-full bg-surface-container-highest hover:bg-surface-container-high text-primary font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 border border-white/[0.06] transition-all" 
-               target="_blank" 
-               rel="noopener">
-              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              <span>Release Notes</span>
-            </a>
-
-            <!-- QR Code Card (Desktop / Tablet) -->
-            <div class="hidden sm:flex items-center gap-2 p-2 rounded-xl bg-surface-container-low border border-white/[0.04]">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&amp;data=https%3A%2F%2Fgithub.com%2FATMRaven%2Fvoice-actors%2Freleases%2Flatest%2Fdownload%2Fvoice-actors-latest.apk" 
-                   alt="Scan QR code to download Voice Actors Android APK" 
-                   class="w-12 h-12 rounded bg-white p-0.5" 
-                   loading="lazy">
-              <div class="flex flex-col text-[10px] font-mono text-on-surface-variant leading-tight">
-                <span class="text-primary font-medium">Scan to Install</span>
-                <span>Phone Camera</span>
-              </div>
-            </div>
-
-          </div>
-
         </div>
-
-        <!-- Checksum Verification Badge -->
-        <div class="mt-4 pt-3 border-t border-white/[0.04] flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-outline">
-          <div class="flex items-center gap-1.5 min-w-0 max-w-full">
-            <svg class="w-3.5 h-3.5 text-tertiary-fixed-dim shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 2.38 3.36-.34.34 3.36L20.48 9.8 19.2 12l1.28 2.2-2.39 2.4-.34 3.36-3.36-.34L12 22l-2.39-2.38-3.36.34-.34-3.36L3.52 14.2 4.8 12 3.52 9.8l2.39-2.4.34-3.36 3.36.34L12 2zm-1.1 13.2l5.3-5.3-1.4-1.4-3.9 3.9-1.7-1.7-1.4 1.4 3.1 3.1z"/></svg>
-            <span class="truncate" id="download-sha256-text">SHA-256: e246d7b1ea999ce729a3ce1b9ba68494245cc488dfa37772c95ee30d965a404a</span>
-          </div>
-          <span class="text-tertiary-fixed-dim/90">Signed &amp; Verified</span>
-        </div>
-
-      </div>
-
-      <!-- Minimal Search Bar -->
-      <div class="relative w-full mb-4">
-        <div class="relative flex items-center w-full h-11 rounded-full bg-surface-container-low px-4 border border-white/[0.06] focus-within:border-white/[0.15] transition-all">
-          <svg class="w-4 h-4 text-outline mr-2.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="w-full bg-transparent text-sm text-primary placeholder:text-outline/50 focus:outline-none" id="archiveSearchInput" placeholder="Search saved audio by script or voice..." type="text"/>
-        </div>
-      </div>
-
-      <!-- Vault Telemetry Progress -->
-      <div class="w-full mb-4 flex flex-col gap-1.5">
-        <div class="flex items-center justify-between font-mono text-[10px] text-outline tracking-wider uppercase">
-          <span>Audio Vault</span>
-          <span id="archive-count-label">0 Clips Saved</span>
-        </div>
-        <div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
-          <div class="h-full bg-tertiary-fixed-dim rounded-full transition-all duration-500" id="archive-progress-bar" style="width: 15%;"></div>
-        </div>
-      </div>
-
-      <!-- Playable IndexedDB Audio Vault -->
-      <section id="vault-list" class="vault-list mb-4" aria-label="Audio vault"></section>
-
-      <!-- Divider to Session Script History -->
-      <div class="flex items-center gap-3 mb-3">
-        <h2 class="font-mono text-[11px] uppercase tracking-widest text-on-surface-variant whitespace-nowrap">Recent Scripts</h2>
-        <div class="h-px bg-white/[0.06] w-full"></div>
-      </div>
-
-      <!-- Saved Clips List -->
-      <div class="flex flex-col gap-3" id="library-items-list">
-        <!-- Rendered dynamically via app.js -->
-        <div class="p-8 text-center text-on-surface-variant font-mono text-xs rounded-xl bg-surface-container-low border border-white/[0.04]">
-          No saved audio clips yet. Synthesize speech in Studio to build your personal archive.
-        </div>
-      </div>
-
-      <div class="flex justify-end pt-3">
-        <button class="font-mono text-[10px] text-outline hover:text-error uppercase tracking-wider transition-colors" id="btn-clear-all-lib" type="button">Clear All Clips</button>
       </div>
     </section>
+
+    <!-- ===================================================================
+         VIEW 2: TRANSCRIBE (Speech-to-Text)
+         =================================================================== -->
+    <section class="vx-view hidden" id="view-stt">
+      <div class="vx-narrow-stage">
+        <div class="vx-view-head">
+          <div>
+            <h1 class="vx-view-title">Transcribe</h1>
+            <p class="vx-view-sub">Record live audio or drop an audio file for instant neural speech recognition</p>
+          </div>
+          <div class="vx-segmented" role="tablist" aria-label="Transcription engine">
+            <button class="vx-seg-btn active" id="btn-engine-whisper" type="button">Whisper v3</button>
+            <button class="vx-seg-btn" id="btn-engine-deepgram" type="button">Deepgram</button>
+          </div>
+        </div>
+
+        <div class="vx-card vx-stt-console">
+          <div class="vx-mic-stage">
+            <div class="vx-mic-halo" id="mic-halo"></div>
+            <svg class="hidden" viewBox="0 0 100 100" aria-hidden="true"><circle id="progress-orbit" cx="50" cy="50" r="46"></circle></svg>
+            <div class="vx-mic-core">
+              <div class="vx-stt-status-row">
+                <span class="vx-stt-dot" id="recording-dot"></span>
+                <span id="stt-status-label">Ready</span>
+              </div>
+              <span class="vx-stt-timer" id="stt-timer-display">00:00</span>
+              <canvas id="stt-live-canvas" width="180" height="26"></canvas>
+            </div>
+          </div>
+
+          <div class="vx-stt-inputs">
+            <button class="vx-input-tile" id="btn-browse-file-alt" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 13v8" />
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+                <path d="m8 17 4-4 4 4" />
+              </svg>
+              <span>Upload Audio File</span>
+            </button>
+            <button class="vx-input-tile" id="btn-big-record" type="button" aria-label="Record with microphone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 19v3" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <rect x="9" y="2" width="6" height="13" rx="3" />
+              </svg>
+              <span id="label-record-toggle">Record Mic</span>
+            </button>
+          </div>
+
+          <div class="vx-stt-dropzone" id="stt-dropzone">
+            <div class="vx-stt-dropzone__info">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <div style="min-width:0">
+                <div class="vx-stt-file-title" id="picked-file-name">Or drop WAV, MP3, M4A, WEBM here</div>
+                <div class="vx-stt-file-sub" id="stt-hint-display">Upload audio or record with microphone</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <input class="hidden" id="input-audio-file" type="file" accept="audio/*" />
+              <button class="vx-btn-subtle" id="btn-browse-file" type="button">Browse</button>
+              <span class="hidden" id="chip-picked-file">
+                <button class="vx-circle-btn" id="btn-remove-picked" type="button" aria-label="Remove selected audio">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <button class="vx-btn-transcribe" id="btn-do-transcribe" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 10V5a1 1 0 0 1 1-1h3" />
+              <path d="M17 4h3a1 1 0 0 1 1 1v5" />
+              <path d="M20 14v5a1 1 0 0 1-1 1h-3" />
+              <path d="M7 20H4a1 1 0 0 1-1-1v-5" />
+              <path d="M9 12h6" />
+            </svg>
+            <span id="label-transcribe">Transcribe Audio</span>
+          </button>
+        </div>
+
+        <div class="vx-card vx-transcript-card" id="stt-result-card">
+          <div class="vx-transcript-head">
+            <span class="vx-eyebrow">Transcript Output</span>
+            <div class="vx-transcript-actions">
+              <button class="vx-btn-text" id="btn-copy-stt" type="button" disabled>Copy</button>
+              <button class="vx-btn-text" id="btn-export-stt" type="button" disabled>Export .txt</button>
+              <button class="vx-btn-text" id="btn-send-stt-to-tts" type="button" disabled>Send to Studio</button>
+            </div>
+          </div>
+          <div class="vx-transcript-body" id="stt-transcript-text">Record with your microphone or upload an audio clip, then press Transcribe Audio.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 3: MODELS & VOICE DIRECTORY
+         =================================================================== -->
+    <section class="vx-view hidden" id="view-models">
+      <div class="vx-models-stage">
+        <div class="vx-view-head">
+          <div>
+            <h1 class="vx-view-title">Providers &amp; Voices</h1>
+            <p class="vx-view-sub">Audition acoustic engines, pin favorite actors, and manage credentials</p>
+          </div>
+          <button class="vx-btn-subtle" id="btn-open-settings-from-models" type="button">Configure API Keys</button>
+        </div>
+
+        <div class="vx-telemetry-strip">
+          <div class="vx-stat-box">
+            <div class="vx-stat-val"><span id="models-stat-connected">8</span></div>
+            <div class="vx-stat-label">Engines Connected</div>
+          </div>
+          <div class="vx-stat-box">
+            <div class="vx-stat-val">94<span class="vx-stat-unit">ms</span></div>
+            <div class="vx-stat-label">Fastest Edge</div>
+          </div>
+          <div class="vx-stat-box">
+            <div class="vx-stat-val">96<span class="vx-stat-unit">voices</span></div>
+            <div class="vx-stat-label">Studio Catalog</div>
+          </div>
+        </div>
+
+        <div class="vx-filter-tabs" role="tablist" aria-label="Filter engines">
+          <button class="models-filter-tab is-active" data-cat="all" type="button">All (8)</button>
+          <button class="models-filter-tab" data-cat="tts" type="button">Speech TTS (7)</button>
+          <button class="models-filter-tab" data-cat="stt" type="button">Transcribe STT (2)</button>
+        </div>
+
+        <div class="vx-engines-list" id="engines-cards-list"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 4: ARCHIVE & AUDIO VAULT
+         =================================================================== -->
+    <section class="vx-view hidden" id="view-archive">
+      <div class="vx-archive-stage">
+        <div class="vx-view-head">
+          <div>
+            <h1 class="vx-view-title">Archive</h1>
+            <p class="vx-view-sub">Offline IndexedDB audio clips and recent studio scripts</p>
+          </div>
+          <button class="vx-btn-danger-ghost" id="btn-clear-all-lib" type="button">Clear All Clips</button>
+        </div>
+
+        <!-- Android Release Download Card (Browser Only) -->
+        <div class="vx-card vx-apk-card" id="apk-release-card">
+          <div class="vx-apk-main">
+            <div class="vx-apk-id">
+              <div class="vx-apk-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" />
+                  <line x1="12" y1="18" x2="12.01" y2="18" />
+                </svg>
+              </div>
+              <div>
+                <div class="vx-apk-badges">
+                  <h3>Voice Actors for Android</h3>
+                  <span class="vx-badge-tag" id="download-version-badge">v1.1.5 Release</span>
+                  <span class="vx-tag" id="download-size-badge">9.3 MB</span>
+                </div>
+                <p class="vx-apk-desc">Official signed Android APK with edge neural streaming, hardware back navigation, and automatic in-app updates.</p>
+                <div class="vx-apk-specs">
+                  <span>com.atmr.voiceactors</span>
+                  <span>·</span>
+                  <span>Android 8.0+ (API 26+)</span>
+                  <span>·</span>
+                  <span>Signed Release APK</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="vx-apk-ctas">
+              <a class="vx-btn-primary-link" href="https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk" download="voice-actors-latest.apk" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>Download APK</span>
+              </a>
+              <a class="vx-btn-outline-link" href="https://github.com/ATMRaven/voice-actors/releases/tag/v1.1.5" id="download-release-link" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                <span>Release Notes</span>
+              </a>
+              <div class="vx-qr-box">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&amp;data=https%3A%2F%2Fgithub.com%2FATMRaven%2Fvoice-actors%2Freleases%2Flatest%2Fdownload%2Fvoice-actors-latest.apk" alt="QR code for Android APK" loading="lazy" onerror="var b=this.closest('.vx-qr-box');if(b)b.style.display='none';" />
+                <div class="vx-qr-text"><strong>Scan to Install</strong><br />Phone Camera</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vx-apk-checksum">
+            <span id="download-sha256-text">SHA-256: e246d7b1ea999ce729a3ce1b9ba68494245cc488dfa37772c95ee30d965a404a</span>
+            <span>Signed &amp; Verified Release</span>
+          </div>
+        </div>
+
+        <div class="vx-search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input id="archiveSearchInput" type="text" placeholder="Search saved audio clips by script or voice..." />
+        </div>
+
+        <div class="vx-vault-progress">
+          <div class="vx-vault-progress__head">
+            <span>Audio Vault</span>
+            <span id="archive-count-label">0 Clips Saved</span>
+          </div>
+          <div class="vx-vault-progress__track">
+            <div class="vx-vault-progress__bar" id="archive-progress-bar"></div>
+          </div>
+        </div>
+
+        <section id="vault-list" class="vault-list" aria-label="Audio vault"></section>
+
+        <div class="vx-section-divider">
+          <h2 class="vx-eyebrow">Recent Scripts</h2>
+          <div class="vx-section-divider__line"></div>
+        </div>
+
+        <div class="vx-history-list" id="library-items-list"></div>
+      </div>
+    </section>
+
   </main>
 
   <!-- =====================================================================
-       3. FLOATING BOTTOM NAVIGATION DOCK (4-Pillar, Mobile Only)
-       Labels raised from 9px to 11px for small-phone legibility.
+       3. MOBILE FLUSH BOTTOM TAB BAR
        ===================================================================== -->
-  <div class="fixed bottom-0 inset-x-0 z-40 pointer-events-none pb-safe px-gutter-mobile" id="main-dock">
-    <nav class="vx-dock__nav pointer-events-auto" aria-label="Primary">
-      
-      <!-- Studio Tab -->
+  <div class="vx-dock" id="main-dock">
+    <nav class="vx-dock__nav" aria-label="Primary">
       <button class="vx-dock__btn dock-tab-btn active" data-tab="studio" type="button" aria-current="page">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+          <line x1="12" y1="19" x2="12" y2="23" />
+        </svg>
         <span class="vx-dock__label">Studio</span>
       </button>
-
-      <!-- Transcribe Tab -->
       <button class="vx-dock__btn dock-tab-btn" data-tab="transcribe" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3z"/><path d="M7 15h2l2-4 2 8 2-6 1.5 2H21"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="M7 13h2l2-4 2 7 2-5 1.5 2H21" />
+        </svg>
         <span class="vx-dock__label">Transcribe</span>
       </button>
-
-      <!-- Models Tab -->
       <button class="vx-dock__btn dock-tab-btn" data-tab="models" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12" />
+        </svg>
         <span class="vx-dock__label">Models</span>
       </button>
-
-      <!-- Archive Tab -->
       <button class="vx-dock__btn dock-tab-btn" data-tab="archive" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v4H4z"/><path d="M5 8v12h14V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 4h16v4H4z" />
+          <path d="M5 8v12h14V8" />
+          <line x1="10" y1="12" x2="14" y2="12" />
+        </svg>
         <span class="vx-dock__label">Archive</span>
       </button>
     </nav>
   </div>
 
   <!-- =====================================================================
-       4. SPACIOUS CENTERED VOICE SELECTION MODAL (96 Authentic Preview Voices)
+       4. VOICE SELECTION CATALOG MODAL / BOTTOM SHEET
        ===================================================================== -->
-  <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-6 transition-opacity duration-200" id="voice-drawer-backdrop">
-    <div class="w-full max-w-5xl h-[88vh] sm:h-[84vh] bg-surface-container-low border border-white/[0.08] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden" id="voice-drawer">
-      
-      <!-- Modal Header -->
-      <div class="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-2 shrink-0">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <h3 class="font-display text-xl text-primary font-normal truncate" id="drawer-title-text">Select Voice</h3>
-          <span class="font-mono text-[10px] uppercase text-outline px-2 py-0.5 rounded-full bg-surface-container shrink-0" id="drawer-voice-count">96</span>
-          <span class="font-mono text-[10px] text-tertiary-fixed-dim bg-tertiary-fixed-dim/10 px-2.5 py-0.5 rounded-full border border-tertiary-fixed-dim/20 shrink-0 hidden sm:inline-flex" id="drawer-provider-badge">Deepgram</span>
+  <div class="vx-backdrop hidden" id="voice-drawer-backdrop">
+    <div class="vx-modal vx-modal--wide" id="voice-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title-text">
+      <div class="vx-drag-pill" aria-hidden="true"></div>
+      <div class="vx-modal__head">
+        <div class="vx-modal__title-wrap">
+          <h3 class="vx-modal__title" id="drawer-title-text">Select Voice</h3>
+          <span class="vx-tag" id="drawer-voice-count">96</span>
+          <span class="vx-badge-tag" id="drawer-provider-badge">Deepgram</span>
         </div>
-        <button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors bg-surface-container hover:bg-surface-container-high cursor-pointer shrink-0" id="btn-close-voice-drawer" aria-label="Close voice selection" type="button">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button class="vx-circle-btn" id="btn-close-voice-drawer" type="button" aria-label="Close voice selection">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <!-- Provider Filter Tabs Carousel -->
-      <div class="px-5 py-2.5 border-b border-white/[0.04] overflow-x-auto flex items-center gap-2 scrollbar-none shrink-0" id="drawer-provider-tabs">
-        <button class="provider-tab-btn active px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap bg-surface-container-highest text-primary border border-white/[0.06] cursor-pointer" data-provider="deepgram" type="button">Deepgram (36)</button>
-        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="mistral" type="button">Mistral (4)</button>
-        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="elevenlabs" type="button">ElevenLabs (21)</button>
-        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="cartesia" type="button">Cartesia (8)</button>
-        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="gemini" type="button">Gemini (5)</button>
-        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="groq" type="button">Groq Orpheus (12)</button>
-        <button class="provider-tab-btn px-3.5 py-1 rounded-full font-mono text-[11px] uppercase tracking-wider whitespace-nowrap text-on-surface-variant hover:text-primary bg-surface-container border border-white/[0.04] cursor-pointer" data-provider="cloudflare" type="button">Cloudflare (9)</button>
+      <div class="drawer-provider-tabs" id="drawer-provider-tabs">
+        <button class="provider-tab-btn active" data-provider="deepgram" type="button">Deepgram (36)</button>
+        <button class="provider-tab-btn" data-provider="mistral" type="button">Mistral (4)</button>
+        <button class="provider-tab-btn" data-provider="elevenlabs" type="button">ElevenLabs (21)</button>
+        <button class="provider-tab-btn" data-provider="cartesia" type="button">Cartesia (8)</button>
+        <button class="provider-tab-btn" data-provider="gemini" type="button">Gemini (5)</button>
+        <button class="provider-tab-btn" data-provider="groq" type="button">Groq Orpheus (12)</button>
+        <button class="provider-tab-btn" data-provider="cloudflare" type="button">Cloudflare (9)</button>
       </div>
 
-      <!-- Search & Filters -->
-      <div class="px-5 py-3 border-b border-white/[0.04] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
-        <div class="relative flex-1 max-w-md">
-          <svg class="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="w-full h-9 pl-9 pr-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/50 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="voice-search-field" placeholder="Search voice actors, accents, tones..." type="text"/>
+      <div class="vx-drawer-controls">
+        <div class="vx-drawer-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input id="voice-search-field" type="text" placeholder="Search voice actors, accents, tones..." />
         </div>
-        
-        <!-- Filter Pills -->
-        <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none" id="drawer-filters">
-          <button class="filter-pill active px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider bg-surface-container-highest text-primary cursor-pointer" data-filter="all" type="button">All</button>
-          <button class="filter-pill px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-outline hover:text-primary bg-surface-container cursor-pointer" data-filter="favorites" type="button">★ Favs (<span id="fav-count-badge">0</span>)</button>
-          <button class="filter-pill px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-outline hover:text-primary bg-surface-container cursor-pointer" data-filter="Female" type="button">Female</button>
-          <button class="filter-pill px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-outline hover:text-primary bg-surface-container cursor-pointer" data-filter="Male" type="button">Male</button>
-          <button class="filter-pill px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-outline hover:text-primary bg-surface-container cursor-pointer" data-filter="recommended" type="button">★ Picks</button>
+        <div class="drawer-filters" id="drawer-filters">
+          <button class="filter-pill active" data-filter="all" type="button">All</button>
+          <button class="filter-pill" data-filter="favorites" type="button">Favs (<span id="fav-count-badge">0</span>)</button>
+          <button class="filter-pill" data-filter="Female" type="button">Female</button>
+          <button class="filter-pill" data-filter="Male" type="button">Male</button>
+          <button class="filter-pill" data-filter="recommended" type="button">Picks</button>
         </div>
       </div>
 
-      <!-- Voices Grid List (Spacious 3-Column Responsive Grid) -->
-      <div class="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 content-start" id="drawer-voices-list">
-        <!-- Rendered dynamically by app.js -->
-      </div>
+      <div class="drawer-voices-grid" id="drawer-voices-list"></div>
     </div>
   </div>
 
   <!-- =====================================================================
-       5. ENGINE SETTINGS & API KEYS MODAL
+       5. ENGINE SETTINGS & KEYS MODAL
        ===================================================================== -->
-  <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 transition-opacity duration-300" id="settings-modal-backdrop">
-    <div class="w-full max-w-lg rounded-2xl bg-surface-container-low border border-white/[0.08] shadow-2xl flex flex-col max-h-[88vh] overflow-hidden" id="settings-modal">
-      
-      <div class="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] shrink-0">
+  <div class="vx-backdrop hidden" id="settings-modal-backdrop">
+    <div class="vx-modal" id="settings-modal" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="vx-drag-pill" aria-hidden="true"></div>
+      <div class="vx-modal__head">
         <div>
-          <h3 class="font-display text-xl text-primary font-normal">Settings</h3>
-          <p class="font-mono text-xs text-outline mt-0.5">Keys &amp; Playback</p>
+          <h3 class="vx-modal__title">Settings</h3>
+          <p class="vx-modal__sub">Appearance, Playback &amp; Provider Keys</p>
         </div>
-        <button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary bg-surface-container" id="btn-close-settings-modal" aria-label="Close settings" type="button">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button class="vx-circle-btn" id="btn-close-settings-modal" type="button" aria-label="Close settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <div class="settings-modal__body flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3.5">
-        <!-- Autoplay Toggle -->
-        <label class="flex items-center justify-between p-3.5 rounded-xl bg-surface-container border border-white/[0.06] cursor-pointer">
+      <div class="vx-modal__body settings-modal__body">
+        <div class="vx-setting-box">
           <div>
-            <span class="text-xs font-medium text-primary block">Auto-Play Audio</span>
-            <span class="text-[11px] text-on-surface-variant">Start playback automatically after synthesis</span>
+            <span class="vx-setting-box__title">Studio Theme</span>
+            <span class="vx-setting-box__desc" id="settings-theme-desc">Warm Paper Light</span>
           </div>
-          <input class="accent-white cursor-pointer w-4 h-4" id="toggle-autoplay" type="checkbox" checked/>
+          <button class="vx-btn-subtle" id="btn-settings-theme" type="button">Switch to Dark</button>
+        </div>
+
+        <label class="vx-setting-box">
+          <div>
+            <span class="vx-setting-box__title">Auto-Play Audio</span>
+            <span class="vx-setting-box__desc">Start playback immediately when buffer opens</span>
+          </div>
+          <span class="vx-switch">
+            <input id="toggle-autoplay" type="checkbox" checked />
+            <span class="vx-switch__slider"></span>
+          </span>
         </label>
 
-        <!-- Android In-App Updates & Version Info -->
         <download-app variant="settings" manifest-url="/latest.json"></download-app>
 
-        <!-- Collapsible Personal API Key Overrides -->
-        <details class="rounded-xl bg-surface-container border border-white/[0.06] p-3.5 group" id="settings-keys-accordion">
-          <summary class="flex items-center justify-between cursor-pointer list-none select-none">
+        <details class="vx-accordion" id="settings-keys-accordion">
+          <summary>
             <div>
-              <span class="text-xs font-medium text-primary block">Custom API Keys</span>
-              <span class="text-[11px] text-on-surface-variant">Server credentials active · Optional overrides</span>
+              <span class="vx-setting-box__title">Custom API Keys</span>
+              <span class="vx-setting-box__desc">Server keys active · Optional per-provider overrides</span>
             </div>
-            <svg class="w-4 h-4 text-on-surface-variant transition-transform group-open:rotate-180 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg class="vx-accordion__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </summary>
 
-          <div class="space-y-3.5 pt-3.5 mt-3.5 border-t border-white/[0.06]">
-        <!-- ElevenLabs -->
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-medium text-primary">ElevenLabs API Key</span>
-            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-elevenlabs">Server Active</span>
-          </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-elevenlabs" placeholder="sk_... (Optional custom key)" type="password"/>
-        </div>
-
-        <!-- Cartesia -->
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-medium text-primary">Cartesia API Key</span>
-            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-cartesia">Server Active</span>
-          </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-cartesia" placeholder="sk_car_... (Optional custom key)" type="password"/>
-        </div>
-
-        <!-- Google Gemini -->
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-medium text-primary">Google Gemini API Key</span>
-            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-gemini">Server Active</span>
-          </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-gemini" placeholder="AIzaSy... (Optional custom key)" type="password"/>
-        </div>
-
-        <!-- Groq -->
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-medium text-primary">Groq API Key (Orpheus &amp; Whisper)</span>
-            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-groq">Server Active</span>
-          </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-groq" placeholder="gsk_... (Optional custom key)" type="password"/>
-        </div>
-
-        <!-- Deepgram -->
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-medium text-primary">Deepgram API Key</span>
-            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-deepgram">Server Active</span>
-          </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-deepgram" placeholder="Optional custom key" type="password"/>
-        </div>
-
-        <!-- Mistral -->
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-medium text-primary">Mistral AI Key</span>
-            <span class="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20" id="pill-status-mistral">Server Active</span>
-          </div>
-          <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none focus:border-white/[0.15]" id="input-key-mistral" placeholder="Optional custom key" type="password"/>
-        </div>
-
-        <!-- Cloudflare -->
-        <div class="grid grid-cols-2 gap-2">
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-primary">Cloudflare Token</span>
-            <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-key-cf-token" placeholder="Optional" type="password"/>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-primary">Account ID</span>
-            <input class="w-full h-9 px-3 rounded-lg bg-surface-container-low text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-key-cf-account" placeholder="Optional" type="text"/>
-          </div>
-        </div>
-
-        <!-- OpenRouter -->
-        <div class="hidden">
-          <input id="input-key-openrouter" type="password"/>
-          <span id="pill-status-openrouter"></span>
-          <span id="pill-status-cloudflare"></span>
-        </div>
+          <div class="vx-accordion__body">
+            <div class="vx-field">
+              <div class="vx-field__head"><span>ElevenLabs API Key</span><span class="status-pill" id="pill-status-elevenlabs">Server Active</span></div>
+              <input class="vx-input" id="input-key-elevenlabs" type="password" placeholder="sk_... (Optional custom key)" />
+            </div>
+            <div class="vx-field">
+              <div class="vx-field__head"><span>Cartesia API Key</span><span class="status-pill" id="pill-status-cartesia">Server Active</span></div>
+              <input class="vx-input" id="input-key-cartesia" type="password" placeholder="sk_car_... (Optional custom key)" />
+            </div>
+            <div class="vx-field">
+              <div class="vx-field__head"><span>Google Gemini API Key</span><span class="status-pill" id="pill-status-gemini">Server Active</span></div>
+              <input class="vx-input" id="input-key-gemini" type="password" placeholder="AIzaSy... (Optional custom key)" />
+            </div>
+            <div class="vx-field">
+              <div class="vx-field__head"><span>Groq API Key (Orpheus &amp; Whisper)</span><span class="status-pill" id="pill-status-groq">Server Active</span></div>
+              <input class="vx-input" id="input-key-groq" type="password" placeholder="gsk_... (Optional custom key)" />
+            </div>
+            <div class="vx-field">
+              <div class="vx-field__head"><span>Deepgram API Key</span><span class="status-pill" id="pill-status-deepgram">Server Active</span></div>
+              <input class="vx-input" id="input-key-deepgram" type="password" placeholder="Optional custom key" />
+            </div>
+            <div class="vx-field">
+              <div class="vx-field__head"><span>Mistral AI Key</span><span class="status-pill" id="pill-status-mistral">Server Active</span></div>
+              <input class="vx-input" id="input-key-mistral" type="password" placeholder="Optional custom key" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="vx-field">
+                <div class="vx-field__head"><span>Cloudflare Token</span></div>
+                <input class="vx-input" id="input-key-cf-token" type="password" placeholder="Optional" />
+              </div>
+              <div class="vx-field">
+                <div class="vx-field__head"><span>Account ID</span></div>
+                <input class="vx-input" id="input-key-cf-account" type="text" placeholder="Optional" />
+              </div>
+            </div>
+            <div class="hidden">
+              <input id="input-key-openrouter" type="password" />
+              <span id="pill-status-openrouter"></span>
+              <span id="pill-status-cloudflare"></span>
+            </div>
           </div>
         </details>
       </div>
 
-      <div class="settings-modal__footer flex items-center justify-between gap-2 px-5 py-3.5 border-t border-white/[0.06] bg-surface-container-low shrink-0">
-        <button class="px-3 py-2 rounded-lg text-[11px] font-mono uppercase tracking-wider text-outline hover:text-primary transition-colors" id="btn-copy-diag" type="button" title="Copy a diagnostic log to share if playback misbehaves">Diagnostics</button>
-        <div class="flex items-center gap-2">
-          <button class="px-3.5 py-2 rounded-lg text-xs font-mono uppercase text-outline hover:text-primary transition-colors" id="btn-reset-default-keys" type="button">Reset</button>
-          <button class="px-5 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium hover:bg-primary-container transition-colors shadow-sm" id="btn-save-custom-keys" type="button">Save</button>
+      <div class="vx-modal__foot settings-modal__footer">
+        <button class="vx-btn-subtle" id="btn-copy-diag" type="button" title="Copy diagnostic log">Diagnostics</button>
+        <div style="display:flex;gap:8px">
+          <button class="vx-btn-subtle" id="btn-reset-default-keys" type="button">Reset</button>
+          <button class="vx-btn-solid" id="btn-save-custom-keys" type="button">Save</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- =====================================================================
-       6. DEVELOPER API / AI AGENT INTEGRATION MODAL
+       6. DEVELOPER API MODAL
        ===================================================================== -->
-  <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 transition-opacity duration-300" id="api-modal-backdrop">
-    <div class="w-full max-w-lg rounded-2xl bg-surface-container-low border border-white/[0.08] shadow-2xl p-5 sm:p-6 flex flex-col" id="api-modal">
-      <div class="flex items-center justify-between pb-3 border-b border-white/[0.06] mb-3">
+  <div class="vx-backdrop hidden" id="api-modal-backdrop">
+    <div class="vx-modal" id="api-modal" role="dialog" aria-modal="true" aria-label="Developer API">
+      <div class="vx-drag-pill" aria-hidden="true"></div>
+      <div class="vx-modal__head">
         <div>
-          <h3 class="font-display text-xl text-primary font-normal">Developer API</h3>
-          <p class="font-mono text-xs text-outline mt-0.5">Agent Keys &amp; REST Endpoints</p>
+          <h3 class="vx-modal__title">Developer API</h3>
+          <p class="vx-modal__sub">Agent Keys &amp; REST Endpoints</p>
         </div>
-        <button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary bg-surface-container" id="btn-close-api-modal" aria-label="Close API modal" type="button">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button class="vx-circle-btn" id="btn-close-api-modal" type="button" aria-label="Close API modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      
-      <p class="text-xs text-on-surface-variant mb-3 leading-relaxed">
-        Generate authorized API tokens to connect autonomous coding agents, CLI tools, or external services to VoxFlow.
-      </p>
 
-      <div class="flex items-center gap-2 mb-3">
-        <input class="flex-1 h-9 px-3 rounded-lg bg-surface-container text-xs text-primary placeholder:text-outline/40 border border-white/[0.04] focus:outline-none" id="input-api-key-name" placeholder="Key description (e.g. Cursor Agent)" type="text"/>
-        <button class="px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium" id="btn-generate-api-key" type="button">Generate</button>
-      </div>
+      <div class="vx-modal__body">
+        <p style="font-size:0.84rem;color:var(--text-secondary)">
+          Generate signed API tokens to connect autonomous coding agents, CLI tools, or external apps to Voice Actors.
+        </p>
 
-      <div class="hidden flex flex-col gap-2 p-3 rounded-lg bg-surface-container-lowest border border-white/[0.04] mb-3" id="api-key-display-area">
-        <span class="font-mono text-[10px] text-tertiary-fixed-dim uppercase tracking-wider">Your API Token (Copy Now):</span>
-        <code class="font-mono text-xs text-emerald-400 break-all select-all" id="display-api-key">vox_...</code>
-        <div class="flex items-center gap-2 pt-1">
-          <button class="font-mono text-[10px] text-primary hover:underline uppercase" id="btn-copy-api-key" type="button">Copy Key</button>
-          <span class="text-outline text-[10px]">•</span>
-          <button class="font-mono text-[10px] text-error hover:underline uppercase" id="btn-revoke-api-key" type="button">Revoke</button>
+        <div class="vx-api-row">
+          <input class="vx-input" id="input-api-key-name" type="text" placeholder="Key label (e.g. Cursor Agent)" />
+          <button class="vx-btn-solid" id="btn-generate-api-key" type="button">Generate</button>
+        </div>
+
+        <div class="vx-api-token-box hidden" id="api-key-display-area">
+          <span class="vx-eyebrow">Your API Token</span>
+          <code id="display-api-key" style="font-family:var(--font-code);font-size:0.78rem;word-break:break-all;color:var(--status-ready);user-select:all"></code>
+          <div style="display:flex;gap:12px">
+            <button class="vx-btn-text" id="btn-copy-api-key" type="button">Copy Key</button>
+            <button class="vx-btn-text" id="btn-revoke-api-key" type="button" style="color:var(--danger)">Clear Key</button>
+          </div>
+        </div>
+
+        <div class="vx-field">
+          <span class="vx-eyebrow">Sample cURL Request</span>
+          <pre class="vx-code-pre" id="api-sample-curl">curl -X POST https://voxflow-809.pages.dev/api/tts \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello from Voice Actors", "voice": "flux-alexis-en"}' \
+  --output speech.mp3</pre>
         </div>
       </div>
 
-      <div class="flex flex-col gap-1">
-        <span class="font-mono text-[10px] text-outline uppercase tracking-wider">Sample cURL Command:</span>
-        <pre class="font-mono text-[11px] text-on-surface-variant bg-surface-container p-2.5 rounded-lg overflow-x-auto select-all" id="api-sample-curl">curl -X POST https://voxflow-809.pages.dev/api/tts \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Hello from VoxFlow", "voice": "flux-alexis-en"}' \
-  --output speech.mp3</pre>
-      </div>
-
-      <div class="flex justify-end pt-4 mt-2 border-t border-white/[0.04]">
-        <button class="px-4 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-mono uppercase text-primary transition-colors" id="btn-close-api-modal-done" type="button">Done</button>
+      <div class="vx-modal__foot" style="justify-content:flex-end">
+        <button class="vx-btn-solid" id="btn-close-api-modal-done" type="button">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Screenshot to Speech Multimodal Extractor -->
-  <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300 hidden" id="modal-screenshot-scan" role="dialog" aria-modal="true" aria-label="Screenshot to Speech Scanner">
-    <div class="bg-surface-container-high border border-white/[0.08] rounded-2xl w-full max-w-lg p-5 shadow-2xl flex flex-col gap-4 animate-scale-up">
-      <div class="flex items-center justify-between pb-3 border-b border-white/[0.06]">
-        <div class="flex items-center gap-2">
-          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
-          <h2 class="font-sans font-semibold text-sm text-primary">Screenshot to Speech</h2>
+  <!-- =====================================================================
+       7. SCREENSHOT TO SPEECH VISION MODAL
+       ===================================================================== -->
+  <div class="vx-backdrop hidden" id="modal-screenshot-scan" role="dialog" aria-modal="true" aria-label="Screenshot to Speech Scanner">
+    <div class="vx-modal">
+      <div class="vx-drag-pill" aria-hidden="true"></div>
+      <div class="vx-modal__head">
+        <div>
+          <h3 class="vx-modal__title">Screenshot to Speech</h3>
+          <p class="vx-modal__sub">Extract clean text, summary, or error digest</p>
         </div>
-        <button class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-highest flex items-center justify-center text-outline hover:text-primary transition-colors cursor-pointer" id="btn-close-screenshot-modal" type="button" aria-label="Close modal">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button class="vx-circle-btn" id="btn-close-screenshot-modal" type="button" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <!-- Dropzone & Preview -->
-      <div class="relative flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/[0.12] hover:border-primary/50 rounded-xl bg-surface-container-lowest/50 transition-colors cursor-pointer text-center group" id="screenshot-dropzone">
-        <input type="file" id="screenshot-file-input" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" accept="image/*" />
-        
-        <!-- Empty State View -->
-        <div class="flex flex-col items-center gap-2" id="screenshot-drop-prompt">
-          <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-outline group-hover:text-primary transition-colors">
-            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <div class="vx-modal__body">
+        <div class="vx-scan-drop" id="screenshot-dropzone">
+          <input type="file" id="screenshot-file-input" accept="image/*" />
+          <div id="screenshot-drop-prompt" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="color:var(--accent-signal)">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <p style="font-size:0.86rem;font-weight:600">Drop screenshot, tap to upload, or paste (Ctrl+V)</p>
+            <p style="font-size:0.74rem;color:var(--text-secondary)">Filters out status bars, notches, battery icons, and ads</p>
           </div>
-          <p class="font-sans text-xs text-primary font-medium">Drop screenshot here, tap to upload, or paste with <kbd class="px-1.5 py-0.5 rounded bg-surface-container-highest text-[10px] font-mono">Ctrl+V</kbd></p>
-          <p class="font-sans text-[11px] text-on-surface-variant">Filters out notch, clock, battery, and ads automatically</p>
+          <div class="hidden" id="screenshot-preview-wrap" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+            <img id="screenshot-preview-img" src="" alt="Screenshot preview" style="max-height:190px;border-radius:10px;object-fit:contain;border:1px solid var(--border-subtle)" />
+            <button type="button" class="vx-btn-text" id="btn-remove-screenshot" style="color:var(--danger)">Remove Image</button>
+          </div>
         </div>
 
-        <!-- Image Preview View (Hidden by default) -->
-        <div class="hidden flex flex-col items-center gap-2 w-full" id="screenshot-preview-wrap">
-          <img id="screenshot-preview-img" src="" alt="Screenshot preview" class="max-h-48 rounded-lg object-contain border border-white/[0.08]" />
-          <button type="button" class="font-mono text-[11px] text-error hover:underline uppercase pt-1" id="btn-remove-screenshot">Remove Image</button>
+        <div class="vx-field">
+          <span class="vx-eyebrow">Extraction Mode</span>
+          <div class="vx-scan-modes" id="screenshot-mode-selector">
+            <label class="mode-chip is-selected" data-mode="clean">
+              <input type="radio" name="extract-mode" value="clean" class="hidden" checked />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+              <span>Clean Text</span>
+            </label>
+            <label class="mode-chip" data-mode="summary">
+              <input type="radio" name="extract-mode" value="summary" class="hidden" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" />
+                <line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+              <span>Summary</span>
+            </label>
+            <label class="mode-chip" data-mode="devlog">
+              <input type="radio" name="extract-mode" value="devlog" class="hidden" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="4 17 10 11 4 5" />
+                <line x1="12" y1="19" x2="20" y2="19" />
+              </svg>
+              <span>Dev Log</span>
+            </label>
+          </div>
         </div>
       </div>
 
-      <!-- Mode Selector -->
-      <div class="flex flex-col gap-1.5">
-        <label class="font-mono text-[10px] uppercase tracking-wider text-tertiary-fixed-dim">Extraction Mode</label>
-        <div class="grid grid-cols-3 gap-2" id="screenshot-mode-selector">
-          <label class="flex flex-col items-center justify-center p-2.5 rounded-lg border border-primary/40 bg-primary/10 text-primary cursor-pointer transition-all text-center mode-chip cursor-pointer" data-mode="clean">
-            <input type="radio" name="extract-mode" value="clean" class="hidden" checked />
-            <svg class="w-4 h-4 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span class="font-sans text-xs font-medium leading-tight">Clean Text</span>
-            <span class="text-[9px] text-on-surface-variant mt-0.5">Verbatim</span>
-          </label>
-
-          <label class="flex flex-col items-center justify-center p-2.5 rounded-lg border border-white/[0.06] bg-surface-container text-on-surface hover:text-primary cursor-pointer transition-all text-center mode-chip cursor-pointer" data-mode="summary">
-            <input type="radio" name="extract-mode" value="summary" class="hidden" />
-            <svg class="w-4 h-4 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            <span class="font-sans text-xs font-medium leading-tight">Summary</span>
-            <span class="text-[9px] text-on-surface-variant mt-0.5">Spoken Audio</span>
-          </label>
-
-          <label class="flex flex-col items-center justify-center p-2.5 rounded-lg border border-white/[0.06] bg-surface-container text-on-surface hover:text-primary cursor-pointer transition-all text-center mode-chip cursor-pointer" data-mode="devlog">
-            <input type="radio" name="extract-mode" value="devlog" class="hidden" />
-            <svg class="w-4 h-4 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            <span class="font-sans text-xs font-medium leading-tight">Dev Log</span>
-            <span class="text-[9px] text-on-surface-variant mt-0.5">Error Digest</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-        <button class="px-3 py-1.5 rounded-lg text-xs font-mono uppercase text-outline hover:text-primary transition-colors cursor-pointer" id="btn-cancel-screenshot" type="button">Cancel</button>
-        <button class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-medium shadow-md hover:bg-primary-container active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" id="btn-extract-screenshot" type="button" disabled>
-          <svg class="w-4 h-4 shrink-0" id="extract-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+      <div class="vx-modal__foot">
+        <button class="vx-btn-subtle" id="btn-cancel-screenshot" type="button">Cancel</button>
+        <button class="vx-btn-solid" id="btn-extract-screenshot" type="button" disabled style="display:inline-flex;align-items:center;gap:8px">
+          <svg id="extract-spinner-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            <line x1="7" y1="12" x2="17" y2="12" />
+          </svg>
           <span id="label-extract-btn">Extract &amp; Insert</span>
         </button>
       </div>
     </div>
   </div>
 
-    <!-- Toast Deck for Smooth Feedback -->
-  <div class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col gap-2 items-center" id="toast-deck"></div>
+  <!-- Toast Deck -->
+  <div class="toast-deck" id="toast-deck"></div>
+  <div id="toast-stack" class="hidden" aria-live="polite"></div>
 
-  <!-- Hidden library drawer backdrop for backward compatibility with app.js -->
-  <div class="hidden" id="library-drawer-backdrop"><button id="btn-close-library-drawer"></button></div>
+  <!-- Legacy drawer compatibility stub -->
+  <div class="hidden" id="library-drawer-backdrop"><button id="btn-close-library-drawer" type="button"></button></div>
 
-  <!-- Android Modules & Web Components -->
+  <!-- Command Palette (Ctrl+K) -->
+  <div id="command-palette" class="command-palette" role="dialog" aria-modal="true" aria-label="Voice palette" hidden>
+    <div class="command-palette-panel">
+      <label class="visually-hidden" for="palette-input">Search voices</label>
+      <input id="palette-input" class="palette-input" type="search" placeholder="Search 96 voices by name or language..." autocomplete="off" />
+      <div id="palette-list" class="palette-list"></div>
+    </div>
+  </div>
+
+  <!-- Native Android Modules & Web Components -->
   <script src="modules/back-navigation.js" type="module"></script>
   <script src="modules/UpdateManager.js" type="module"></script>
   <script src="components/DownloadApp.js" type="module"></script>
 
-  <div id="command-palette" class="command-palette" role="dialog" aria-modal="true" aria-label="Voice palette" hidden>
-    <div class="command-palette-panel">
-      <label class="visually-hidden" for="palette-input">Search voices</label>
-      <input id="palette-input" class="input palette-input" type="search" placeholder="Search voices" autocomplete="off" />
-      <div id="palette-list" class="palette-list"></div>
-    </div>
-  </div>
-  <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
-
-  <!-- Core App Controller Script -->
+  <!-- Core App Controller -->
   <script type="module" src="app.js"></script>
 </body>
 </html>

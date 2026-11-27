@@ -2,6 +2,7 @@ import { listAudio, getAudio, deleteAudio } from './db.js';
 import { buildFilename, extFromMime } from './filename.js';
 
 let currentAudio = null;
+let currentAudioId = null;
 let currentObjectUrl = null;
 let onStateChange = null;
 let renderToken = 0;
@@ -27,15 +28,25 @@ function formatDate(ts) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function syncVaultPlayButtons() {
+  const playingNow = !!currentAudio && !currentAudio.paused;
+  document.querySelectorAll('#vault-list .archive-play').forEach((btn) => {
+    const active = playingNow && btn.dataset.audioId === currentAudioId;
+    btn.classList.toggle('is-playing', active);
+    const label = btn.querySelector('span');
+    if (label) label.textContent = active ? 'Pause' : 'Play';
+  });
+}
+
 export async function renderVault(container) {
   if (!container) return;
   const token = ++renderToken;
   container.innerHTML = '';
 
-  for (let i = 0; i < 3; i += 1) {
+  for (let i = 0; i < 2; i += 1) {
     const sk = document.createElement('div');
     sk.className = 'skeleton-row-tall';
-    sk.style.height = '64px';
+    sk.style.height = '84px';
     container.appendChild(sk);
   }
 
@@ -47,7 +58,7 @@ export async function renderVault(container) {
     container.innerHTML = '';
     const error = document.createElement('p');
     error.className = 'vault-error';
-    error.textContent = 'Could not read vault';
+    error.textContent = 'Could not read audio vault';
     container.appendChild(error);
     return;
   }
@@ -58,7 +69,7 @@ export async function renderVault(container) {
   if (items.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'vault-empty';
-    empty.textContent = 'No audio yet. Generate a clip in Studio.';
+    empty.textContent = 'No audio saved yet. Synthesize speech in Studio to keep playable clips offline.';
     container.appendChild(empty);
     return;
   }
@@ -77,7 +88,7 @@ export async function renderVault(container) {
 
     const metaLine = document.createElement('p');
     metaLine.className = 'archive-item-meta';
-    metaLine.textContent = `${meta.voiceName || 'voice'} · ${formatDuration(meta.duration)} · ${formatDate(meta.createdAt)}`;
+    metaLine.textContent = `${meta.voiceName || 'Voice'} · ${formatDuration(meta.duration)} · ${formatDate(meta.createdAt)}`;
 
     const actions = document.createElement('div');
     actions.className = 'archive-item-actions';
@@ -85,8 +96,15 @@ export async function renderVault(container) {
     const playBtn = document.createElement('button');
     playBtn.type = 'button';
     playBtn.className = 'btn-secondary archive-play';
+    playBtn.dataset.audioId = meta.id;
     playBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg><span>Play</span>';
-    playBtn.addEventListener('click', () => replay(meta.id));
+    playBtn.addEventListener('click', () => {
+      if (currentAudioId === meta.id && currentAudio) {
+        togglePlayPause();
+      } else {
+        replay(meta.id);
+      }
+    });
 
     const dlBtn = document.createElement('button');
     dlBtn.type = 'button';
@@ -100,6 +118,7 @@ export async function renderVault(container) {
     delBtn.setAttribute('aria-label', `Delete ${meta.filename}`);
     delBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     delBtn.addEventListener('click', async () => {
+      if (currentAudioId === meta.id) stopVaultPlayback();
       await deleteAudio(meta.id);
       await renderVault(container);
       notify();
@@ -114,6 +133,7 @@ export async function renderVault(container) {
     card.appendChild(actions);
     container.appendChild(card);
   }
+  syncVaultPlayButtons();
 }
 
 export async function replay(id) {
@@ -126,9 +146,15 @@ export async function replay(id) {
   currentObjectUrl = URL.createObjectURL(blob);
   if (!currentAudio) {
     currentAudio = new Audio();
+    currentAudio.addEventListener('ended', syncVaultPlayButtons);
+    currentAudio.addEventListener('pause', syncVaultPlayButtons);
+    currentAudio.addEventListener('play', syncVaultPlayButtons);
   }
+  currentAudioId = id;
+  currentAudio.dataset.audioId = id;
   currentAudio.src = currentObjectUrl;
   await currentAudio.play();
+  syncVaultPlayButtons();
   notify();
 }
 
@@ -140,6 +166,8 @@ export function stopVaultPlayback() {
     URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = null;
   }
+  currentAudioId = null;
+  syncVaultPlayButtons();
   notify();
 }
 
@@ -163,6 +191,7 @@ export function togglePlayPause() {
   if (!currentAudio) return;
   if (currentAudio.paused) currentAudio.play();
   else currentAudio.pause();
+  syncVaultPlayButtons();
   notify();
 }
 

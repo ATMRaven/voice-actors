@@ -1,9 +1,8 @@
-const CACHE_NAME = 'voice-actors-v5';
+const CACHE_NAME = 'voice-actors-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
-  '/styles-overhaul.css',
   '/mobile.css',
   '/app.js',
   '/manifest.json',
@@ -49,12 +48,10 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
 
-  // Bypass API requests and release manifest to network directly
   if (url.pathname.startsWith('/api/') || url.pathname === '/latest.json') {
     return;
   }
 
-  // Previews: Cache first, network fallback for fast local replay
   if (url.pathname.startsWith('/previews/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
@@ -74,8 +71,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation & same-origin JS/CSS shell assets: Network first, cache fallback
-  // Ensures fresh HTML is never paired with stale cached app.js/styles.css.
   const isCodeOrStyle = url.origin === self.location.origin && /\.(js|css|html)$/.test(url.pathname);
   if (event.request.mode === 'navigate' || isCodeOrStyle) {
     event.respondWith(
@@ -90,7 +85,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static media/icons: Stale-while-revalidate
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {

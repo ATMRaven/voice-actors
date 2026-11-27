@@ -1,852 +1,314 @@
 /* =====================================================================
-   VOICE ACTORS — MINIMALIST MOBILE UX OVERHAUL (< 768px)
-   Clean, zero-bloat obsidian studio tailored for Android APK & mobile web.
-   Self-contained fallbacks ensure crisp layout even without external CDNs.
+   VOICE ACTORS — NATIVE MOBILE & ANDROID APK ERGONOMICS (< 768px)
+   Flush native bottom tab bar, bottom-sheet modals, 44px+ hit targets
    ===================================================================== */
-
-/* ---------- 0. Global phone hygiene & offline utility safety ---------- */
-html {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
-
-/* Fallback button/modal resets if Tailwind CDN is offline/slow */
-[hidden] {
-  display: none !important;
-}
-
-button {
-  background: transparent;
-  border: 0;
-}
-
-#gen-progress {
-  display: none;
-}
 
 @media (max-width: 767px) {
   :root {
-    --dock-h: 60px;
-    --dock-gap: 10px;
-    --phone-pad: 14px;
+    --header-h: 54px;
+    --dock-h: 62px;
   }
 
-  body {
-    overflow-x: hidden;
-    background: var(--bg-page, #121315);
-    color: var(--text-main, #f4f5f7);
-    overscroll-behavior-y: none;
-  }
-
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Prevent iOS/Android auto-zoom on field focus */
+  /* Prevent Android/iOS input zoom on focus */
   input,
   textarea,
   select {
     font-size: 16px !important;
   }
 
-  /* ---------- 1. Compact Header (52px) ------------------------------ */
+  /* ---------- 1. Compact Header ---------- */
   .vx-header__bar {
-    height: 52px;
-    padding-inline: var(--phone-pad);
-    gap: 0.5rem;
-  }
-
-  .vx-brand {
-    gap: 0.5rem;
-    flex: 1 1 auto;
-    min-width: 0;
+    padding-inline: 14px;
+    gap: 8px;
   }
 
   .vx-brand__mark {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-  }
-
-  .vx-brand__mark svg {
-    width: 15px;
-    height: 15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
   }
 
   .vx-brand__name {
-    font-size: 0.925rem;
-    letter-spacing: -0.015em;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.94rem;
   }
 
   .vx-nav,
-  #btn-open-api,
-  #engine-status {
+  .vx-palette-trigger {
     display: none !important;
   }
 
   .vx-actions {
     gap: 6px;
-    flex-shrink: 0;
   }
 
   .vx-iconbtn {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
   }
 
-  .vx-iconbtn svg {
-    width: 16px;
-    height: 16px;
+  /* ---------- 2. Main Viewport Clearance ---------- */
+  .vx-main {
+    padding: calc(var(--header-h) + var(--sat) + 12px) 14px calc(var(--dock-h) + var(--sab) + 22px);
   }
 
-  .vx-menu__panel {
-    right: 0;
-    left: auto;
-    min-width: min(78vw, 270px);
+  .vx-studio-title,
+  .vx-view-title {
+    font-size: 1.5rem;
   }
 
-  /* ---------- 2. Page Frame (Single Bottom Bar Clearance) ----------- */
-  main {
-    padding-top: calc(52px + env(safe-area-inset-top, 0px) + 10px) !important;
-    padding-bottom: calc(var(--dock-h) + var(--dock-gap) + env(safe-area-inset-bottom, 0px) + 24px) !important;
-    padding-inline: var(--phone-pad) !important;
-    max-width: 100% !important;
-  }
-
-  /* ---------- 3. Studio Top Bar (Compact Studio + Engine Pill) ------ */
-  .vx-studio-head {
-    padding-top: 0 !important;
-    padding-bottom: 10px !important;
-    align-items: center !important;
-    gap: 8px;
-  }
-
-  .vx-studio-head__title h1 {
-    font-family: var(--font-main, sans-serif) !important;
-    font-size: 0.72rem !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.14em !important;
-    text-transform: uppercase;
-    color: var(--text-secondary, #a4a8ae) !important;
-    margin: 0;
-  }
-
-  .vx-studio-head__title p {
-    display: none !important;
-  }
-
-  #dock-model-pill {
-    padding: 6px 11px !important;
-    gap: 6px !important;
-    border-radius: 9999px !important;
-    background: var(--bg-card, #1f2021) !important;
-    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)) !important;
-    color: var(--text-main, #f4f5f7) !important;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  #dock-model-name {
-    max-width: 145px;
-    font-size: 11px !important;
-  }
-
-  #menu-model-select {
-    width: min(88vw, 310px);
-    right: 0;
-    max-height: 60vh;
-    overflow-y: auto;
-    background: #1b1c1d;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    padding: 6px;
-  }
-
-  /* Pinned voices rail — hidden completely when empty */
-  .favorites-strip {
-    gap: 6px;
-    min-height: 0;
-    padding: 0;
-    margin-bottom: 8px;
-  }
-
-  .favorites-strip:has(.favorites-empty),
-  .favorites-empty {
+  .vx-studio-sub {
     display: none;
   }
 
-  .favorite-chip {
-    height: 34px;
-    padding: 0 11px;
-    font-size: 12px;
+  .vx-studio-layout {
+    gap: 12px;
   }
 
-  /* ---------- 4. Single-Row Active Voice Card ----------------------- */
-  #active-persona-card {
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 10px;
-    padding: 10px 12px !important;
-    margin-bottom: 10px !important;
-    border-radius: 14px !important;
-    background: var(--bg-card, #1f2021) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    cursor: pointer;
+  /* Reorder mobile studio: Console Voice/Engine header feel + Script + Speed + CTA */
+  .vx-script-card {
+    padding: 14px;
+    min-height: 210px;
+    border-radius: var(--radius-lg);
   }
 
-  #active-persona-card > div:first-child {
-    gap: 10px;
-    min-width: 0;
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
+  .vx-script-toolbar {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
   }
 
-  #dock-voice-avatar {
-    width: 38px !important;
-    height: 38px !important;
-    font-size: 0.95rem !important;
-  }
-
-  #dock-voice-name {
-    font-size: 0.95rem !important;
-    line-height: 1.25;
-  }
-
-  .vx-verified-icon {
-    display: none !important;
-  }
-
-  #dock-voice-accent {
-    font-size: 10.5px !important;
-    letter-spacing: 0.04em !important;
-    line-height: 1.25;
-  }
-
-  #active-persona-card > div:last-child {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  #favorite-toggle,
-  #btn-dock-voice-sample,
-  #dock-voice-pill {
-    width: 36px;
-    height: 36px;
-    min-height: 36px !important;
-    padding: 0 !important;
-    border-radius: 50% !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-hover, #292a2b) !important;
-    border: 1px solid rgba(255, 255, 255, 0.07) !important;
-    color: var(--text-main, #f4f5f7);
-    position: relative;
-  }
-
-  #favorite-toggle span,
-  #btn-dock-voice-sample #sample-label,
-  #dock-voice-pill span {
-    display: none !important;
-  }
-
-  #favorite-toggle[aria-pressed="true"] {
-    color: var(--accent-amber, #efbe82) !important;
-    border-color: rgba(239, 190, 130, 0.35) !important;
-    background: rgba(239, 190, 130, 0.12) !important;
-  }
-
-  #favorite-toggle[aria-pressed="true"] svg {
-    fill: currentColor;
-  }
-
-  /* ---------- 5. Minimalist Script Editor Card ---------------------- */
-  #textarea-stage {
-    padding: 12px !important;
-    border-radius: 14px !important;
-    margin-bottom: 10px !important;
-    background: var(--bg-card, #1f2021) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  }
-
-  #textarea-stage > div:first-child {
-    padding-bottom: 8px !important;
-    margin-bottom: 8px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .vx-script-title {
-    display: none !important;
+  .vx-script-label {
+    display: none;
   }
 
   .vx-script-actions {
-    display: grid !important;
+    width: 100%;
+    display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px !important;
-    width: 100%;
+    gap: 6px;
   }
 
-  #btn-scan-image,
-  #btn-paste,
-  #btn-load-file,
-  #btn-clear {
-    min-height: 34px;
-    padding: 0 6px !important;
-    border-radius: 9px !important;
-    display: inline-flex;
-    align-items: center;
+  .vx-tool-btn {
+    height: 38px;
+    padding: 0 6px;
     justify-content: center;
-    gap: 5px;
-    font-size: 11.5px !important;
-    font-family: var(--font-main, sans-serif) !important;
-    font-weight: 500;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    background: rgba(255, 255, 255, 0.04) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    color: var(--text-main, #f4f5f7) !important;
-    white-space: nowrap;
+    font-size: 0.76rem;
   }
 
-  #btn-clear {
-    color: var(--text-secondary, #a4a8ae) !important;
+  .vx-kbd-chip {
+    display: none;
   }
 
-  #text-input {
-    min-height: 124px !important;
-    max-height: 34vh;
-    overflow-y: auto;
+  .vx-textarea {
+    min-height: 132px;
+    max-height: 34dvh;
     font-size: 16px !important;
-    line-height: 1.55 !important;
-    padding-block: 4px;
-    background: transparent;
-    border: 0;
-    color: var(--text-main, #f4f5f7);
-    width: 100%;
-    resize: none;
+    line-height: 1.58;
   }
 
-  #textarea-stage > div:last-child {
-    padding-top: 8px !important;
-    margin-top: 4px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  .vx-spec-pill {
+    display: none;
   }
 
-  #textarea-stage > div:last-child span {
-    font-size: 10px !important;
-    letter-spacing: 0.05em;
+  .vx-actor-card {
+    padding: 12px 14px;
+    border-radius: var(--radius-lg);
   }
 
-  /* Hide decorative "48kHz out" pill on mobile */
-  #textarea-stage > div:last-child > div:last-child {
-    display: none !important;
+  .vx-actor-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.15rem;
   }
 
-  /* ---------- 6. Single-Row Speed Bar ------------------------------- */
+  .vx-verified-icon {
+    display: none;
+  }
+
+  .vx-pill-action {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .vx-pill-action > span:not(.vx-play-icon) {
+    display: none;
+  }
+
   .vx-speed-card {
-    padding: 10px 12px !important;
-    border-radius: 14px !important;
-    margin-bottom: 10px !important;
-    background: var(--bg-card, #1f2021) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  }
-
-  .vx-speed-card__inner {
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 12px !important;
-  }
-
-  .vx-speed-card__header {
-    display: contents !important;
-  }
-
-  .vx-speed-card__header > div:first-child {
-    flex-shrink: 0;
-  }
-
-  .vx-speed-card__header > div:first-child > span:first-child {
-    font-size: 12.5px !important;
-    color: var(--text-secondary, #a4a8ae) !important;
+    padding: 12px 14px;
+    border-radius: var(--radius-lg);
   }
 
   .vx-speed-sub {
-    display: none !important;
-  }
-
-  #dock-speed-pill {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  #dock-speed-label {
-    flex-shrink: 0;
-    min-width: 34px;
-    text-align: right;
-    font-size: 12px !important;
-    color: var(--accent-amber, #efbe82) !important;
-  }
-
-  /* ---------- 7. Generate CTA (Cleanly In-Flow, No Double Bar) ------ */
-  #cta-generate-zone {
-    position: static !important;
-    margin: 2px 0 12px !important;
-    padding: 0 !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-  }
-
-  #btn-main-generate {
-    height: 48px !important;
-    border-radius: 14px !important;
-    font-size: 0.95rem !important;
-    font-weight: 600 !important;
-    gap: 8px;
-    background: #ffffff !important;
-    color: #16171a !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-  }
-
-  #btn-cancel-generate {
-    height: 44px !important;
-    border-radius: 14px !important;
-    margin-top: 6px;
-    font-size: 11px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    background: rgba(127, 29, 29, 0.35);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    color: #fca5a5;
-  }
-
-  #btn-cancel-generate.hidden {
-    display: none !important;
+    display: none;
   }
 
   .vx-cta-latency {
+    display: none;
+  }
+
+  /* Hide CTA only when mobile soft keyboard covers screen */
+  body.keyboard-open .vx-dock {
     display: none !important;
   }
 
-  #gen-progress {
-    flex-direction: column;
-    gap: 5px;
-    padding: 0 2px 6px;
-  }
-
-  #gen-progress.is-active {
-    display: flex;
-  }
-
-  #gen-progress__track {
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
-    overflow: hidden;
-  }
-
-  #gen-progress__fill {
-    height: 100%;
-    width: 0%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #efbe82, #f7d9b0);
-    transition: width 240ms var(--ease-out, ease);
-  }
-
-  #gen-progress__label {
-    display: flex;
-    justify-content: space-between;
-    font-family: var(--font-code, monospace);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary, #a4a8ae);
-  }
-
-  /* ---------- 8. Player Card ---------------------------------------- */
-  #dock-player {
-    padding: 12px !important;
-    border-radius: 14px !important;
-    margin-bottom: 12px !important;
-    background: var(--bg-card, #1f2021) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  }
-
-  #waveform-scrub-zone {
-    height: 52px !important;
-    border-radius: 10px;
-  }
-
-  #dock-btn-play {
-    width: 44px !important;
-    height: 44px !important;
-    border-radius: 50% !important;
-    background: #ffffff !important;
-    color: #16171a !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #dock-player #btn-dock-download,
-  #dock-player #btn-toggle-reader {
-    width: 40px !important;
-    height: 40px !important;
-    border-radius: 50% !important;
-    background: var(--bg-hover, #292a2b) !important;
-    color: var(--text-main, #f4f5f7) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #dock-btn-play.needs-tap {
-    animation: tap-pulse 1.6s ease-in-out infinite;
-    box-shadow: 0 0 0 0 rgba(239, 190, 130, 0.55);
-  }
-
-  @keyframes tap-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(239, 190, 130, 0.5); }
-    70% { box-shadow: 0 0 0 12px rgba(239, 190, 130, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(239, 190, 130, 0); }
-  }
-
-  #player-time-display {
-    font-size: 10.5px;
-  }
-
-  #player-label-voice,
-  #player-speed-text {
-    font-size: 10.5px;
-  }
-
-  /* ---------- 9. Karaoke Reader Stage ------------------------------- */
-  #interactive-stage {
-    padding: 14px !important;
-    border-radius: 14px !important;
-    background: var(--bg-card, #1f2021) !important;
-  }
-
-  #interactive-stage > div:first-child {
-    flex-wrap: wrap;
-    gap: 6px;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
-  }
-
-  #btn-stage-cancel,
-  #btn-back-to-editor {
-    min-height: 34px;
-    font-size: 10.5px;
-  }
-
-  #interactive-reading-body {
-    max-height: 52vh !important;
-    min-height: 42vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    padding: 10px 2px !important;
-    font-size: 1.0625rem !important;
-    line-height: 1.85 !important;
-    scroll-padding-block: 40% 40%;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 16px), transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 16px), transparent 100%);
-  }
-
-  .reader-sentence {
-    padding: 2px 0;
-    margin-bottom: 10px;
-    border-left: none;
-  }
-
-  .reader-line {
-    padding: 6px 10px;
-    margin-bottom: 4px;
-    border-radius: 8px;
-    border-left: 2px solid transparent;
-    transition: background-color 180ms var(--ease-out, ease), border-color 180ms var(--ease-out, ease);
-  }
-
-  .reader-line.active-line {
-    background: rgba(239, 190, 130, 0.1);
-    border-left-color: var(--accent-amber, #efbe82);
-    color: var(--text-main, #f4f5f7);
-  }
-
-  .reader-word.active-word {
-    background: rgba(239, 190, 130, 0.22);
-    box-shadow: 0 0 0 2px rgba(239, 190, 130, 0.22);
-    border-radius: 4px;
-  }
-
-  #ribbon-track {
-    height: 6px !important;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.09) !important;
-  }
-
-  #ribbon-progress {
-    background: var(--accent-amber, #efbe82) !important;
-  }
-
-  #ribbon-segments-badge {
-    max-width: 58%;
-    text-align: right;
-    white-space: normal;
-    line-height: 1.3;
-  }
-
-  /* ---------- 10. Bottom Navigation Dock ---------------------------- */
-  #main-dock {
-    display: block !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* ---------- 3. Flush Native Bottom Tab Bar ---------- */
+  .vx-dock {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    inset-inline: 0;
+    z-index: 45;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border-top: 1px solid var(--border-subtle);
+    padding-bottom: var(--sab);
   }
 
   .vx-dock__nav {
-    margin: 0 auto var(--dock-gap) !important;
-    padding: 5px 6px !important;
-    border-radius: 20px !important;
+    height: var(--dock-h);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 4px 6px;
     gap: 2px;
   }
 
   .vx-dock__btn {
-    min-height: 46px;
-    border-radius: 14px !important;
-    gap: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 48px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-muted);
+    position: relative;
+    transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
   }
 
   .vx-dock__btn svg {
-    width: 19px;
-    height: 19px;
+    width: 20px;
+    height: 20px;
   }
 
   .vx-dock__label {
-    font-size: 9.5px;
-    letter-spacing: 0.05em;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
   }
 
-  /* ---------- 11. Top Non-Blocking Single-Pill Toast --------------- */
-  #toast-deck {
-    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
-    bottom: auto !important;
-    left: 14px !important;
-    right: 14px !important;
-    transform: none !important;
-    align-items: center !important;
-    z-index: 65 !important;
+  .vx-dock__btn[aria-current="page"] {
+    color: var(--accent-signal);
+    background: var(--accent-signal-soft);
   }
 
-  #toast-deck > * {
-    max-width: 100%;
-    padding: 7px 14px;
-    font-size: 11.5px;
-    border-radius: 9999px;
-    text-align: center;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.75);
+  .vx-dock__btn[aria-current="page"] .vx-dock__label {
+    font-weight: 700;
   }
 
-  /* ---------- 12. Bottom-Sheet Modals & Sticky Settings Footer ------ */
-  #voice-drawer-backdrop,
-  #settings-modal-backdrop,
-  #api-modal-backdrop,
-  #modal-screenshot-scan {
-    padding: 0 !important;
-    align-items: flex-end !important;
+  /* ---------- 4. Transcribe, Models, Archive Mobile ---------- */
+  .vx-stt-console {
+    padding: 16px 14px;
   }
 
-  #voice-drawer {
-    width: 100% !important;
-    height: 90dvh !important;
-    max-height: 90dvh !important;
-    border-radius: 20px 20px 0 0 !important;
+  .vx-mic-stage {
+    width: 132px;
+    height: 132px;
   }
 
-  #settings-modal,
-  #api-modal,
-  #modal-screenshot-scan > div {
-    width: 100% !important;
-    max-height: 86dvh !important;
-    border-radius: 20px 20px 0 0 !important;
+  .vx-stt-timer {
+    font-size: 1.65rem;
   }
 
-  #api-modal,
-  #modal-screenshot-scan > div {
-    padding: 16px !important;
+  .vx-stt-dropzone:not(.has-file) {
+    display: none;
   }
 
-  #settings-modal {
-    padding: 0 !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
+  .vx-telemetry-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
 
-  #settings-modal .settings-modal__body {
-    padding: 14px 16px !important;
-    overflow-y: auto !important;
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
+  .vx-stat-box {
+    padding: 10px 12px;
   }
 
-  #settings-modal .settings-modal__footer {
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
-    flex-shrink: 0 !important;
+  .vx-stat-val {
+    font-size: 1.35rem;
   }
 
-  /* ---------- 13. Transcribe View (Zero Duplicate Upload Box) ------- */
-  #view-stt > div:first-child {
-    padding-top: 0 !important;
-    padding-bottom: 12px !important;
-  }
-
-  #view-stt > div:nth-child(2) {
-    margin-block: 8px !important;
-  }
-
-  #view-stt > div:nth-child(2) > div:first-child {
-    width: 124px !important;
-    height: 124px !important;
-  }
-
-  #stt-timer-display {
-    font-size: 1.55rem !important;
-  }
-
-  /* Hide decorative "Captured at 48kHz • FLAC" badge on mobile */
-  #view-stt > div:nth-child(2) > div:nth-child(2) {
-    display: none !important;
-  }
-
-  /* Hide duplicate file dropzone unless a file is picked */
-  #stt-dropzone:not(.has-file) {
-    display: none !important;
-  }
-
-  #stt-dropzone.has-file {
-    margin-top: 10px;
-    margin-bottom: 10px !important;
-    padding: 10px 12px !important;
-  }
-
-  #btn-do-transcribe {
-    margin-bottom: 12px;
-    height: 46px !important;
-    border-radius: 14px !important;
-  }
-
-  /* ---------- 14. Models View (Clean Directory, Zero Vanity Stats) -- */
-  .vx-models-head {
-    padding-top: 0 !important;
-    padding-bottom: 12px !important;
-  }
-
-  .vx-models-eyebrow,
-  .vx-models-sub,
-  .vx-models-stats {
-    display: none !important;
-  }
-
-  .vx-models-head h1 {
-    font-size: 1.5rem !important;
-  }
-
-  .engine-card {
-    padding: 12px !important;
-  }
-
-  .engine-card > div:first-child {
-    gap: 10px;
-    align-items: center;
-  }
-
-  .engine-card > div:first-child > div:first-child {
-    gap: 10px;
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .engine-card .w-10.h-10 {
-    width: 36px !important;
-    height: 36px !important;
-  }
-
-  .engine-card .truncate,
-  .engine-card .engine-desc {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    line-height: 1.35;
-  }
-
-  .engine-card .font-medium.text-sm {
-    font-size: 13px !important;
-  }
-
-  .engine-card .flex.items-center.gap-2 {
-    flex-wrap: wrap;
-    row-gap: 2px;
-  }
-
-  .engine-card .btn-toggle-voices {
-    padding: 4px 9px !important;
-    font-size: 10px !important;
-    height: 30px;
-  }
-
-  /* ---------- 15. Archive View (Clean, Zero Overflow) --------------- */
-  .vx-archive-head {
-    padding-top: 0 !important;
-    padding-bottom: 12px !important;
-  }
-
-  .vx-archive-eyebrow,
-  .vx-archive-sub {
-    display: none !important;
-  }
-
-  .vx-archive-head h1 {
-    font-size: 1.5rem !important;
-  }
-
-  #apk-release-card {
-    padding: 14px !important;
-    margin-bottom: 16px !important;
-  }
-
+  .vx-accordion-grid,
+  .drawer-voices-grid,
   .vault-list {
-    gap: 10px;
+    grid-template-columns: 1fr;
   }
 
-  #btn-load-file {
-    display: inline-flex !important;
+  .vx-qr-box {
+    display: none;
   }
-}
 
-/* Desktop: the dock is a phone affordance, never a second nav bar */
-@media (min-width: 768px) {
-  #main-dock {
-    display: none !important;
+  /* ---------- 5. Bottom-Sheet Modals ---------- */
+  .vx-backdrop {
+    padding: 0;
+    align-items: flex-end;
   }
-}
 
-@media (min-width: 768px) and (max-width: 900px) {
-  .vx-nav__item span,
-  .vx-nav__item {
-    font-size: 0.66rem;
+  .vx-modal {
+    max-width: 100%;
+    max-height: 88dvh;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: var(--sab);
+    animation: vx-sheet-up var(--dur-med) var(--ease-out);
+  }
+
+  .vx-modal--wide {
+    height: 90dvh;
+    max-height: 90dvh;
+  }
+
+  .vx-drag-pill {
+    display: block;
+  }
+
+  .vx-modal__head {
+    padding: 12px 16px;
+  }
+
+  .vx-modal__body {
+    padding: 14px 16px;
+  }
+
+  .vx-modal__foot {
+    padding: 12px 16px;
+  }
+
+  .drawer-provider-tabs {
+    padding: 8px 14px;
+  }
+
+  .vx-drawer-controls {
+    padding: 10px 14px;
+  }
+
+  .drawer-voices-grid {
+    padding: 12px 14px;
+  }
+
+  @keyframes vx-sheet-up {
+    from { transform: translateY(32px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .toast-deck {
+    bottom: calc(var(--dock-h) + var(--sab) + 14px);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    align-items: center;
   }
 }

@@ -13,16 +13,16 @@
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 1500,
+      "launchShowDuration": 1200,
       "launchAutoHide": false,
-      "backgroundColor": "#121315",
+      "backgroundColor": "#F3F1EC",
       "androidSplashResourceName": "splash",
       "androidScaleType": "CENTER_CROP",
       "showSpinner": false
     },
     "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#121315"
+      "style": "LIGHT",
+      "backgroundColor": "#F3F1EC"
     },
     "Keyboard": {
       "resize": "body",

@@ -1417,14 +1417,19 @@ export default {
       try {
         const formData = await request.formData();
         const file = formData.get("file");
+        const requestedEngine = (formData.get("engine") || "whisper").toString().toLowerCase();
 
         const clientKey = extractApiKey(request) || formData.get("api_key");
         const customGroqHeader = request.headers.get("X-Groq-Key");
+        const customDgHeader = request.headers.get("X-Deepgram-Key");
         let groqKey = (customGroqHeader ? customGroqHeader.trim() : (formData.get("groq_key") ? String(formData.get("groq_key")).trim() : "")) || env.GROQ_API_KEY;
+        let deepgramKey = (customDgHeader ? customDgHeader.trim() : (formData.get("deepgram_key") ? String(formData.get("deepgram_key")).trim() : "")) || env.DEEPGRAM_API_KEY;
 
         if (clientKey) {
           if (clientKey.startsWith("gsk_")) {
             groqKey = clientKey;
+          } else if (clientKey.startsWith("dg_") || (clientKey.length === 40 && !clientKey.startsWith("vox_"))) {
+            deepgramKey = clientKey;
           } else if (clientKey.startsWith("vox_live_")) {
             const check = await verifyVoxApiKey(clientKey, secret);
             if (!check.valid) {
@@ -1433,12 +1438,39 @@ export default {
           }
         }
 
-        if (!groqKey) {
-          return jsonResponse({ detail: "Groq API key required for transcription." }, 401);
-        }
-
         if (!file) {
           return jsonResponse({ detail: "No audio file provided." }, 400);
+        }
+
+        if (requestedEngine === "deepgram" && deepgramKey) {
+          const audioBuf = await file.arrayBuffer();
+          const dgRes = await fetch("https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=true", {
+            method: "POST",
+            headers: {
+              "Authorization": `Token ${deepgramKey}`,
+              "Content-Type": file.type || "audio/webm"
+            },
+            body: audioBuf
+          });
+
+          if (!dgRes.ok) {
+            const errText = await dgRes.text();
+            return jsonResponse({ detail: `Deepgram Nova-2 Error (${dgRes.status}): ${errText}` }, dgRes.status);
+          }
+
+          const dgJson = await dgRes.json();
+          const ch = dgJson.results && dgJson.results.channels && dgJson.results.channels[0];
+          const alt = ch && ch.alternatives && ch.alternatives[0];
+          return jsonResponse({
+            text: (alt && alt.transcript) || "",
+            duration: (dgJson.metadata && dgJson.metadata.duration) || 0,
+            language: (ch && ch.detected_language) || "auto",
+            engine: "deepgram-nova-2"
+          });
+        }
+
+        if (!groqKey) {
+          return jsonResponse({ detail: "Groq API key required for transcription." }, 401);
         }
 
         const groqForm = new FormData();

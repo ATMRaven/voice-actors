@@ -4,8 +4,8 @@
   "description": "High-fidelity neural voice synthesis studio and Whisper speech transcription.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#121315",
-  "theme_color": "#121315",
+  "background_color": "#F3F1EC",
+  "theme_color": "#F3F1EC",
   "orientation": "portrait-primary",
   "icons": [
     {
