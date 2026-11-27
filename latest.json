@@ -2,11 +2,11 @@
   "versionName": "1.2.0",
   "versionCode": 10200,
   "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
-  "sha256": "e246d7b1ea999ce729a3ce1b9ba68494245cc488dfa37772c95ee30d965a404a",
-  "sizeBytes": 9773043,
+  "sha256": "75809d78d448f0413a1c042cf3c06c35f6156b0397128e586fffb1dcf9e55f4c",
+  "sizeBytes": 9756473,
   "minSupportedVersionCode": 1,
   "mandatory": false,
-  "releaseNotes": "v1.1.5: Minimalist mobile UI/UX overhaul, inline SVG icons, condensed single-screen Studio, sticky bottom-sheet Settings, unified Archive vault search.",
-  "publishedAt": "2026-11-27T20:54:06.153Z",
+  "releaseNotes": "v1.2.0: Ground-up Swiss Editorial Audio Studio revamp — warm stone Light & graphite Dark themes, above-the-fold desktop Studio grid, inline Mistral emotion selector, Deepgram Nova-2 STT routing, self-contained vector icons, and responsive Android navigation.",
+  "publishedAt": "2026-11-27T20:55:57Z",
   "version": "1.2.0"
 }
