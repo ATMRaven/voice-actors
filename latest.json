@@ -1,12 +1,12 @@
 {
-  "versionName": "1.1.5",
-  "versionCode": 10105,
+  "versionName": "1.2.0",
+  "versionCode": 10200,
   "apkUrl": "https://github.com/ATMRaven/voice-actors/releases/latest/download/voice-actors-latest.apk",
   "sha256": "e246d7b1ea999ce729a3ce1b9ba68494245cc488dfa37772c95ee30d965a404a",
   "sizeBytes": 9773043,
   "minSupportedVersionCode": 1,
   "mandatory": false,
   "releaseNotes": "v1.1.5: Minimalist mobile UI/UX overhaul, inline SVG icons, condensed single-screen Studio, sticky bottom-sheet Settings, unified Archive vault search.",
-  "publishedAt": "2026-11-25T12:03:07Z",
-  "version": "1.1.5"
+  "publishedAt": "2026-11-27T20:54:06.153Z",
+  "version": "1.2.0"
 }
